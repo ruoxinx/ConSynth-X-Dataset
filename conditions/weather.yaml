@@ -1,0 +1,10 @@
+# Weather condition definitions
+weather:
+  clear: {description: "No precipitation, normal visibility"}
+  light_rain: {description: "Light rain, wet surfaces; rain_intensity: 0.1-0.3"}
+  rain: {description: "Rainfall visible; rain_intensity: 0.3-0.6"}
+  heavy_rain: {description: "Heavy rain; rain_intensity: 0.6-1.0"}
+  snow: {description: "Snowfall or accumulation"}
+  fog: {description: "Reduced visibility; fog_density: >0.1"}
+  dust: {description: "Dust in air reducing clarity"}
+  wind: {description: "High wind affecting particle motion"}

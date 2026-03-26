@@ -1,0 +1,15 @@
+{
+  "scene_id": "string",
+  "timestamp": "ISO8601",
+  "site_id": "string",
+  "camera": {
+    "intrinsics": {"focal_length": null, "sensor_width": null},
+    "extrinsics": null
+  },
+  "conditions": {
+    "weather": [],
+    "lighting": [],
+    "scale": [],
+    "degradation": []
+  }
+}

@@ -1,0 +1,6 @@
+# Scale / distance definitions
+scale:
+  close_range: {description: "Objects occupy large image area; camera near"}
+  medium_range: {description: "Typical working distance"}
+  long_range: {description: "Distant objects; small pixel area"}
+  small_object: {description: "Objects with small pixel footprint (challenging detection)"}

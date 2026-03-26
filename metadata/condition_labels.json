@@ -1,0 +1,8 @@
+{
+  "label_schema_version": "0.1",
+  "labels": [
+    {"id": "rain", "type": "weather", "provenance": "manual|rule-based"},
+    {"id": "fog", "type": "weather", "provenance": "manual|rule-based"},
+    {"id": "low_light", "type": "lighting", "provenance": "manual|rule-based"}
+  ]
+}

@@ -1,0 +1,8 @@
+# Lighting condition definitions
+lighting:
+  daylight: {description: "Normal daytime illumination"}
+  low_light: {description: "Underexposed scenes; exposure_ev: -3 to -1"}
+  nighttime: {description: "Night with artificial lights"}
+  backlit: {description: "Strong backlight; sun behind subjects"}
+  shadow_heavy: {description: "Large shadows occluding regions"}
+  glare: {description: "Specular highlights and lens flare"}

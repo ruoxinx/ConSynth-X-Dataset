@@ -1,0 +1,7 @@
+# Sensor and image degradation parameters
+noise:
+  motion_blur: {description: "Motion blur applied; parameter: motion_blur_amount"}
+  defocus_blur: {description: "Depth-of-field blur"}
+  gaussian_noise: {description: "Sensor noise; gaussian std"}
+  low_resolution: {description: "Downsampled images"}
+  compression_artifacts: {description: "JPEG-like artifacts at low quality"}
