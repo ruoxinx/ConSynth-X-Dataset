@@ -1,0 +1,24 @@
+# Base configuration for Benchmark Runner
+# All dataset-specific configs inherit from this
+
+# === Paths ===
+paths:
+  lmu_data_root: /users/PGS0407/binben14/LMUData
+  augmentation_root: /users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data
+  annotation_root: /users/PGS0407/binben14/VietHuy/ConstructionSite-10k-Implementation/Annotations
+  output_root: /users/PGS0407/binben14/VietHuy/Benchmark_runner/output
+
+# === Inference defaults ===
+inference:
+  temperature: 0.2
+  max_new_tokens: 1024
+  batch_size: 1
+  num_workers: 4
+  seed: 42
+  checkpoint_every: 1  # save after every N images
+  resume: true          # auto-resume from checkpoint
+
+# === Evaluation defaults ===
+evaluation:
+  iou_grid_size: 100
+  positive_only: true
