@@ -41,7 +41,7 @@ NUM_CLASSES = len(CLASS_NAMES)
 # ============================================================
 # Paths
 # ============================================================
-BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/construction-site")
+BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
 VOC_ROOT = BASE_DIR / "SODA/data/SODA VOCdevkit/VOCdevkit/VOC2007"
 AUG_DIR = BASE_DIR / "augmentation_data/SODA"
 OUTPUT_DIR = BASE_DIR / "validation_data/downstream_detection/SODA"

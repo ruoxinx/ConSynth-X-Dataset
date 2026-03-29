@@ -97,10 +97,10 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Extract validation data from Arrow file')
     parser.add_argument('--arrow-file', type=str, 
-                        default="/users/PGS0407/binben14/VietHuy/construction-site/LouisChen15___construction_site/construction_site-train-00000-of-00002.arrow",
+                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site/construction_site-train-00000-of-00002.arrow",
                         help='Path to Arrow file')
     parser.add_argument('--output-dir', type=str,
-                        default="/users/PGS0407/binben14/VietHuy/construction-site/augmentation_data/val_from_train",
+                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/val_from_train",
                         help='Output directory')
     parser.add_argument('--num-samples', type=int, default=2000,
                         help='Number of samples to extract')

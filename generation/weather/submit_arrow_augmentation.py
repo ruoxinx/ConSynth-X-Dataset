@@ -36,9 +36,9 @@ def parse_args():
                         help='End sample index (default: all samples)')
     
     # Style config
-    parser.add_argument('--snow-style-dir', type=str, default='weather_aug/snow_style',
+    parser.add_argument('--snow-style-dir', type=str, default='generation/weather/snow_style',
                         help='Directory containing snow style images')
-    parser.add_argument('--rain-style-dir', type=str, default='weather_aug/rain_style',
+    parser.add_argument('--rain-style-dir', type=str, default='generation/weather/rain_style',
                         help='Directory containing rain style images')
     parser.add_argument('--pipeline', type=str, default='all',
                         choices=['snow', 'rain', 'all'],
@@ -155,7 +155,7 @@ def main():
     # Handle input file path based on dataset name
     dataset_dir = work_dir / 'LouisChen15___construction_site'
     if args.dataset == 'construction_site_night':
-        input_file = "/users/PGS0407/binben14/VietHuy/construction-site/output/construction_site_test/style_snow_0/batch_0-100.arrow"
+        input_file = "/users/PGS0407/binben14/VietHuy/ConstructionSite/output/construction_site_test/style_snow_0/batch_0-100.arrow"
     elif args.dataset == 'construction_site_test':
         input_file = dataset_dir / 'construction_site-test.arrow'
     elif args.dataset == 'construction_site_train':

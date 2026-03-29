@@ -270,7 +270,7 @@ if __name__ == "__main__":
     # Test Arrow loading
     print("Testing Arrow loading...")
     ds_arrow = ConstructionSiteDataset(
-        "/users/PGS0407/binben14/VietHuy/construction-site/LouisChen15___construction_site/construction_site-test.arrow",
+        "/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site/construction_site-test.arrow",
         transform=transform,
         max_samples=5
     )
@@ -283,7 +283,7 @@ if __name__ == "__main__":
     # Test folder loading
     print("\nTesting Folder loading...")
     ds_folder = ConstructionSiteDataset(
-        "/users/PGS0407/binben14/VietHuy/construction-site/augmentation_data/construction_site-test",
+        "/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/construction_site-test",
         transform=transform,
         max_samples=5
     )

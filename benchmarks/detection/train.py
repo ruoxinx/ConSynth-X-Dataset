@@ -310,7 +310,7 @@ def main():
     parser.add_argument('--lr-gamma', type=float, default=0.1,
                         help='Gamma for StepLR scheduler')
     parser.add_argument('--output-dir', type=str, 
-                        default='/users/PGS0407/binben14/VietHuy/construction-site/validation_data/downstream_detection/checkpoints',
+                        default='/users/PGS0407/binben14/VietHuy/ConstructionSite/validation_data/downstream_detection/checkpoints',
                         help='Output directory for checkpoints')
     parser.add_argument('--max-train-samples', type=int, default=None,
                         help='Maximum training samples (None for all)')
@@ -319,7 +319,7 @@ def main():
     args = parser.parse_args()
     
     # Paths
-    BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/construction-site")
+    BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
     AUG_DATA_DIR = BASE_DIR / "augmentation_data"
     
     # Device

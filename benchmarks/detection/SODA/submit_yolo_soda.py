@@ -14,8 +14,8 @@ from pathlib import Path
 from datetime import datetime
 import argparse
 
-WORKSPACE = Path("/users/PGS0407/binben14/VietHuy/construction-site")
-SCRIPT = WORKSPACE / "validation_data/downstream_detection/SODA/train_yolo_soda.py"
+WORKSPACE = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+SCRIPT = Path(__file__).resolve().parent / "train_yolo_soda.py"
 OUTPUT_DIR = WORKSPACE / "validation_data/downstream_detection/SODA"
 VLM_BIN = "/users/PGS0407/binben14/.conda/envs/VLM/bin"
 

@@ -1,0 +1,23 @@
+# Claude Code
+CLAUDE.md
+
+# LaTeX build artifacts
+slide/*.aux
+slide/*.log
+slide/*.nav
+slide/*.out
+slide/*.snm
+slide/*.toc
+slide/*.synctex.gz
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Temp files
+*.npy
+*.tmp
+
+# Generated figures (regenerate with slide/generate_figures.py)
+slide/figures/*.png

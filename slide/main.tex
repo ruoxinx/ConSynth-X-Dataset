@@ -1,0 +1,777 @@
+\documentclass[aspectratio=169, 10pt]{beamer}
+
+% ── Theme & Colors ──
+\usetheme{Madrid}
+\usecolortheme{whale}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+% ── Packages ──
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, calc}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{textcomp}
+\graphicspath{{figures/}}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{array}
+
+\definecolor{okgreen}{RGB}{50,150,50}
+\definecolor{warnred}{RGB}{200,50,50}
+\definecolor{infobl}{RGB}{40,100,180}
+\definecolor{lightyellow}{RGB}{255,255,220}
+\definecolor{lightblue}{RGB}{220,235,255}
+\definecolor{lightgreen}{RGB}{220,255,220}
+\definecolor{lightred}{RGB}{255,225,225}
+\definecolor{boxblue}{RGB}{0,80,160}
+\definecolor{boxorange}{RGB}{200,100,0}
+\definecolor{boxgreen}{RGB}{0,130,60}
+\definecolor{boxpurple}{RGB}{120,50,160}
+
+% ── TikZ Styles (must be in preamble for beamer compatibility) ──
+\tikzset{
+    % Problem Statement
+    catbox/.style={rectangle, rounded corners=3pt, draw=#1, fill=#1!10,
+                text width=3.6cm, minimum height=0.7cm, align=center,
+                font=\scriptsize\bfseries},
+    % Overview pipeline
+    pipebox/.style={rectangle, rounded corners=4pt, draw=#1, fill=#1!8,
+                minimum width=4.2cm, minimum height=1.4cm, align=center, font=\small},
+    pipelbl/.style={font=\scriptsize, text=gray!70},
+    % Weather pipeline
+    wnode/.style={rectangle, rounded corners=3pt, draw=boxblue, fill=boxblue!8,
+                 minimum width=2.2cm, minimum height=0.85cm, align=center, font=\footnotesize},
+    wssim/.style={rectangle, rounded corners=3pt, draw=warnred, fill=warnred!8,
+                 minimum width=2.2cm, minimum height=0.85cm, align=center, font=\footnotesize},
+    warrow/.style={-{Stealth[length=2.5mm]}, thick, boxblue!60},
+    wnote/.style={font=\tiny, text=gray!80},
+    % Day2Night pipeline
+    dnode/.style={rectangle, rounded corners=3pt, draw=boxorange, fill=boxorange!8,
+                 minimum width=3.5cm, minimum height=0.8cm, align=center, font=\footnotesize},
+    darrow/.style={-{Stealth[length=2.5mm]}, thick, boxorange!60},
+    % Outpainting pipeline
+    onode/.style={rectangle, rounded corners=3pt, draw=boxgreen, fill=boxgreen!8,
+                 minimum width=3.8cm, minimum height=0.7cm, align=center, font=\footnotesize},
+    oarrow/.style={-{Stealth[length=2.5mm]}, thick, boxgreen!60},
+    % Repo structure
+    rdir/.style={rectangle, rounded corners=2pt, draw=#1, fill=#1!8,
+                minimum width=2.8cm, minimum height=0.6cm, align=center,
+                font=\footnotesize\ttfamily},
+    rroot/.style={rectangle, rounded corners=4pt, draw=black, fill=gray!10,
+                 minimum width=2.8cm, minimum height=0.65cm, align=center,
+                 font=\footnotesize\bfseries\ttfamily},
+    rarrow/.style={-{Stealth[length=2mm]}, thick, gray!50},
+    rdesc/.style={font=\tiny, text=gray!80},
+    % General
+    garrow/.style={-{Stealth[length=3mm]}, thick, gray!70},
+}
+
+% ── Title ──
+\title[ConSynth-X]{ConSynth-X: Benchmarking Construction CV\\Under Extreme Field Conditions}
+\subtitle{Project Progress Report}
+\author{Viet Huy Duong \\ \texttt{vduong1@kent.edu}}
+\institute{Kent State University}
+\date{March 29, 2026}
+
+\begin{document}
+
+% ════════════════════════════════════════
+\begin{frame}
+\titlepage
+\end{frame}
+
+% ════════════════════════════════════════
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Problem \& Motivation}
+% ════════════════════════════════════════
+
+\begin{frame}{Problem Statement}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\textbf{Goal:} Evaluate how robust construction computer vision models are under extreme field conditions.
+
+\vspace{0.5em}
+\textbf{Why this matters:}
+\begin{itemize}
+    \item Construction sites face rain, snow, fog, low light, glare
+    \item Models trained on clean data fail in the field
+    \item No standardized benchmark for these conditions
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{ConSynth-X provides:}
+\begin{enumerate}
+    \item Synthetic augmentation pipelines (3 methods)
+    \item Multi-label taxonomy of 40+ conditions
+    \item VLM benchmarking framework (11 models)
+    \item YOLOv8 detection benchmarks
+\end{enumerate}
+\end{column}
+\begin{column}{0.42\textwidth}
+\centering
+\begin{tikzpicture}
+\node[catbox=boxblue]   (w) at (0,3)   {Weather (rain, snow, fog)};
+\node[catbox=boxorange] (l) at (0,2)   {Lighting (night, glare)};
+\node[catbox=boxgreen]  (s) at (0,1)   {Scale (small/distant)};
+\node[catbox=boxpurple] (q) at (0,0)   {Image Quality (blur, noise)};
+\node[catbox=gray]      (c) at (0,-1)  {Scene Complexity};
+\node[catbox=warnred]   (d) at (0,-2)  {Domain Shift};
+
+\node[font=\footnotesize\bfseries, above=0.2cm of w] {6 Condition Categories};
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Datasets}
+% ════════════════════════════════════════
+
+\begin{frame}{Base Datasets}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{boxblue}{Construction Site Dataset}}
+\begin{itemize}
+    \item Format: HuggingFace Arrow
+    \item 3 classes: \texttt{excavator}, \texttt{rebar}, \texttt{worker\_with\_white\_hard\_hat}
+    \item Test set: \textbf{3,004} images
+    \item Rich annotations: bounding boxes + 4 safety rules + captions
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{boxorange}{SODA Dataset}}
+\begin{itemize}
+    \item Format: Pascal VOC (XML)
+    \item \textbf{15} object classes
+    \item Total: \textbf{19,846} images
+    \item Standard VOC train/val/test splits
+\end{itemize}
+\end{column}
+\end{columns}
+
+\vspace{0.8em}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{Method} & \textbf{Construction Site} & \textbf{SODA} \\
+\midrule
+Original   & Baseline              & 3,004  & 19,846 \\
+Weather    & Neural Style Transfer & 10,266 & 47,169 \\
+Night      & img2img-turbo         & 3,004  & --     \\
+Small      & FLUX Outpainting      & 1,323  & 1,001  \\
+\midrule
+\textbf{Total} &                   & \textbf{17,597} & \textbf{68,016} \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Augmentation Pipelines}
+% ════════════════════════════════════════
+
+\begin{frame}{Overview of 3 Augmentation Pipelines}
+\centering
+\begin{tikzpicture}
+% Original
+\node[pipebox=gray, minimum width=2.8cm] (orig) at (0,0) {\textbf{Original Image}\\3,004 images};
+
+% Weather
+\node[pipebox=boxblue] (weather) at (5.5,1.6) {
+    \textbf{Weather}\\
+    MiDaS + VGG19\\
+    6 styles (rain/snow)
+};
+
+% Night
+\node[pipebox=boxorange] (night) at (5.5,0) {
+    \textbf{Day-to-Night}\\
+    CycleGAN-Turbo\\
+    1:1 mapping
+};
+
+% Small
+\node[pipebox=boxgreen] (small) at (5.5,-1.6) {
+    \textbf{Outpainting}\\
+    FLUX.1-Fill-dev\\
+    Gaussian scale
+};
+
+% Arrows
+\draw[garrow] (orig.east) -- (weather.west);
+\draw[garrow] (orig.east) -- (night.west);
+\draw[garrow] (orig.east) -- (small.west);
+
+% Annotations
+\node[pipelbl, right=0.15cm of weather.east] {Annotations copied};
+\node[pipelbl, right=0.15cm of night.east]   {Annotations copied};
+\node[pipelbl, right=0.15cm of small.east]   {Bbox re-mapped};
+
+\end{tikzpicture}
+
+\vspace{0.5em}
+\begin{columns}[T]
+\begin{column}{0.32\textwidth}
+\centering
+\textcolor{boxblue}{\rule{3cm}{1.5pt}}\\[0.2em]
+{\scriptsize SSIM filter: $0.5 \leq$ SSIM $\leq 0.95$}
+\end{column}
+\begin{column}{0.32\textwidth}
+\centering
+\textcolor{boxorange}{\rule{3cm}{1.5pt}}\\[0.2em]
+{\scriptsize 512$\times$512 internal, FP16}
+\end{column}
+\begin{column}{0.32\textwidth}
+\centering
+\textcolor{boxgreen}{\rule{3cm}{1.5pt}}\\[0.2em]
+{\scriptsize Scale $\sim \mathcal{N}(0.25, 0.05^2)$, clamp $[0.2, 0.4]$}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Weather Augmentation Pipeline}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+\node[wnode] (input) at (0,0)    {\textbf{Input}};
+\node[wnode] (midas) at (3,0)    {\textbf{MiDaS}\\DPT\_Large};
+\node[wnode] (depth) at (3,-1.5) {Depth Map};
+\node[wnode] (vgg)   at (6,0)    {\textbf{VGG19}\\Style Transfer};
+\node[wnode] (style) at (6,-1.5) {Style Ref.\\{\tiny rain/snow $\times$ 3}};
+\node[wnode] (part)  at (9,0)    {\textbf{Particle}\\Generator};
+\node[wnode] (out)   at (12,0)   {\textbf{Output}};
+\node[wssim] (ssim) at (12,-1.5) {\textbf{SSIM Filter}\\$[0.5, 0.95]$};
+
+\draw[warrow] (input) -- (midas);
+\draw[warrow] (midas) -- (depth);
+\draw[warrow] (midas) -- (vgg);
+\draw[warrow] (depth) -| (part);
+\draw[warrow] (style) -- (vgg);
+\draw[warrow] (vgg) -- (part);
+\draw[warrow] (part) -- (out);
+\draw[warrow, draw=warnred!60] (out) -- (ssim);
+
+\node[wnote, above=0.05cm of vgg] {wt=10k, steps=10};
+\node[wnote, above=0.05cm of part] {rain/snow};
+\end{tikzpicture}}%
+
+\vspace{0.6em}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\centering
+{\footnotesize \textbf{Construction Site} (3,004 original)}\\[0.3em]
+\begin{tabular}{lc}
+\toprule
+\textbf{Style} & \textbf{After Filter} \\
+\midrule
+rain\_0 / rain\_1 / rain\_2 & 2,211 / 1,243 / 1,208 \\
+snow\_0 / snow\_1 / snow\_2 & 2,159 / 1,649 / 1,796 \\
+\midrule
+\textbf{Total} & \textbf{10,266} \\
+\bottomrule
+\end{tabular}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering
+{\footnotesize \textbf{SODA} (19,846 original)}\\[0.3em]
+\begin{tabular}{lc}
+\toprule
+\textbf{Style} & \textbf{After Filter} \\
+\midrule
+rain\_0 / rain\_1 / rain\_2 & 8,392 / 8,059 / 9,541 \\
+snow\_0 / snow\_1 / snow\_2 & 9,818 / 7,485 / 3,874 \\
+\midrule
+\textbf{Total} & \textbf{47,169} \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Day-to-Night Augmentation}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\textbf{Model:} CycleGAN-Turbo (\texttt{day\_to\_night} checkpoint)
+
+\vspace{0.5em}
+\textbf{Pipeline:}
+\begin{enumerate}
+    \item Load day image $\rightarrow$ resize to $512 \times 512$
+    \item Forward pass through CycleGAN-Turbo
+    \item Resize output back to original resolution (LANCZOS)
+    \item Save night image + copy annotations directly
+\end{enumerate}
+
+\vspace{0.5em}
+\textbf{Key properties:}
+\begin{itemize}
+    \item \textbf{1:1 mapping} -- every image gets one night variant
+    \item FP16 inference with xformers attention
+    \item Annotations \textbf{copied unchanged} (pixel-level transform)
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Output:} 3,004 night images (Construction Site)
+\end{column}
+\begin{column}{0.42\textwidth}
+\centering
+\begin{tikzpicture}
+\node[dnode] (in)      at (0,3)   {\textbf{Day Image}};
+\node[dnode] (resize1) at (0,2)   {Resize $512\times512$};
+\node[dnode] (model)   at (0,1)   {\textbf{CycleGAN-Turbo}};
+\node[dnode] (resize2) at (0,0)   {Resize Original Size};
+\node[dnode] (out)     at (0,-1)  {\textbf{Night Image}};
+
+\draw[darrow] (in) -- (resize1);
+\draw[darrow] (resize1) -- (model);
+\draw[darrow] (model) -- (resize2);
+\draw[darrow] (resize2) -- (out);
+
+\node[font=\tiny, text=gray, right=0.2cm of model] {FP16, xformers};
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Outpainting -- Scale/Distance Augmentation}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\textbf{Model:} FLUX.1-Fill-dev (bfloat16)
+
+\vspace{0.4em}
+\textbf{Idea:} Expand canvas around original image $\rightarrow$ objects appear smaller/more distant.
+
+\vspace{0.4em}
+\textbf{Scale factor:} Truncated Gaussian
+\[
+s \sim \mathcal{N}(\mu{=}0.25,\;\sigma{=}0.05), \quad s \in [0.2, 0.4]
+\]
+Canvas size: $(1+2s) \times$ original on each axis.
+
+\vspace{0.4em}
+\textbf{Bbox transfer:}
+\[
+x'_1 = \frac{x_1 \cdot W \cdot r + p_x}{W'}, \quad
+y'_1 = \frac{y_1 \cdot H \cdot r + p_y}{H'}
+\]
+{\scriptsize where $r$ = resize factor, $(p_x, p_y)$ = paste offset}
+
+\vspace{0.4em}
+\textbf{Prompt:} \textit{``an outdoor construction site with buildings, roads, and open sky in the background''}
+\end{column}
+\begin{column}{0.45\textwidth}
+\centering
+\begin{tikzpicture}
+\node[onode] (in)     at (0,4)   {\textbf{Original} ($W \times H$)};
+\node[onode] (scale)  at (0,3)   {Sample $s \sim \mathcal{N}(0.25, 0.05^2)$};
+\node[onode] (canvas) at (0,2)   {Create canvas + mask};
+\node[onode] (flux)   at (0,1)   {\textbf{FLUX.1-Fill-dev}};
+\node[onode] (bbox)   at (0,0)   {Transfer bounding boxes};
+\node[onode] (out)    at (0,-1)  {\textbf{Outpainted image}};
+
+\draw[oarrow] (in) -- (scale);
+\draw[oarrow] (scale) -- (canvas);
+\draw[oarrow] (canvas) -- (flux);
+\draw[oarrow] (flux) -- (bbox);
+\draw[oarrow] (bbox) -- (out);
+
+\node[font=\tiny, text=gray, right=0.15cm of flux] {steps=28, cfg=30};
+\end{tikzpicture}
+
+\vspace{0.5em}
+\begin{tabular}{lc}
+\toprule
+\textbf{Dataset} & \textbf{Output} \\
+\midrule
+Construction Site & 1,323 \\
+SODA & 1,001 \\
+\bottomrule
+\end{tabular}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Benchmarking Framework}
+% ════════════════════════════════════════
+
+\begin{frame}{VLM Benchmarking -- Models \& Tasks}
+\begin{columns}[T]
+\begin{column}{0.45\textwidth}
+\textbf{11 Vision-Language Models:}
+
+\vspace{0.3em}
+{\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Model} & \textbf{Size} \\
+\midrule
+Qwen2.5-VL & 7B / 32B / 72B \\
+Qwen3-VL & 8B \\
+InternVL2.5 & 8B / 26B \\
+LLaVA v1.5 & 7B \\
+Llama-3.2-Vision & 11B \\
+Gemma-3 & 27B \\
+Phi-4-multimodal & -- \\
+GPT-4o / GPT-4o-mini & API \\
+\bottomrule
+\end{tabular}
+}
+\end{column}
+\begin{column}{0.52\textwidth}
+\textbf{4 Benchmark Tasks:}
+
+\vspace{0.3em}
+\begin{enumerate}
+    \item \textbf{Description} (0-shot captioning)\\
+    {\scriptsize Metrics: BERTScore, BLEU, ROUGE-L, METEOR, CLIPScore}
+
+    \vspace{0.2em}
+    \item \textbf{VQA Safety} (5-shot, 4 rules)\\
+    {\scriptsize Metrics: Per-rule P/R/F1 + bbox IoU}
+
+    \vspace{0.2em}
+    \item \textbf{VQA Rule 1} (binary Yes/No)\\
+    {\scriptsize PPE compliance detection}
+
+    \vspace{0.2em}
+    \item \textbf{Object Detection}\\
+    {\scriptsize Normalized bbox, grid-based IoU}
+\end{enumerate}
+
+\vspace{0.4em}
+{\footnotesize \textbf{Conditions:} original $\times$ weather $\times$ night $\times$ small}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Safety Rules for VQA}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{warnred}{Rule 1} -- PPE Compliance}
+\begin{itemize}
+    \item Hard hats, proper clothing, safety shoes
+    \item High-vis vests at night
+    \item Face shields when cutting/welding
+\end{itemize}
+
+\vspace{0.4em}
+\textbf{\textcolor{warnred}{Rule 2} -- Safety Harness}
+\begin{itemize}
+    \item Required at height $\geq$ 3m
+    \item Without edge protection
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{warnred}{Rule 3} -- Edge Protection}
+\begin{itemize}
+    \item Guardrails, fences required
+    \item Underground projects $\geq$ 3m depth
+\end{itemize}
+
+\vspace{0.4em}
+\textbf{\textcolor{warnred}{Rule 4} -- Excavator Safety}
+\begin{itemize}
+    \item Workers in blind spots
+    \item Within operation radius
+\end{itemize}
+
+\vspace{0.6em}
+{\footnotesize \textbf{Output format:} JSON with rule ID, reason, bounding box $[x_1, y_1, x_2, y_2]$ in normalized $[0,1]$ space.}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{VQA Safety Results}
+% ════════════════════════════════════════
+
+\begin{frame}{VQA Safety -- Overall F1 by Model and Condition}
+\centering
+\includegraphics[width=0.92\textwidth]{vqa_f1_bar.pdf}
+
+\vspace{0.3em}
+{\scriptsize 5-shot prompting (Phi-4: 2-shot due to memory). LLaVA-1.5-7B omitted (100\% parse errors). Now includes \textbf{Gemma-3-27B}.}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{VQA Safety -- F1 Radar Across Conditions}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\centering
+\includegraphics[width=\textwidth]{vqa_f1_radar_conditions.pdf}
+\end{column}
+\begin{column}{0.45\textwidth}
+\centering
+\includegraphics[width=\textwidth]{vqa_per_rule_heatmap.pdf}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ─���──────────────────────────────────────
+\begin{frame}{VQA Safety -- Key Observations}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Condition Impact:}
+\begin{itemize}
+    \item \textcolor{warnred}{Night} and \textcolor{warnred}{small} degrade all models
+    \item F1 drops 15--60\% from original to worst condition
+    \item \textcolor{boxblue}{Weather} has moderate impact
+    \item IoU drops more severely than classification metrics
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{Model Comparison:}
+\begin{itemize}
+    \item \textbf{Gemma-3-27B}: Highest F1 (13.3\%), most robust across conditions
+    \item \textbf{InternVL2.5-26B}: High recall (77--84\%) but low precision
+    \item \textbf{Qwen3-VL-8B}: Best bbox IoU (29\%), conservative
+    \item \textbf{GPT-4o-mini}: $\sim$50\% error rate
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Per-Rule Analysis:}
+
+\vspace{0.3em}
+{\footnotesize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Rule} & \textbf{Best F1} & \textbf{Challenge} \\
+\midrule
+Rule 1 (PPE) & 0.244 & Most common\\
+Rule 2 (Harness) & 0.200 & Rare violations \\
+Rule 3 (Edge) & 0.267 & Spatial reasoning \\
+Rule 4 (Excavator) & 0.129 & Hardest overall \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.6em}
+\textbf{Key finding:}\\[0.2em]
+{\footnotesize All models struggle with construction safety VQA. Even the best model achieves only $\sim$0.30 IoU, suggesting current VLMs lack the spatial and domain understanding needed for reliable safety inspection.}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Description Task Results}
+% ════════════════════════════════════════
+
+\begin{frame}{Description Task -- Model Profiles (Original)}
+\begin{columns}[T]
+\begin{column}{0.50\textwidth}
+\centering
+\includegraphics[width=\textwidth]{desc_radar_original.pdf}
+\end{column}
+\begin{column}{0.46\textwidth}
+\vspace{1cm}
+\textbf{Key findings:}
+\begin{itemize}
+    \item \textbf{Phi-4} and \textbf{InternVL2.5-26B} lead on text metrics (BLEU, BERT-F1)
+    \item \textbf{CLIPScore} high across all models (0.74--0.83) -- descriptions are semantically relevant
+    \item \textbf{LLaVA-1.5-7B} weakest across all metrics
+    \item Larger models $\neq$ always better (Phi-4 6B $\approx$ InternVL 26B)
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Description Task -- All Metrics Heatmap}
+\centering
+\includegraphics[width=0.88\textwidth]{desc_heatmap.pdf}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Description Task -- Degradation Under Augmentation}
+\centering
+\includegraphics[width=0.95\textwidth]{desc_degradation.pdf}
+
+\vspace{0.3em}
+{\scriptsize Positive = performance drop from original. SBERT-Sim and CLIPScore show minimal degradation, confirming augmented images remain semantically consistent.}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{YOLOv8 Detection Benchmarks}
+% ════════════════════════════════════════
+
+\begin{frame}{YOLOv8 Detection -- Training Configurations}
+\begin{columns}[T]
+\begin{column}{0.50\textwidth}
+\textbf{Construction Site (3 classes):}
+
+\vspace{0.3em}
+{\small
+\begin{tabular}{lp{4cm}}
+\toprule
+\textbf{Config} & \textbf{Training Data} \\
+\midrule
+A & Original only \\
+B & Original + Weather \\
+C & Original + Weather + Small \\
+D & Original + Weather + Night \\
+E & Original + Weather + Small + Night \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.5em}
+\textbf{Goal:} Measure if augmented data improves robustness across conditions.
+\end{column}
+\begin{column}{0.46\textwidth}
+\textbf{SODA (15 classes):}
+
+\vspace{0.3em}
+{\small
+\begin{tabular}{lp{3.5cm}}
+\toprule
+\textbf{Config} & \textbf{Training Data} \\
+\midrule
+S-A & Original only \\
+S-B & Original + Weather + Night \\
+S-C & Original + Weather + Night + Small \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.5em}
+\textbf{Infrastructure:}
+\begin{itemize}
+    \item YOLOv8 (nano to xlarge)
+    \item Image size: 640px
+    \item OSC cluster: A100 GPUs
+    \item \texttt{fcntl.flock} for parallel SLURM jobs
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Project Architecture}
+% ════════════════════════════════════════
+
+\begin{frame}{Repository Structure}
+\centering
+\resizebox{0.95\textwidth}{!}{%
+\begin{tikzpicture}
+
+\node[rroot] (r) at (0,0) {ConSynth-X/};
+
+% Left side - data
+\node[rdir=boxblue]   (tax) at (-5, -1.2) {taxonomy/};
+\node[rdir=boxblue]   (con) at (-5, -2.0) {conditions/};
+\node[rdir=boxblue]   (spl) at (-5, -2.8) {splits/};
+\node[rdir=boxblue]   (met) at (-5, -3.6) {metadata/};
+
+% Center - generation
+\node[rdir=boxorange] (gen) at (-1, -1.2) {generation/};
+\node[rdir=boxorange] (gw) at (-1, -2.0) {weather/};
+\node[rdir=boxorange] (gd) at (-1, -2.8) {day2night/};
+\node[rdir=boxorange] (go) at (-1, -3.6) {outpainting/};
+
+% Right side - benchmarks
+\node[rdir=boxgreen]  (ben) at (3, -1.2) {benchmarks/};
+\node[rdir=boxgreen]  (bv) at (3, -2.0) {vlm/};
+\node[rdir=boxgreen]  (bd) at (3, -2.8) {detection/};
+
+% Far right - eval & examples
+\node[rdir=boxpurple] (eva) at (6.5, -1.2) {evaluation/};
+\node[rdir=boxpurple] (exa) at (6.5, -2.0) {examples/};
+
+% Arrows from root
+\draw[rarrow] (r.south) -- ++(0,-0.3) -| (tax.north);
+\draw[rarrow] (r.south) -- ++(0,-0.3) -| (gen.north);
+\draw[rarrow] (r.south) -- ++(0,-0.3) -| (ben.north);
+\draw[rarrow] (r.south) -- ++(0,-0.3) -| (eva.north);
+
+% Sub-arrows
+\draw[rarrow, gray!30] (gen.south) -- (gw.north);
+\draw[rarrow, gray!30] (gw.south) -- (gd.north);
+\draw[rarrow, gray!30] (gd.south) -- (go.north);
+\draw[rarrow, gray!30] (ben.south) -- (bv.north);
+\draw[rarrow, gray!30] (bv.south) -- (bd.north);
+\draw[rarrow, gray!30] (eva.south) -- (exa.north);
+
+% Descriptions
+\node[rdesc, right=0.1cm of tax] {40+ condition labels};
+\node[rdesc, right=0.1cm of con] {YAML configs};
+\node[rdesc, right=0.1cm of spl] {train/val/test JSON};
+\node[rdesc, right=0.1cm of met] {annotation schemas};
+\node[rdesc, left=0.1cm of bv]  {11 VLMs};
+\node[rdesc, left=0.1cm of bd]  {YOLOv8};
+\node[rdesc, right=0.1cm of eva] {metrics};
+\node[rdesc, right=0.1cm of exa] {8 notebooks};
+\end{tikzpicture}}%
+\end{frame}
+
+% ════════════════════════════════════════
+\section{Current Status \& Next Steps}
+% ════════════════════════════════════════
+
+\begin{frame}{Current Status \& Next Steps}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{okgreen}{Completed:}}
+\begin{itemize}
+    \item[\textcolor{okgreen}{$\checkmark$}] 3 augmentation pipelines (weather, night, outpainting)
+    \item[\textcolor{okgreen}{$\checkmark$}] 85,613 total augmented images
+    \item[\textcolor{okgreen}{$\checkmark$}] VLM benchmark framework (11 models)
+    \item[\textcolor{okgreen}{$\checkmark$}] VQA Safety evaluation (5 models $\times$ 4 conditions)
+    \item[\textcolor{okgreen}{$\checkmark$}] YOLOv8 training configs (5+3 experiments)
+    \item[\textcolor{okgreen}{$\checkmark$}] Taxonomy of 40+ conditions
+    \item[\textcolor{okgreen}{$\checkmark$}] Dual format support (Arrow + VOC)
+    \item[\textcolor{okgreen}{$\checkmark$}] Repository consolidated into ConSynth-X
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{infobl}{In Progress / Next:}}
+\begin{itemize}
+    \item[\textcolor{infobl}{$\circ$}] Run remaining VLMs (Qwen 32B/72B, Gemma-3)
+    \item[\textcolor{infobl}{$\circ$}] Description task evaluation (BERTScore, CLIPScore)
+    \item[\textcolor{infobl}{$\circ$}] Complete YOLO training \& comparison
+    \item[\textcolor{infobl}{$\circ$}] Cross-condition evaluation module
+    \item[\textcolor{infobl}{$\circ$}] SODA day-to-night augmentation
+\end{itemize}
+
+\vspace{0.5em}
+\textbf{\textcolor{gray}{Planned:}}
+\begin{itemize}
+    \item[\textcolor{gray}{$\circ$}] Per-condition robustness metrics (AP)
+    \item[\textcolor{gray}{$\circ$}] Failure-case visualizations
+    \item[\textcolor{gray}{$\circ$}] Paper with reporting tables
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
+\begin{frame}{}
+\centering
+\vspace{2cm}
+{\Huge\bfseries Thank You}
+
+\vspace{1cm}
+{\large Questions?}
+
+\vspace{1cm}
+{\footnotesize
+Repository: \texttt{ConSynth-X/}\\
+Viet Huy Duong -- \texttt{vduong1@kent.edu}\\
+Kent State University
+}
+\end{frame}
+
+\end{document}

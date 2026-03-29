@@ -6,7 +6,7 @@ paths:
   lmu_data_root: /users/PGS0407/binben14/LMUData
   augmentation_root: /users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data
   annotation_root: /users/PGS0407/binben14/VietHuy/ConstructionSite-10k-Implementation/Annotations
-  output_root: /users/PGS0407/binben14/VietHuy/Benchmark_runner/output
+  output_root: /users/PGS0407/binben14/VietHuy/ConSynth-X/benchmarks/vlm/output
 
 # === Inference defaults ===
 inference:

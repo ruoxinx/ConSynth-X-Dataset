@@ -31,11 +31,6 @@ CONDITION_TSV = {
 }
 
 
-def _fix_path(path):
-    """Fix known path mismatches in TSV files."""
-    return path.replace('/VietHuy/construction-site/', '/VietHuy/ConstructionSite/')
-
-
 def build_image_id_to_path(condition):
     """Build mapping from image_id (e.g. '0000005') to image file path for a condition."""
     tsv_path = CONDITION_TSV.get(condition)
@@ -45,7 +40,7 @@ def build_image_id_to_path(condition):
     df = pd.read_csv(tsv_path, sep='\t')
     mapping = {}
     for _, row in df.iterrows():
-        img_path = _fix_path(row['image_path'])
+        img_path = row['image_path']
         img_id = os.path.basename(img_path).replace('.jpg', '').replace('.png', '')
         mapping[img_id] = img_path
     return mapping

@@ -113,12 +113,12 @@ def main():
 
     # Paths
     parser.add_argument("--voc-root",
-                        default="/users/PGS0407/binben14/VietHuy/construction-site/SODA/data/SODA VOCdevkit/VOCdevkit/VOC2007",
+                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/SODA/data/SODA VOCdevkit/VOCdevkit/VOC2007",
                         help="VOC2007 root directory")
     parser.add_argument("--image-list", default=None,
                         help="Image list file (default: ImageSets/Main/trainval.txt)")
     parser.add_argument("--output-dir",
-                        default="/users/PGS0407/binben14/VietHuy/construction-site/augmentation_data/SODA/small",
+                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/SODA/small",
                         help="Output directory")
 
     # Sample selection

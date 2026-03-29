@@ -346,7 +346,7 @@ def main():
                         choices=['n', 's', 'm', 'l', 'x'],
                         help='YOLOv8 model size (n=nano, s=small, m=medium, l=large, x=xlarge)')
     parser.add_argument('--output-dir', type=str, 
-                        default='/users/PGS0407/binben14/VietHuy/construction-site/validation_data/downstream_detection/checkpoints',
+                        default='/users/PGS0407/binben14/VietHuy/ConstructionSite/validation_data/downstream_detection/checkpoints',
                         help='Output directory')
     parser.add_argument('--max-train-samples', type=int, default=None,
                         help='Maximum training samples')
@@ -355,7 +355,7 @@ def main():
     args = parser.parse_args()
     
     # Paths
-    BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/construction-site")
+    BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
     AUG_DATA_DIR = BASE_DIR / "augmentation_data"
     
     # Check CUDA

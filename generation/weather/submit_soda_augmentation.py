@@ -42,9 +42,9 @@ def parse_args():
                         help='End image index (default: all images)')
     
     # Style config
-    parser.add_argument('--snow-style-dir', type=str, default='weather_aug/snow_style',
+    parser.add_argument('--snow-style-dir', type=str, default='generation/weather/snow_style',
                         help='Directory containing snow style images')
-    parser.add_argument('--rain-style-dir', type=str, default='weather_aug/rain_style',
+    parser.add_argument('--rain-style-dir', type=str, default='generation/weather/rain_style',
                         help='Directory containing rain style images')
     parser.add_argument('--pipeline', type=str, default='all',
                         choices=['snow', 'rain', 'all'],

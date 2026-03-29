@@ -44,23 +44,10 @@ class InferenceRunner:
         )
         self.checkpoint_file = self.out_file.replace('.json', '_checkpoint.json')
 
-    @staticmethod
-    def _fix_path(path):
-        """Fix known path mismatches in TSV files.
-        TSVs use 'construction-site' but actual dir is 'ConstructionSite'.
-        """
-        return path.replace(
-            '/VietHuy/construction-site/',
-            '/VietHuy/ConstructionSite/'
-        )
-
     def _load_samples(self):
         """Load samples from TSV or by scanning image directory."""
         if self.tsv_path and os.path.exists(self.tsv_path):
-            samples = self.task.load_samples_from_tsv(self.tsv_path)
-            for s in samples:
-                s['image_path'] = self._fix_path(s['image_path'])
-            return samples
+            return self.task.load_samples_from_tsv(self.tsv_path)
         raise FileNotFoundError(f"TSV not found: {self.tsv_path}")
 
     def _find_weather_image(self, image_path):

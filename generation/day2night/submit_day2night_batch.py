@@ -19,7 +19,7 @@ from pathlib import Path
 import pyarrow as pa
 
 WORK_DIR = Path(__file__).parent.resolve()  # day2night/
-PROJECT_DIR = WORK_DIR.parent  # construction-site/
+PROJECT_DIR = WORK_DIR.parent.parent  # ConSynth-X/
 
 JOB_TEMPLATE = """#!/bin/bash
 #SBATCH --job-name={job_name}
