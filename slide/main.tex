@@ -414,18 +414,20 @@ SODA & 1,001 \\
 
 \vspace{0.3em}
 {\small
-\begin{tabular}{ll}
+\begin{tabular}{llc}
 \toprule
-\textbf{Model} & \textbf{Size} \\
+\textbf{Model} & \textbf{Size} & \textbf{Status} \\
 \midrule
-Qwen2.5-VL & 7B / 32B / 72B \\
-Qwen3-VL & 8B \\
-InternVL2.5 & 8B / 26B \\
-LLaVA v1.5 & 7B \\
-Llama-3.2-Vision & 11B \\
-Gemma-3 & 27B \\
-Phi-4-multimodal & -- \\
-GPT-4o / GPT-4o-mini & API \\
+InternVL2.5 & 26B & \textcolor{okgreen}{Done} \\
+Gemma-3 & 27B & \textcolor{okgreen}{Done} \\
+Qwen3-VL & 8B & \textcolor{okgreen}{Done} \\
+Phi-4-multimodal & 6B & \textcolor{okgreen}{Done} \\
+GPT-4o-mini & API & \textcolor{okgreen}{Done} \\
+LLaVA v1.5 & 7B & \textcolor{warnred}{Failed} \\
+\midrule
+Qwen2.5-VL & 7/32/72B & \textcolor{gray}{Pending} \\
+Llama-3.2-Vision & 11B & \textcolor{gray}{Pending} \\
+GPT-4o & API & \textcolor{gray}{Pending} \\
 \bottomrule
 \end{tabular}
 }
@@ -525,43 +527,43 @@ GPT-4o / GPT-4o-mini & API \\
 \begin{frame}{VQA Safety -- Key Observations}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
-\textbf{Condition Impact:}
+\textbf{Model Comparison (6 models evaluated):}
 \begin{itemize}
-    \item \textcolor{warnred}{Night} and \textcolor{warnred}{small} degrade all models
-    \item F1 drops 15--60\% from original to worst condition
-    \item \textcolor{boxblue}{Weather} has moderate impact
-    \item IoU drops more severely than classification metrics
-\end{itemize}
-
-\vspace{0.5em}
-\textbf{Model Comparison:}
-\begin{itemize}
-    \item \textbf{Gemma-3-27B}: Highest F1 (13.3\%), most robust across conditions
-    \item \textbf{InternVL2.5-26B}: High recall (77--84\%) but low precision
-    \item \textbf{Qwen3-VL-8B}: Best bbox IoU (29\%), conservative
-    \item \textbf{GPT-4o-mini}: $\sim$50\% error rate
+    \item \textbf{Gemma-3-27B}: Best F1 (13.3\%), most robust across conditions (F1 12.0\% on night/small)
+    \item \textbf{InternVL2.5-26B}: Very high recall (70--84\%) but extremely low precision (5--7\%) -- over-predicts violations
+    \item \textbf{Qwen3-VL-8B}: Best bbox IoU (28.9\%) with balanced P/R -- best localization
+    \item \textbf{Phi-4} (2-shot): F1=10.7\%, competitive with GPT-4o-mini; 5-shot OOMs on 1$\times$A100
+    \item \textbf{GPT-4o-mini}: $\sim$50\% error rate (model\_error + missing responses)
+    \item \textbf{LLaVA-1.5-7B}: 100\% parse errors -- cannot produce JSON
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
-\textbf{Per-Rule Analysis:}
+\textbf{Condition Impact:}
+\begin{itemize}
+    \item \textcolor{warnred}{Night} degrades GPT-4o-mini most (F1: 12.2$\to$3.8\%)
+    \item Gemma-3 and InternVL2.5 are \textbf{robust} across conditions
+    \item All models: \textbf{very high false positive rate}
+\end{itemize}
 
-\vspace{0.3em}
+\vspace{0.4em}
+\textbf{Per-Rule F1\% (original, best model):}
+
+\vspace{0.2em}
 {\footnotesize
-\begin{tabular}{lcc}
+\begin{tabular}{lcl}
 \toprule
-\textbf{Rule} & \textbf{Best F1} & \textbf{Challenge} \\
+\textbf{Rule} & \textbf{Best F1} & \textbf{Best Model} \\
 \midrule
-Rule 1 (PPE) & 0.244 & Most common\\
-Rule 2 (Harness) & 0.200 & Rare violations \\
-Rule 3 (Edge) & 0.267 & Spatial reasoning \\
-Rule 4 (Excavator) & 0.129 & Hardest overall \\
+R1 (PPE) & 24.3\% & InternVL2.5 \\
+R2 (Harness) & 17.4\% & Qwen3-VL \\
+R3 (Edge) & 26.7\% & GPT-4o-mini \\
+R4 (Excavator) & 12.9\% & Qwen3-VL \\
 \bottomrule
 \end{tabular}
 }
 
-\vspace{0.6em}
-\textbf{Key finding:}\\[0.2em]
-{\footnotesize All models struggle with construction safety VQA. Even the best model achieves only $\sim$0.30 IoU, suggesting current VLMs lack the spatial and domain understanding needed for reliable safety inspection.}
+\vspace{0.4em}
+{\footnotesize \textbf{Takeaway:} Even the best model achieves $\sim$0.30 IoU. Current VLMs lack domain knowledge for reliable safety inspection.}
 \end{column}
 \end{columns}
 \end{frame}
@@ -577,14 +579,18 @@ Rule 4 (Excavator) & 0.129 & Hardest overall \\
 \includegraphics[width=\textwidth]{desc_radar_original.pdf}
 \end{column}
 \begin{column}{0.46\textwidth}
-\vspace{1cm}
-\textbf{Key findings:}
+\vspace{0.5cm}
+\textbf{5 models evaluated} (GPT-4o pending):
 \begin{itemize}
-    \item \textbf{Phi-4} and \textbf{InternVL2.5-26B} lead on text metrics (BLEU, BERT-F1)
-    \item \textbf{CLIPScore} high across all models (0.74--0.83) -- descriptions are semantically relevant
-    \item \textbf{LLaVA-1.5-7B} weakest across all metrics
-    \item Larger models $\neq$ always better (Phi-4 6B $\approx$ InternVL 26B)
+    \item \textbf{Phi-4} (6B) leads: BLEU 0.065, BERT-F1 0.330 -- \textit{competitive with InternVL 26B}
+    \item \textbf{InternVL2.5-26B}: Best ROUGE-L (0.303)
+    \item \textbf{Gemma-3-27B}: Between Qwen3 and InternVL
+    \item \textbf{CLIPScore} high across all (0.74--0.83) -- descriptions are semantically relevant
+    \item \textbf{LLaVA-1.5-7B}: Weakest across all metrics
 \end{itemize}
+
+\vspace{0.3em}
+{\footnotesize \textbf{Note:} CLIPScore consistently \textit{increases} on night/small conditions (0.80--0.83 vs 0.78 original), likely because augmented images have simpler backgrounds.}
 \end{column}
 \end{columns}
 \end{frame}
@@ -726,24 +732,23 @@ S-C & Original + Weather + Night + Small \\
 \begin{column}{0.48\textwidth}
 \textbf{\textcolor{okgreen}{Completed:}}
 \begin{itemize}
-    \item[\textcolor{okgreen}{$\checkmark$}] 3 augmentation pipelines (weather, night, outpainting)
-    \item[\textcolor{okgreen}{$\checkmark$}] 85,613 total augmented images
+    \item[\textcolor{okgreen}{$\checkmark$}] 3 augmentation pipelines (85,613 images)
     \item[\textcolor{okgreen}{$\checkmark$}] VLM benchmark framework (11 models)
-    \item[\textcolor{okgreen}{$\checkmark$}] VQA Safety evaluation (5 models $\times$ 4 conditions)
-    \item[\textcolor{okgreen}{$\checkmark$}] YOLOv8 training configs (5+3 experiments)
-    \item[\textcolor{okgreen}{$\checkmark$}] Taxonomy of 40+ conditions
-    \item[\textcolor{okgreen}{$\checkmark$}] Dual format support (Arrow + VOC)
-    \item[\textcolor{okgreen}{$\checkmark$}] Repository consolidated into ConSynth-X
+    \item[\textcolor{okgreen}{$\checkmark$}] VQA Safety: 6 models $\times$ 4 conditions
+    \item[\textcolor{okgreen}{$\checkmark$}] Description: 5 models $\times$ 4 conditions
+    \item[\textcolor{okgreen}{$\checkmark$}] Batch eval scripts (GPU + CPU)
+    \item[\textcolor{okgreen}{$\checkmark$}] YOLOv8 training configs (5+3)
+    \item[\textcolor{okgreen}{$\checkmark$}] Gemma-3-27B, Phi-4 integrated
+    \item[\textcolor{okgreen}{$\checkmark$}] Repo consolidated into ConSynth-X
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
 \textbf{\textcolor{infobl}{In Progress / Next:}}
 \begin{itemize}
-    \item[\textcolor{infobl}{$\circ$}] Run remaining VLMs (Qwen 32B/72B, Gemma-3)
-    \item[\textcolor{infobl}{$\circ$}] Description task evaluation (BERTScore, CLIPScore)
+    \item[\textcolor{infobl}{$\circ$}] Run remaining VLMs (Qwen2.5 7B/32B/72B, Llama-3.2, GPT-4o)
     \item[\textcolor{infobl}{$\circ$}] Complete YOLO training \& comparison
-    \item[\textcolor{infobl}{$\circ$}] Cross-condition evaluation module
     \item[\textcolor{infobl}{$\circ$}] SODA day-to-night augmentation
+    \item[\textcolor{infobl}{$\circ$}] Cross-condition evaluation module
 \end{itemize}
 
 \vspace{0.5em}
