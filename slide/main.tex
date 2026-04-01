@@ -17,7 +17,7 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{textcomp}
-\graphicspath{{figures/}}
+\graphicspath{{images/}}
 \usepackage{multirow}
 \usepackage{colortbl}
 \usepackage{array}
@@ -55,6 +55,14 @@
     dnode/.style={rectangle, rounded corners=3pt, draw=boxorange, fill=boxorange!8,
                  minimum width=3.5cm, minimum height=0.8cm, align=center, font=\footnotesize},
     darrow/.style={-{Stealth[length=2.5mm]}, thick, boxorange!60},
+    % Fog pipeline
+    fnode/.style={rectangle, rounded corners=3pt, draw=boxpurple, fill=boxpurple!8,
+                 minimum width=2.8cm, minimum height=0.8cm, align=center, font=\footnotesize},
+    farrow/.style={-{Stealth[length=2.5mm]}, thick, boxpurple!60},
+    % Diffusion weather pipeline
+    dwnode/.style={rectangle, rounded corners=3pt, draw=teal, fill=teal!8,
+                  minimum width=2.8cm, minimum height=0.8cm, align=center, font=\footnotesize},
+    dwarrow/.style={-{Stealth[length=2.5mm]}, thick, teal!60},
     % Outpainting pipeline
     onode/.style={rectangle, rounded corners=3pt, draw=boxgreen, fill=boxgreen!8,
                  minimum width=3.8cm, minimum height=0.7cm, align=center, font=\footnotesize},
@@ -111,10 +119,10 @@
 \vspace{0.5em}
 \textbf{ConSynth-X provides:}
 \begin{enumerate}
-    \item Synthetic augmentation pipelines (3 methods)
+    \item Synthetic augmentation pipelines (5 methods)
     \item Multi-label taxonomy of 40+ conditions
     \item VLM benchmarking framework (11 models)
-    \item YOLOv8 detection benchmarks
+    \item Image quality evaluation (FID, DINO structure)
 \end{enumerate}
 \end{column}
 \begin{column}{0.42\textwidth}
@@ -140,7 +148,7 @@
 \begin{frame}{Base Datasets}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
-\textbf{\textcolor{boxblue}{Construction Site Dataset}}
+\textbf{\textcolor{boxblue}{ConstructionSite10k}}
 \begin{itemize}
     \item Format: HuggingFace Arrow
     \item 3 classes: \texttt{excavator}, \texttt{rebar}, \texttt{worker\_with\_white\_hard\_hat}
@@ -159,83 +167,82 @@
 \end{column}
 \end{columns}
 
-\vspace{0.8em}
+\vspace{0.4em}
 \centering
+{\small
 \begin{tabular}{lccc}
 \toprule
-\textbf{Condition} & \textbf{Method} & \textbf{Construction Site} & \textbf{SODA} \\
+\textbf{Condition} & \textbf{Method} & \textbf{Constr. Site} & \textbf{SODA} \\
 \midrule
-Original   & Baseline              & 3,004  & 19,846 \\
-Weather    & Neural Style Transfer & 10,266 & 47,169 \\
-Night      & img2img-turbo         & 3,004  & --     \\
-Small      & FLUX Outpainting      & 1,323  & 1,001  \\
+Original        & Baseline              & 3,004  & 19,846 \\
+Weather (style) & Neural Style Transfer & 10,266 & 47,169 \\
+Weather (diff.) & InstructPix2Pix       & \textit{TBD}   & --     \\
+Night           & img2img-turbo         & 3,004  & 19,846 \\
+Fog             & Koschmieder + DA V2   & 3,003  & --     \\
+Small           & FLUX Outpainting      & 1,323  & 1,001  \\
 \midrule
-\textbf{Total} &                   & \textbf{17,597} & \textbf{68,016} \\
+\textbf{Total} &                        & \textbf{20,600+} & \textbf{87,862} \\
 \bottomrule
 \end{tabular}
+}
 \end{frame}
 
 % ════════════════════════════════════════
 \section{Augmentation Pipelines}
 % ════════════════════════════════════════
 
-\begin{frame}{Overview of 3 Augmentation Pipelines}
+\begin{frame}{Overview of 5 Augmentation Pipelines}
 \centering
+\scalebox{0.78}{%
 \begin{tikzpicture}
 % Original
-\node[pipebox=gray, minimum width=2.8cm] (orig) at (0,0) {\textbf{Original Image}\\3,004 images};
+\node[pipebox=gray, minimum width=2.6cm, minimum height=1.0cm] (orig) at (0,0) {\textbf{Original Image}\\3,004 images};
 
-% Weather
-\node[pipebox=boxblue] (weather) at (5.5,1.6) {
-    \textbf{Weather}\\
-    MiDaS + VGG19\\
-    6 styles (rain/snow)
+% Weather (old)
+\node[pipebox=boxblue, minimum width=3.6cm, minimum height=1.0cm] (weather) at (5.5,2.6) {
+    \textbf{Weather (Style Transfer)}\\
+    {\scriptsize MiDaS + VGG19, 6 styles}
+};
+
+% Weather (new - diffusion)
+\node[pipebox=teal, minimum width=3.6cm, minimum height=1.0cm] (diffweather) at (5.5,1.3) {
+    \textbf{Weather (Diffusion)}\\
+    {\scriptsize InstructPix2Pix + physics}
 };
 
 % Night
-\node[pipebox=boxorange] (night) at (5.5,0) {
+\node[pipebox=boxorange, minimum width=3.6cm, minimum height=1.0cm] (night) at (5.5,0) {
     \textbf{Day-to-Night}\\
-    CycleGAN-Turbo\\
-    1:1 mapping
+    {\scriptsize CycleGAN-Turbo, 1:1}
+};
+
+% Fog
+\node[pipebox=boxpurple, minimum width=3.6cm, minimum height=1.0cm] (fog) at (5.5,-1.3) {
+    \textbf{Fog}\\
+    {\scriptsize Koschmieder + DA V2}
 };
 
 % Small
-\node[pipebox=boxgreen] (small) at (5.5,-1.6) {
+\node[pipebox=boxgreen, minimum width=3.6cm, minimum height=1.0cm] (small) at (5.5,-2.6) {
     \textbf{Outpainting}\\
-    FLUX.1-Fill-dev\\
-    Gaussian scale
+    {\scriptsize FLUX.1-Fill-dev}
 };
 
 % Arrows
 \draw[garrow] (orig.east) -- (weather.west);
+\draw[garrow] (orig.east) -- (diffweather.west);
 \draw[garrow] (orig.east) -- (night.west);
+\draw[garrow] (orig.east) -- (fog.west);
 \draw[garrow] (orig.east) -- (small.west);
 
 % Annotations
-\node[pipelbl, right=0.15cm of weather.east] {Annotations copied};
-\node[pipelbl, right=0.15cm of night.east]   {Annotations copied};
-\node[pipelbl, right=0.15cm of small.east]   {Bbox re-mapped};
+\node[pipelbl, right=0.1cm of weather.east] {Annot. copied};
+\node[pipelbl, right=0.1cm of diffweather.east] {\textcolor{teal}{\textbf{NEW}}};
+\node[pipelbl, right=0.1cm of night.east]   {Annot. copied};
+\node[pipelbl, right=0.1cm of fog.east]     {\textcolor{boxpurple}{\textbf{NEW}}};
+\node[pipelbl, right=0.1cm of small.east]   {Bbox re-mapped};
 
-\end{tikzpicture}
-
-\vspace{0.5em}
-\begin{columns}[T]
-\begin{column}{0.32\textwidth}
-\centering
-\textcolor{boxblue}{\rule{3cm}{1.5pt}}\\[0.2em]
-{\scriptsize SSIM filter: $0.5 \leq$ SSIM $\leq 0.95$}
-\end{column}
-\begin{column}{0.32\textwidth}
-\centering
-\textcolor{boxorange}{\rule{3cm}{1.5pt}}\\[0.2em]
-{\scriptsize 512$\times$512 internal, FP16}
-\end{column}
-\begin{column}{0.32\textwidth}
-\centering
-\textcolor{boxgreen}{\rule{3cm}{1.5pt}}\\[0.2em]
-{\scriptsize Scale $\sim \mathcal{N}(0.25, 0.05^2)$, clamp $[0.2, 0.4]$}
-\end{column}
-\end{columns}
+\end{tikzpicture}}%
 \end{frame}
 
 % ────────────────────────────────────────
@@ -299,6 +306,124 @@ snow\_0 / snow\_1 / snow\_2 & 9,818 / 7,485 / 3,874 \\
 \end{frame}
 
 % ────────────────────────────────────────
+\begin{frame}{NEW: Diffusion-Based Rain/Snow (InstructPix2Pix)}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\textbf{Model:} InstructPix2Pix (\texttt{timbrooks/instruct-pix2pix})
+
+\vspace{0.3em}
+\textbf{Why IP2P?} Replaces neural style transfer with direct text-guided image editing while preserving scene structure.
+
+\vspace{0.3em}
+\textbf{Hybrid approach:} IP2P atmosphere + physics overlay
+\begin{itemize}
+    \item IP2P: dark sky, wet ground, frost, snow cover
+    \item Physics: rain streaks (3 layers, 2800--5200) + fog overlay
+    \item Snowflakes: 3 layers, 2100--3300, screen blend
+\end{itemize}
+
+\vspace{0.3em}
+\textbf{Key parameters:}
+
+{\scriptsize
+\begin{tabular}{lcc}
+\toprule
+ & \textbf{Rain} & \textbf{Snow} \\
+\midrule
+\texttt{image\_guidance} & 1.5 & 1.5 \\
+\texttt{guidance\_scale} & 10.0 & 8.0 \\
+\texttt{steps} & 30 & 30 \\
+\bottomrule
+\end{tabular}
+}
+\end{column}
+\begin{column}{0.45\textwidth}
+\centering
+\begin{tikzpicture}
+\node[dwnode] (in)      at (0,4)   {\textbf{Input Image}};
+\node[dwnode] (ip2p)    at (0,3)   {\textbf{InstructPix2Pix}\\atmosphere edit};
+\node[dwnode] (phys)    at (0,2)   {\textbf{Physics Overlay}\\rain/snow particles};
+\node[dwnode] (ssim)    at (0,1)   {\textbf{SSIM Filter}\\$[0.5{-}0.95]$};
+\node[dwnode] (lpips)   at (0,0)   {\textbf{LPIPS Filter}\\$< 0.35$ keep};
+\node[dwnode] (out)     at (0,-1)  {\textbf{Output}};
+
+\draw[dwarrow] (in) -- (ip2p);
+\draw[dwarrow] (ip2p) -- (phys);
+\draw[dwarrow] (phys) -- (ssim);
+\draw[dwarrow] (ssim) -- (lpips);
+\draw[dwarrow] (lpips) -- (out);
+
+\node[font=\tiny, text=gray, right=0.1cm of ip2p] {FP16, 1$\times$A100};
+\end{tikzpicture}
+
+\vspace{0.3em}
+{\scriptsize \textbf{Post-filter:} SSIM rejects unchanged/corrupted; LPIPS rejects structural loss $\geq 0.35$.}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{NEW: Fog Augmentation (Koschmieder Model)}
+\begin{columns}[T]
+\begin{column}{0.50\textwidth}
+\textbf{Model:} Depth Anything V2 (Small) + Koschmieder atmospheric scattering
+
+\vspace{0.3em}
+\textbf{Approach:} Physics-based fog synthesis using per-pixel depth-aware attenuation with Perlin noise for non-uniform density.
+
+\vspace{0.3em}
+\textbf{3 Intensity Zones:}
+
+{\scriptsize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Label} & \textbf{Visibility (m)} & \textbf{Description} \\
+\midrule
+heavy  & 300--500  & Background obscured \\
+medium & 500--750  & Objects recognizable \\
+light  & 750--1000 & Subtle morning haze \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.3em}
+\textbf{Key features:}
+\begin{itemize}
+    \item Smoothstep layer blending (no horizontal banding)
+    \item Multi-octave Perlin noise for realism
+    \item Fog color: 210--245 (avoids white washout)
+    \item All annotations preserved
+\end{itemize}
+\end{column}
+\begin{column}{0.47\textwidth}
+\centering
+\begin{tikzpicture}
+\node[fnode] (in)      at (0,4)   {\textbf{Input Image}};
+\node[fnode] (depth)   at (0,3)   {\textbf{Depth Anything V2}\\depth map};
+\node[fnode] (kosch)   at (0,2)   {\textbf{Koschmieder Model}\\atmospheric scattering};
+\node[fnode] (perlin)  at (0,1)   {\textbf{Perlin Noise}\\non-uniform density};
+\node[fnode] (out)     at (0,0)   {\textbf{Foggy Image}};
+
+\draw[farrow] (in) -- (depth);
+\draw[farrow] (depth) -- (kosch);
+\draw[farrow] (kosch) -- (perlin);
+\draw[farrow] (perlin) -- (out);
+
+\node[font=\tiny, text=gray, right=0.1cm of depth] {GPU, fast};
+\node[font=\tiny, text=gray, right=0.1cm of kosch] {60\textdegree{} FOV};
+\end{tikzpicture}
+
+\vspace{0.5em}
+\textbf{Output:} 3$\times$1,001 = \textbf{3,003 images}\\
+{\scriptsize (heavy + medium + light, Construction Site)}
+
+\vspace{0.3em}
+{\scriptsize Arrow format with \texttt{fog\_label}, \texttt{fog\_visibility} metadata columns.}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
 \begin{frame}{Day-to-Night Augmentation}
 \begin{columns}[T]
 \begin{column}{0.55\textwidth}
@@ -322,7 +447,7 @@ snow\_0 / snow\_1 / snow\_2 & 9,818 / 7,485 / 3,874 \\
 \end{itemize}
 
 \vspace{0.5em}
-\textbf{Output:} 3,004 night images (Construction Site)
+\textbf{Output:} 3,004 (Construction Site) + 19,846 (SODA)
 \end{column}
 \begin{column}{0.42\textwidth}
 \centering
@@ -350,25 +475,27 @@ snow\_0 / snow\_1 / snow\_2 & 9,818 / 7,485 / 3,874 \\
 \begin{column}{0.52\textwidth}
 \textbf{Model:} FLUX.1-Fill-dev (bfloat16)
 
-\vspace{0.4em}
+\vspace{0.3em}
 \textbf{Idea:} Expand canvas around original image $\rightarrow$ objects appear smaller/more distant.
 
-\vspace{0.4em}
+\vspace{0.3em}
 \textbf{Scale factor:} Truncated Gaussian
 \[
 s \sim \mathcal{N}(\mu{=}0.25,\;\sigma{=}0.05), \quad s \in [0.2, 0.4]
 \]
+\vspace{-0.5em}
 Canvas size: $(1+2s) \times$ original on each axis.
 
-\vspace{0.4em}
+\vspace{0.3em}
 \textbf{Bbox transfer:}
 \[
 x'_1 = \frac{x_1 \cdot W \cdot r + p_x}{W'}, \quad
 y'_1 = \frac{y_1 \cdot H \cdot r + p_y}{H'}
 \]
+\vspace{-0.5em}
 {\scriptsize where $r$ = resize factor, $(p_x, p_y)$ = paste offset}
 
-\vspace{0.4em}
+\vspace{0.3em}
 \textbf{Prompt:} \textit{``an outdoor construction site with buildings, roads, and open sky in the background''}
 \end{column}
 \begin{column}{0.45\textwidth}
@@ -523,7 +650,7 @@ GPT-4o & API & \textcolor{gray}{Pending} \\
 \end{columns}
 \end{frame}
 
-% ─���──────────────────────────────────────
+% ────────────────────────────────────────
 \begin{frame}{VQA Safety -- Key Observations}
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
@@ -611,58 +738,109 @@ R4 (Excavator) & 12.9\% & Qwen3-VL \\
 \end{frame}
 
 % ════════════════════════════════════════
-\section{YOLOv8 Detection Benchmarks}
+\section{Augmentation Quality Evaluation}
 % ════════════════════════════════════════
 
-\begin{frame}{YOLOv8 Detection -- Training Configurations}
+\begin{frame}{Augmentation Quality -- FID \& DINO Structure Similarity}
 \begin{columns}[T]
-\begin{column}{0.50\textwidth}
-\textbf{Construction Site (3 classes):}
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{boxblue}{Fr\'{e}chet Inception Distance (FID)}}
 
 \vspace{0.3em}
-{\small
-\begin{tabular}{lp{4cm}}
-\toprule
-\textbf{Config} & \textbf{Training Data} \\
-\midrule
-A & Original only \\
-B & Original + Weather \\
-C & Original + Weather + Small \\
-D & Original + Weather + Night \\
-E & Original + Weather + Small + Night \\
-\bottomrule
-\end{tabular}
-}
-
-\vspace{0.5em}
-\textbf{Goal:} Measure if augmented data improves robustness across conditions.
-\end{column}
-\begin{column}{0.46\textwidth}
-\textbf{SODA (15 classes):}
+Measures distributional distance between original and augmented images in Inception-v3 feature space.
+\[
+\mathrm{FID} = \|\mu_r - \mu_g\|^2 + \mathrm{Tr}\!\left(\Sigma_r + \Sigma_g - 2(\Sigma_r \Sigma_g)^{1/2}\right)
+\]
 
 \vspace{0.3em}
-{\small
-\begin{tabular}{lp{3.5cm}}
-\toprule
-\textbf{Config} & \textbf{Training Data} \\
-\midrule
-S-A & Original only \\
-S-B & Original + Weather + Night \\
-S-C & Original + Weather + Night + Small \\
-\bottomrule
-\end{tabular}
-}
-
-\vspace{0.5em}
-\textbf{Infrastructure:}
 \begin{itemize}
-    \item YOLOv8 (nano to xlarge)
-    \item Image size: 640px
-    \item OSC cluster: A100 GPUs
-    \item \texttt{fcntl.flock} for parallel SLURM jobs
+    \item \textbf{Lower = closer} to real distribution
+    \item Captures both quality and diversity
+    \item Computed per augmentation condition
 \end{itemize}
 \end{column}
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{boxorange}{DINO Structure Similarity}}
+
+\vspace{0.3em}
+Measures structural preservation using self-supervised DINOv2 features.
+
+\vspace{0.3em}
+\begin{itemize}
+    \item Extract patch-level features from DINOv2-ViT
+    \item Compute cosine similarity between original and augmented feature maps
+    \item \textbf{Higher = better} structural preservation
+    \item Captures spatial layout, object structure, and scene composition
+\end{itemize}
+
+\vspace{0.3em}
+{\footnotesize \textbf{Why DINO?} Self-supervised features correlate with human perception of structural similarity better than pixel-level metrics.}
+\end{column}
 \end{columns}
+
+\vspace{0.6em}
+\centering
+{\footnotesize \textbf{Goal:} Verify augmented images preserve realism (FID) and scene structure (DINO) while introducing meaningful visual variation.}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Quality Evaluation -- Per-Condition Analysis}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{FID Scores} (lower = closer to original):
+
+\vspace{0.3em}
+{\small
+\begin{tabular}{lrc}
+\toprule
+\textbf{Condition} & \textbf{FID $\downarrow$} & \textbf{Images} \\
+\midrule
+rain\_0          & \textbf{27.8} & 2,211 \\
+snow\_0          & 39.6          & 2,159 \\
+rain\_2          & 40.8          & 1,208 \\
+rain\_1          & 43.6          & 1,243 \\
+snow\_2          & 50.5          & 1,796 \\
+small            & 60.2          & 1,323 \\
+snow\_1          & 69.9          & 1,649 \\
+night            & \textcolor{warnred}{97.8} & 3,004 \\
+\bottomrule
+\end{tabular}
+}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{DINO Structural Similarity} (higher = better):
+
+\vspace{0.3em}
+{\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Condition} & \textbf{Mean $\uparrow$} & \textbf{Std} \\
+\midrule
+rain\_0          & \textbf{0.893} & 0.103 \\
+rain\_2          & 0.846          & 0.167 \\
+snow\_0          & 0.842          & 0.138 \\
+rain\_1          & 0.829          & 0.190 \\
+night            & 0.754          & 0.100 \\
+snow\_2          & 0.753          & 0.144 \\
+snow\_1          & 0.744          & 0.176 \\
+small            & \textcolor{warnred}{0.729} & 0.113 \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.3em}
+{\scriptsize DINOv2-ViT-S/14, cosine similarity of patch features.}
+\end{column}
+\end{columns}
+
+\vspace{0.5em}
+\textbf{Key Findings:}
+\begin{itemize}
+    \item \textbf{Rain\_0} best quality: lowest FID (27.8) and highest DINO (0.893) -- subtle, realistic effect
+    \item \textbf{Night} largest distribution shift (FID 97.8) but decent structure preservation (DINO 0.754)
+    \item \textbf{Small} (outpainting) lowest structural similarity (0.729) -- expected due to scene expansion
+    \item Snow styles show more variation than rain (FID 39.6--69.9 vs 27.8--43.6)
+\end{itemize}
 \end{frame}
 
 % ════════════════════════════════════════
@@ -691,7 +869,7 @@ S-C & Original + Weather + Night + Small \\
 % Right side - benchmarks
 \node[rdir=boxgreen]  (ben) at (3, -1.2) {benchmarks/};
 \node[rdir=boxgreen]  (bv) at (3, -2.0) {vlm/};
-\node[rdir=boxgreen]  (bd) at (3, -2.8) {detection/};
+\node[rdir=boxgreen]  (bd) at (3, -2.8) {quality/};
 
 % Far right - eval & examples
 \node[rdir=boxpurple] (eva) at (6.5, -1.2) {evaluation/};
@@ -717,7 +895,7 @@ S-C & Original + Weather + Night + Small \\
 \node[rdesc, right=0.1cm of spl] {train/val/test JSON};
 \node[rdesc, right=0.1cm of met] {annotation schemas};
 \node[rdesc, left=0.1cm of bv]  {11 VLMs};
-\node[rdesc, left=0.1cm of bd]  {YOLOv8};
+\node[rdesc, left=0.1cm of bd]  {FID, DINO};
 \node[rdesc, right=0.1cm of eva] {metrics};
 \node[rdesc, right=0.1cm of exa] {8 notebooks};
 \end{tikzpicture}}%
@@ -732,23 +910,24 @@ S-C & Original + Weather + Night + Small \\
 \begin{column}{0.48\textwidth}
 \textbf{\textcolor{okgreen}{Completed:}}
 \begin{itemize}
-    \item[\textcolor{okgreen}{$\checkmark$}] 3 augmentation pipelines (85,613 images)
+    \item[\textcolor{okgreen}{$\checkmark$}] 5 augmentation pipelines total
     \item[\textcolor{okgreen}{$\checkmark$}] VLM benchmark framework (11 models)
     \item[\textcolor{okgreen}{$\checkmark$}] VQA Safety: 6 models $\times$ 4 conditions
     \item[\textcolor{okgreen}{$\checkmark$}] Description: 5 models $\times$ 4 conditions
-    \item[\textcolor{okgreen}{$\checkmark$}] Batch eval scripts (GPU + CPU)
-    \item[\textcolor{okgreen}{$\checkmark$}] YOLOv8 training configs (5+3)
+    \item[\textcolor{okgreen}{$\checkmark$}] Augmentation quality metrics (FID, DINO)
     \item[\textcolor{okgreen}{$\checkmark$}] Gemma-3-27B, Phi-4 integrated
     \item[\textcolor{okgreen}{$\checkmark$}] Repo consolidated into ConSynth-X
+    \item[\textcolor{okgreen}{$\checkmark$}] \textbf{NEW:} Fog pipeline (Koschmieder + DA V2)
+    \item[\textcolor{okgreen}{$\checkmark$}] \textbf{NEW:} Diffusion rain/snow (IP2P + physics)
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
 \textbf{\textcolor{infobl}{In Progress / Next:}}
 \begin{itemize}
     \item[\textcolor{infobl}{$\circ$}] Run remaining VLMs (Qwen2.5 7B/32B/72B, Llama-3.2, GPT-4o)
-    \item[\textcolor{infobl}{$\circ$}] Complete YOLO training \& comparison
-    \item[\textcolor{infobl}{$\circ$}] SODA day-to-night augmentation
-    \item[\textcolor{infobl}{$\circ$}] Cross-condition evaluation module
+    \item[\textcolor{infobl}{$\circ$}] Full batch run: IP2P rain/snow (3,004 images)
+    \item[\textcolor{infobl}{$\circ$}] FID \& DINO eval on fog + diffusion weather
+    \item[\textcolor{okgreen}{$\checkmark$}] SODA day-to-night augmentation (19,846 images)
 \end{itemize}
 
 \vspace{0.5em}

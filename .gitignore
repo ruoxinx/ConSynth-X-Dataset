@@ -1,5 +1,59 @@
-# Claude Code
-CLAUDE.md
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.eggs/
+dist/
+build/
+
+# Model checkpoints & weights
+*.pt
+*.pth
+*.pkl
+*.ckpt
+*.safetensors
+*.bin
+*.h5
+*.onnx
+
+# Data files
+*.arrow
+*.parquet
+*.npy
+*.npz
+*.hdf5
+
+# Images & media (keep style references via git add -f)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.mp4
+
+# SLURM job artifacts
+jobs/
+logs/
+*.out
+*.err
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temp & OS
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
 
 # LaTeX build artifacts
 slide/*.aux
@@ -9,15 +63,14 @@ slide/*.out
 slide/*.snm
 slide/*.toc
 slide/*.synctex.gz
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-
-# Temp files
-*.npy
-*.tmp
-
-# Generated figures (regenerate with slide/generate_figures.py)
 slide/figures/*.png
+
+# Generated/output directories
+output_samples/
+wandb/
+runs/
+checkpoints/
+augmentation_data/
+
+# Claude Code
+CLAUDE.md
