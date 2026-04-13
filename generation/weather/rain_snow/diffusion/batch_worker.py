@@ -101,7 +101,7 @@ def main():
 
     # Config
     if args.weather == 'rain':
-        prompt = "make it a heavy rainy day, dark overcast sky, wet muddy ground"
+        prompt = "a rainy day with dark overcast sky, rain falling, grey clouds"
         igs, guidance = 1.5, 10.0
         ssim_range = SSIM_RAIN
     else:

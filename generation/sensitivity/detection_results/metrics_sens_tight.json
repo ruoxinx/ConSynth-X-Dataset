@@ -1,0 +1,18 @@
+{
+  "config": "sens_tight",
+  "ssim_rain": 0.7,
+  "ssim_snow": 0.65,
+  "lpips": 0.25,
+  "mAP50": 0.5417709052489844,
+  "mAP50_95": 0.3440759221286292,
+  "precision": 0.612569856503561,
+  "recall": 0.5764187879898409,
+  "train_images": 14948,
+  "train_original": 7009,
+  "train_rain": 2259,
+  "train_snow": 5680,
+  "val_images": 1000,
+  "excavator_AP50": 0.9093351339321529,
+  "rebar_AP50": 0.21222158942306327,
+  "worker_with_white_hard_hat_AP50": 0.5037559923917373
+}

@@ -1,0 +1,447 @@
+# Development Log — ConSynth-X
+
+> Nhật ký theo dõi các thay đổi và cập nhật của dự án theo ngày.
+
+---
+
+## 2026-04-12
+
+### Cross-Validation Synthesis — Tổng hợp 5 Approaches
+
+**Mục tiêu**: Nhìn xuyên suốt kết quả từ 5 validation approaches (UnivFD, FID/KID, Weather Classifier, Texture Fidelity, Relative Mahalanobis) để rút ra kết luận tổng thể về chất lượng bộ dữ liệu.
+
+---
+
+#### Finding 1: Hai pipeline augmentation bổ sung cho nhau, không thay thế
+
+Đây là những gì data cho thấy — nhìn xuyên suốt tất cả metrics:
+
+| Metric | IP2P Diffusion | Style Transfer |
+|---|---|---|
+| Texture fidelity (belief H) | **0.85-0.86** (faithful) | 0.00 (artifact/uncertain) |
+| Weather classifier accuracy | 26-64% (yếu-trung bình) | 62-95% (trung bình-tốt) |
+| UnivFD score gap | **0.027-0.037** (nhỏ nhất) | 0.081-0.128 |
+| FID vs ACDC | 194-205 | 192-228 |
+
+**Pattern**: IP2P Diffusion giữ texture gốc tốt (trông tự nhiên, detector không phân biệt được) nhưng hiệu ứng thời tiết nhẹ (classifier khó nhận ra). Style Transfer tạo hiệu ứng thời tiết rõ hơn (classifier nhận ra) nhưng texture bị thay đổi nhiều hơn.
+
+**Interpretation**: Đây là trade-off **realism vs recognizability** — corroborates Ruck et al. (2026) observation. Hai pipeline bổ sung cho nhau: diffusion cho "subtle weather" và style transfer cho "obvious weather". Paper nên present cả hai và discuss trade-off thay vì chọn một.
+
+---
+
+#### Finding 2: Night augmentation (CycleGAN-Turbo) — strongest semantic shift, weakest texture
+
+Đây là những gì data cho thấy:
+
+| Metric | Night | Nhận xét |
+|---|---|---|
+| FID vs ACDC night | **178.9** (best, −34% vs baseline 270.5) | Semantic gần ảnh đêm thật nhất |
+| Texture composite | **9.138** (worst, DCT_W=29.81) | Over-smoothed, mất HF content |
+| Belief fusion conflict | **0.078** (highest) | LBP vs GLCM/DCT disagree |
+| Mahalanobis gap closed | **38%** (best in CLIP) | Feature-space improvement lớn nhất |
+
+**Pattern**: Night augmentation thành công ở mức semantic (FID, Mahalanobis) nhưng có texture artifact rõ. Belief fusion conflict cao nhất (0.078) cho thấy LBP (micro-texture local) vẫn OK nhưng GLCM/DCT (global texture + frequency) bị thay đổi mạnh.
+
+**Interpretation**: CycleGAN-Turbo giỏi biến đổi tông màu, ánh sáng toàn cục nhưng "over-smooth" → mất natural noise/grain. Đây là hạn chế known của CycleGAN-based methods. Paper nên report as-is, không cần fix.
+
+---
+
+#### Finding 3: Diffusion Snow — realistic nhưng không "trông như tuyết"
+
+Đây là những gì data cho thấy:
+
+| Metric | Diffusion Snow | Style Snow (best) |
+|---|---|---|
+| Weather classifier | **25.7%** (49% → rain) | 95.0% |
+| Texture fidelity (H) | **0.862** (faithful) | 0.00 |
+| FID vs ACDC snow | **205.3** (< baseline 216.0) | 206.6-228.2 |
+| UnivFD fooling rate | **100.0%** | 99.9% |
+
+**Pattern**: Diffusion snow đạt điểm cao nhất ở texture fidelity VÀ FID gần real snow hơn baseline, nhưng weather classifier chỉ nhận ra 26%. Lưu ý: original construction images cũng chỉ 6% sun/clear → classifier có bias hệ thống trên domain construction.
+
+**Interpretation (2 giả thuyết, chưa verify)**:
+1. IP2P tạo atmospheric effect (trời xám, light diffuse) mà không tạo visible snow particles → classifier không thấy "snow" nhưng FID thấy domain shift phù hợp
+2. Weather classifier bias trên construction images — cần visual inspection để phân biệt
+
+**Action needed**: Visual inspection diffusion snow vs style snow để xác nhận giả thuyết nào đúng. KHÔNG nên dismiss 26% accuracy mà cũng KHÔNG nên dismiss 0.862 texture fidelity — report cả hai.
+
+---
+
+#### Finding 4: Augmentation giữ detection performance — nhưng chưa chứng minh improvement
+
+Đây là những gì data cho thấy:
+
+- Baseline (no aug): mAP50=0.562, mAP50-95=0.338
+- Current (10K aug images): mAP50=0.547, mAP50-95=0.339
+- Excavator: +1.0% AP50, Rebar: −3.6% AP50, Worker: −2.0% AP50
+
+**Pattern**: mAP50-95 gần như không đổi (+0.001). mAP50 giảm nhẹ (−1.5%). Per-class cho thấy object lớn (excavator) hưởng lợi, object nhỏ/dày đặc (rebar, worker) giảm nhẹ.
+
+**Critical caveat**: Val set chỉ có clean (clear-weather) images. Test này chỉ chứng minh augmentation **không gây hại** trên clean conditions, CHƯA chứng minh augmentation **cải thiện robustness** trên weather conditions. Để chứng minh giá trị thực sự của dataset, cần:
+- Test detection trên ảnh weather/night (real hoặc augmented test set)
+- Cross-condition evaluation matrix
+
+---
+
+#### Finding 5: VLM yếu trên construction domain — validate motivation cho Paper 2 & 3
+
+Đây là những gì data cho thấy:
+
+- Best VLM overall F1: InternVL2.5-26B = 0.124 (original), Qwen3-VL-8B IoU=0.298
+- LLaVA-1.5-7B: 100% error rate (500/500 fail) trên mọi condition
+- Extreme conditions giảm thêm: InternVL2.5 night F1=0.094 (−24% vs original)
+- gpt-4o-mini: 45-54% error rate (API failures hoặc format errors)
+
+**Pattern**: Tất cả VLM đều rất yếu (F1 < 0.13) ngay cả trên ảnh gốc. Extreme conditions làm giảm thêm. Model nhỏ (LLaVA 7B) hoàn toàn fail.
+
+**Interpretation**: Construction site là domain niche chưa được VLM training tốt. Đây là motivation mạnh cho Paper 2 (benchmark) và Paper 3 (improvement).
+
+---
+
+#### Gaps còn thiếu cho Paper 1
+
+Dựa trên kết quả hiện tại, 3 gaps chính:
+
+1. **Detection under weather conditions** — CRITICAL cho paper
+   - Hiện chỉ test trên clean val set → chỉ chứng minh "không gây hại"
+   - Cần cross-condition detection (train on clean+aug → test on weather) để chứng minh dataset value
+   
+2. **SODA dataset validation** — chưa có
+   - Tất cả validation results chỉ cho Construction Site dataset (3,004 images)
+   - SODA (19,846 images) chưa có validation results → missing 2/3 dataset
+
+3. **Visual inspection diffusion snow** — cần confirm
+   - 26% classifier accuracy vs 86% texture fidelity → contradiction cần giải thích bằng visual evidence
+   - Nên có figure so sánh diffusion snow vs style snow vs real snow trong paper
+
+---
+
+## 2026-04-11
+
+### FID/KID Multi-Reference Validation — 3 Datasets, 39 Pairs
+
+**Mở rộng FID/KID validation** từ 1 dataset (WeatherNet snow-only) lên 3 reference datasets, 4 conditions, 39 pairs.
+
+**Reference datasets**:
+| Dataset | Conditions | N images | Source |
+|---|---|---|---|
+| ACDC (ICCV 2021) | rain, snow, fog, night | 3,578 | Real driving scenes, ETH Zurich |
+| WeatherBench (arXiv 2509.11642) | rain, snow, haze→fog | 3,000 (1K/cond subset) | Real-world paired, 42K total |
+| WeatherNet-05 | snow, fog | 3,136 | HuggingFace outdoor scenes |
+
+**Kết quả tóm tắt** (FID ↓ = better, so với original baseline):
+
+| Condition | Best Method | Best Δ FID | Validated on |
+|---|---|---|---|
+| **Night** | CycleGAN-Turbo | **−34%** (178.9 vs 270.5) | ACDC |
+| **Snow** | style_snow_2 / diffusion | −5% to −9% | All 3 datasets |
+| **Fog** | diffusion_fog_heavy | −6% to −10% | WeatherBench + WeatherNet |
+| **Rain** | ≈ baseline | inconclusive | ACDC + WeatherBench |
+
+**Bug fixes**:
+- `cond_dir.glob("*.jpg")` → `cond_dir.rglob("*.jpg")` — ACDC nested dirs weren't scanned
+- Added `PYTHONUNBUFFERED=1` to SLURM job for realtime log output
+- Added condition alias mapping (`fog` ↔ `haze`) for WeatherBench compatibility
+
+**Fog augmentation added**: 3 intensity levels (heavy/medium/light) from `augmentation_data/construction_site/fog/diffusion/test/`
+
+**Files modified**: `validation/compute_fid_kid.py` (FOG_DATA path, CONDITION_PAIRS, REFERENCE_DATASETS, alias mapping), `jobs/fid_kid_validation.sh` (PYTHONUNBUFFERED)
+
+---
+
+### Texture-based Fidelity Assessment — Approach 4 cho Realism Validation
+
+**Vấn đề**: FID/KID và weather classifier đo macro-level (semantic distribution, weather recognition) nhưng bỏ qua micro-level artifacts: unnatural noise patterns, frequency anomalies, missing gray-tone diversity trong ảnh augmented.
+
+**Giải pháp**: Implement 4 kênh texture features theo Duminil et al. (2025) — adapted cho distribution comparison thay vì CNN classification:
+
+| Feature | Phát hiện | Dim |
+|---|---|---|
+| GLCM | Global texture discontinuity | 48 |
+| LBP | Micro-texture pattern artifacts | 26 |
+| DCT | Frequency energy anomalies (thiếu/thừa HF noise) | 12 |
+| Haralick | Statistical texture metrics tổng hợp | 16 |
+
+**Setup**: 300 images/condition, 12 augmentation conditions + 4 ACDC real weather references. So sánh bằng Wasserstein distance + KS test. Job 4896342, ~19 phút trên 8-core CPU (không cần GPU).
+
+**Kết quả — Ranking theo Composite Texture Artifact Score (lower = more natural):**
+
+| Rank | Augmentation | Composite | Key Feature |
+|---|---|---|---|
+| 1 | Diffusion snow | **0.609** | DCT_W=1.34 (gần original) |
+| 2 | Diffusion rain | **0.628** | KS p>0.05 nhiều dims (not significant) |
+| 3-8 | Style transfer (các loại) | 2.96-4.59 | 100% dims significant (p≈0.000) |
+| 9-11 | Fog (3 mức) | 4.61-6.89 | Expected — fog removes HF |
+| 12 | **Night (CycleGAN)** | **9.138** | **DCT_W=29.81 — over-smoothed** |
+
+**Phát hiện quan trọng:**
+
+1. **Diffusion (IP2P) giữ texture tốt nhất** — gap 5× vs style transfer. IP2P chỉ thay đổi atmosphere, giữ nguyên micro-texture.
+2. **Trade-off realism vs recognizability** (corroborates Ruck et al. 2026):
+   - Style transfer: weather classifier accuracy 70-95% (recognizable) + texture artifacts cao (Composite 3-6)
+   - Diffusion: weather classifier accuracy 63.5% (ít recognizable hơn) + texture artifacts thấp (Composite 0.6)
+   - → Paper nên present cả hai metrics và discuss trade-off
+3. **Night CycleGAN over-smoothed** — DCT_W=29.81 gấp 21× diffusion. Mất natural HF noise. Cần investigate: post-processing noise? khác model?
+4. **Style snow_1 outlier** — Composite 5.96 vs snow_0 (2.96), snow_2 (4.59). Style reference image snow_1 có thể gây artifacts bất thường.
+5. **ACDC comparison**: fog/night augmentations gần ACDC real weather hơn original → augmentation hiệu quả ở texture level.
+
+**Files tạo**:
+- `validation/compute_texture_fidelity.py` — script chính (GLCM + LBP + DCT + Haralick + Wasserstein/KS)
+- `jobs/texture_fidelity_validation.sh` — SLURM job (CPU-only, 8 cores, 32GB, 4h)
+- Output: `validation/results/texture_fidelity/` (JSON + 6 plots + LaTeX table)
+
+**Docs cập nhật**: `docs/methods.md` (Approach 4), `docs/checklist.md` (results + TODOs), `docs/literature.md` ([23] Duminil + [24] Ruck)
+
+### Dempster-Shafer Belief Fusion (Approach 4b)
+
+**Implement**: Dempster-Shafer belief theory fusion trên 4 Wasserstein scores, skip CNN training. Theo Eq. 14-23 từ Duminil et al. (2025).
+
+**Pipeline**: Wasserstein → exp(-λ·W) similarity [0,1] → BBFs (Φ₁, Φ₂ with α₀, τ) → BBAs per criterion → CRC combination → {H, H̄, Ω, Conflict}
+
+**Parameters**: τ=0.6 (pessimistic), α₀=0.8 (GLCM/LBP/DCT), α₀=0.5 (Haralick), λ calibrated per-feature (median_W → Sc=0.5)
+
+**Kết quả quan trọng:**
+- **Diffusion rain/snow = FAITHFUL** (H=0.854/0.862) — 4 criteria unanimous, conflict=0, uncertainty thấp
+- **Style transfer = ARTIFACT hoặc uncertain** — H=0, m(H̄) varies 0.26-0.83
+- **Night CycleGAN = ARTIFACT + conflict cao nhất (0.078)** — LBP disagrees: micro-texture OK (Sc=0.648 > τ) nhưng GLCM/DCT bad → insight mới: Night giữ local patterns nhưng mất global texture + frequency
+- **Style snow_1 = strongest artifact** (H̄=0.831) — confirms outlier from Approach 4
+
+**Phát hiện mới nhờ belief fusion (không thấy từ Wasserstein đơn)**:
+1. **Conflict** phân biệt "tất cả criteria đồng ý bad" vs "criteria không đồng ý" — Night có profile artifact khác fog/style
+2. **Uncertainty** phân biệt "chắc chắn artifact" (snow_1: Ω=0.17) vs "chưa rõ" (rain_1: Ω=0.74)
+3. **Unanimous agreement** cho diffusion → evidence mạnh hơn "average Wasserstein thấp"
+
+**Files**: `validation/belief_fusion.py` (chạy trên CPU, vài giây, đọc JSON kết quả từ Approach 4)
+**Output**: `belief_fusion_results.json`, `belief_fusion_summary.png`, `belief_bba_per_condition.png`, `belief_radar_comparison.png`
+
+**Also researched**: 2 validation papers từ `paper/validate/`:
+- Duminil et al. (2025) — texture features + belief theory → adapted GLCM/LBP/DCT/Haralick
+- Ruck et al. (2026) — VLM Jury + Relative Mahalanobis Distance → **implemented (Approach 5)**
+
+---
+
+### Relative Mahalanobis Distance — Approach 5 (Ruck et al. 2026)
+
+**Implement**: Per-image relative Mahalanobis distance trong CLIP + DINOv2 embedding spaces vs ACDC real weather.
+
+**Bug fix**: DINOv2 via `torch.hub` crash do xformers CUDA build issue → chuyển sang `transformers.AutoModel("facebook/dinov2-large")`. Job 4897210 fail → resubmit 4897885 → thành công (01:41 AM).
+
+**Kết quả CLIP (% gap closed toward ACDC baseline):**
+
+| Condition | Best Augmentation | % Gap Closed |
+|---|---|---|
+| Night | CycleGAN-Turbo | **38%** |
+| Snow | style_snow_2 | **27%** |
+| Rain | style_rain_1 | **25%** |
+| Fog | fog_heavy | **18%** |
+
+**Key findings:**
+1. All augmentations closer to ACDC than original — validated
+2. Night largest improvement (38%) in CLIP, but over-smoothed in texture (Approach 4)
+3. CLIP sensitive to style transfer, DINOv2 nearly unchanged (<1 point shift)
+4. Snow: style > diffusion (CLIP), diffusion > style (DINOv2) — semantic vs texture trade-off
+5. Cross-approach synthesis: style transfer = strong weather + artifacts, diffusion = subtle + natural
+
+**Files**: `validation/compute_relative_mahalanobis.py`, `jobs/relative_mahalanobis.sh`
+**Output**: `validation/results/relative_mahalanobis/` (JSON + 3 plots + LaTeX)
+
+---
+
+## 2026-04-10
+
+### Realism Validation Pipeline — 3 Approaches Tested
+
+**Vấn đề**: Giáo viên góp ý cần validate bộ dữ liệu có giá trị. Quality metrics hiện tại (SSIM, LPIPS, DINO) chỉ đo similarity với ảnh gốc, không trả lời "ảnh augmented có trông thật không?".
+
+**Approach 1: UniversalFakeDetect (UnivFD) — ABANDONED**
+
+- Model: `WisconsinAIVision/UniversalFakeDetect` (CVPR 2023, MIT)
+- Setup: CLIP ViT-L/14 + trained FC classifier, weights từ official GitHub repo
+- Test scale: Full dataset, 22,601 images, 11 conditions
+- **Kết quả: fooling rate 99.5-100% cho TẤT CẢ conditions** — metric không phân biệt được
+- **Lý do thất bại**: UnivFD train để detect ảnh AI-generated hoàn toàn. ConSynth-X augmentation là edit trên ảnh thật → detector luôn thấy "real photograph"
+- Files: `validation/realism_detector.py`, `validation/run_realism_validation.py`
+- Results: `validation/results/full_univfd/` (supplementary only)
+
+**Approach 2: FID/KID vs Real Weather Reference — PARTIAL**
+
+- Attempt 1: ACDC (`mathpluscode/ACDC` trên HF) → **sai dataset** (medical cardiac MRI, không phải weather)
+- Attempt 2: `dgural/bdd100k` → **rate limit 429** (dataset 7GB, HF throttle)
+- Attempt 3: `34data/bdd100k-weather-classification` → không có images (text only)
+- **Solution**: Dùng **WeatherNet-05-18039** (`prithivMLmods/WeatherNet-05-18039`)
+  - 18,039 images, 5 weather classes, Apache-2.0
+  - Download thành công toàn bộ
+- Compute: InceptionV3 pool3 features + FID + KID (polynomial kernel)
+- **Kết quả**:
+  - **Snow validated**: augmented snow FID 116-125 < original→snow 128.8 (augmentation đưa distribution gần real snow)
+  - **Rain failed**: original→rain FID 133.7 < augmented rain 135-145 (cross-domain gap construction vs outdoor dominates)
+- Files: `validation/compute_fid_kid.py`, `validation/download_reference.py`
+- Results: `validation/results/fid_kid/`
+
+**Approach 3: Weather Classifier (SigLIP2) — SUCCESS, PRIMARY METRIC**
+
+- Model: `prithivMLmods/Weather-Image-Classification` (SigLIP2 fine-tuned, Apache-2.0)
+- Base: `google/siglip2-base-patch16-224`, 5 classes, 85.89% test accuracy
+- Training data: WeatherNet-05-18039 (same as Approach 2 reference)
+- **Ý tưởng**: Thay vì đo distribution, dùng classifier trực tiếp. Feed augmented rain → expect classifier say "rain".
+- Test scale: Full dataset, 3,004 images/condition, 11 conditions
+
+**Kết quả chính**:
+
+| Condition | Accuracy | Verdict |
+|---|---|---|
+| original (construction clear) | 6.1% → sun/clear | cross-domain bias (classifier expects driving) |
+| small (outpainting) | 8.4% | cross-domain bias |
+| weather_style_rain_0 | **88.6%** | ✓ validated |
+| weather_style_rain_1 | 71.3% | ✓ validated |
+| weather_style_rain_2 | 70.8% | ✓ validated |
+| weather_style_snow_0 | 61.8% | moderate |
+| **weather_style_snow_1** | **95.0%** | ✓ excellent |
+| weather_style_snow_2 | 92.7% | ✓ excellent |
+| diffusion_rain (IP2P) | 63.5% | moderate, kém hơn style transfer |
+| **diffusion_snow (IP2P)** | **25.7%** | ✗ FAILED, 49% classify as rain |
+| night (CycleGAN) | N/A | no night class, 95% classify as rain |
+
+**Key findings cho paper**:
+
+1. **Weather classifier phân biệt rõ** giữa các methods (unlike UnivFD)
+2. **Style transfer rain/snow**: validated tốt (70-95% recognition)
+3. **IP2P diffusion**: rain OK (63.5%), **snow FAILED (25.7%)** — cần investigate
+4. **Cross-domain bias**: construction images (đất/bụi/equipment) không khớp distribution driving scenes. Original clear images chỉ 6.1% "sun/clear", 57.8% bị classify thành rain/storm
+5. **Night pipeline**: không validate được qua weather classifier (cần separate metric)
+
+**Files**: `validation/weather_classifier.py`, `validation/jobs/run_weather_cls.sh`
+**Results**: `validation/results/weather_cls/` (JSON, CSV, accuracy barplot, confusion heatmap, LaTeX table)
+
+**Quyết định**: Dùng Approach 3 (weather classifier) làm primary validation metric cho paper. FID/KID snow (Approach 2) làm secondary. UnivFD (Approach 1) chỉ supplementary (để giải thích tại sao không work cho edit-based augmentation).
+
+**TODO tiếp theo**:
+- Investigate tại sao IP2P diffusion_snow fail (25.7% vs style transfer 92.7%)
+- Document cross-domain bias explicitly trong paper
+- Tìm separate validation metric cho night pipeline
+
+---
+
+## 2026-04-09
+
+### DINO vs SSIM — Phát hiện SSIM không phù hợp cho weather augmentation
+
+**Phát hiện quan trọng**: SSIM đo pixel-level similarity, phạt cả thay đổi mong muốn (darkened sky, rain streaks, color shift) lẫn không mong muốn (hallucinate objects, structural damage). Không phân biệt được "good edit" vs "bad edit".
+
+**DINO patch similarity** (DINOv2-ViT-S/14) đo semantic structure — objects, layout, spatial composition — không phạt atmospheric changes. Phù hợp hơn cho weather augmentation.
+
+**Kết quả ranking bằng DINO (50 samples):**
+
+| Method | DINO Patch | SSIM | Insight |
+|---|---|---|---|
+| Canny CN + img2img | **0.744** | 0.590 | Winner DINO — strong weather + preserved objects |
+| Vanilla IP2P | 0.674 | **0.692** | Winner SSIM — nhưng chỉ vì ít thay đổi |
+| FLUX Kontext | 0.639 | 0.281 | SSIM cực thấp nhưng DINO khá (global=0.92) |
+| SDXL IP2P | 0.435 | 0.443 | Tệ cả hai |
+| ControlNet IP2P | 0.196 | 0.214 | Generate ảnh mới |
+
+**Disagreement cases (50 samples OLD prompt):**
+- 5 cases "SSIM bị lừa": DINO < 0.55 nhưng SSIM > 0.50 — ground biến bùn nhưng brightness giống
+- 5 cases "SSIM đánh thấp": DINO > 0.70 nhưng SSIM < 0.65 — weather edit tốt, objects giữ, pixel khác
+- DINO-SSIM correlation = 0.907 — cao nhưng disagreement cases quan trọng nhất
+
+**Bài học cho paper**: Dùng DINO thay SSIM làm primary quality metric. SSIM vẫn report nhưng không dùng để rank methods.
+
+**Figures tạo**: `dino_eval/disagreement_5plus5.png`, `dino_eval/dino_vs_ssim.png`, `dino_eval/old_prompt_20samples_dino.png`
+
+---
+
+## 2026-04-08
+
+### Model Comparison — Tìm model tốt nhất cho weather editing
+
+Đã test 4 models cho rain augmentation (5 samples, same prompt):
+
+| Model | Mean SSIM | Verdict |
+|---|---|---|
+| **IP2P SD1.5 + new prompt** | **0.676** | Best — subtle atmospheric edit |
+| SDXL IP2P | 0.442 | Over-edits, phá scene structure |
+| FLUX.1 Kontext | 0.281 | Tạo ảnh mới hoàn toàn — model quá mạnh |
+
+**Kết luận**: Model mạnh hơn ≠ tốt hơn cho task này. Weather augmentation cần **subtle edit**, không cần creative generation. IP2P SD1.5 (860M params) outperform cả SDXL (2.6B) và FLUX (12B) vì nó edit vừa phải.
+
+### ControlNet + IP2P — Structure Preservation (đang test)
+
+Thay vì đổi model, thêm **ControlNet** để khóa structure:
+- **Approach B**: `control_v11e_sd15_ip2p` — ControlNet trained on IP2P pairs
+- **Approach C**: Canny ControlNet + img2img (strength=0.35) — edge map + low noise
+- Job 4754807 submitted, đang chạy
+
+Literature support: SDEdit (Meng et al. ICLR 2022), ControlNet (Zhang et al. ICCV 2023), InstructRL4Pix (2024)
+
+### IP2P Rain Prompt Bug — "wet muddy ground" gây hallucinate
+
+**Phát hiện:** Prompt v1 `"make it a heavy rainy day, dark overcast sky, wet muddy ground"` khiến IP2P tập trung biến đổi mặt đất thành bùn/nước thay vì tạo atmospheric rain. Kết quả: 48% rain images bị DROP (SSIM thấp, LPIPS cao).
+
+**Root cause:** Cụm "wet muddy ground" — IP2P diễn giải thành "replace ground texture with mud/water", gây structural deformation lớn. Physics overlay đã xử lý rain streaks, nên IP2P không cần modify ground.
+
+**Fix:**
+- Prompt v2: `"a rainy day with dark overcast sky, rain falling, grey clouds"` (chỉ atmospheric)
+- Files changed: `batch_worker.py`, `batch_worker_soda.py`, `physics.py`
+- Test: 20 samples submitted (job 4753144)
+- Full regen job: `jobs/regen_rain_v5.sh` (chờ review test samples trước)
+
+**Bài học:** Với IP2P + physics pipeline, prompt nên focus atmosphere, để physics module xử lý particles. Tránh yêu cầu IP2P thay đổi scene structure.
+
+### Sensitivity Analysis — Kết quả và Hạn chế
+
+- 7 configs YOLOv8n đã train xong (baseline + 6 threshold configs)
+- **Phát hiện:** loose/moderate/no_lpips cho kết quả IDENTICAL — Arrow files đã pre-filtered nên threshold lỏng hơn không thể recover ảnh đã DROP
+- Chỉ strict/tight thực sự filter khác nhau
+- Snow không có LPIPS scores → no_lpips config vô nghĩa cho snow
+- Val set chỉ có clean images → baseline thắng (expected, uninformative)
+
+### Paper Template
+
+- Tạo `paper/main.tex` — Nature Scientific Data Data Descriptor format
+- Tạo `paper/references.bib` — 13 references với verification status
+- Sinh 3 figures: comparison grid, quality spectrum, filter distributions
+- 15 trang, compile OK
+
+---
+
+## 2026-04-06
+
+- Khởi tạo file `DEVLOG.md` để theo dõi tiến trình phát triển dự án.
+- Phân tích so sánh 2 phương pháp weather augmentation:
+  - **Method 1:** Neural Style Transfer (VGG19) + MiDaS depth + physics particles — đã có downstream detection (mAP +75%)
+  - **Method 2:** InstructPix2Pix + physics overlay + LPIPS/SSIM filter — chưa đánh giá downstream
+  - Tạo notebook phân tích: `examples/compare_weather_augmentation.ipynb`
+  - Tạo tài liệu tham khảo: `related_paper/weather_augmentation_references.md` (7 bài báo)
+  - **Kết luận tạm:** Chưa thể khẳng định method nào tốt hơn — cần chạy YOLOv8 với data IP2P để so sánh downstream
+- Xác định publication roadmap: 3 bài báo theo thứ tự
+  1. **Scientific Data** (ưu tiên hiện tại) — dataset paper
+  2. **VLM Benchmark** — đánh giá 11+ VLMs trên construction images
+  3. **VLM Object Detection Improvement** — cải thiện detection cho VLM
+- Cập nhật `CLAUDE.md` với roadmap chi tiết
+- **Research Integrity Audit** — kiểm tra toàn diện dự án trước Scientific Data submission:
+  - **CRITICAL**: 20+ parameters không có justification (SSIM thresholds, LPIPS, style weights, IP2P guidance, physics overlay params, MiDaS depth constants)
+  - **CRITICAL**: Mâu thuẫn style_weight (10k vs 100k) và steps (10 vs 50) giữa workers và pipelines
+  - **CRITICAL**: Không model nào có pinned version (IP2P, MiDaS, FLUX, VGG19, YOLOv8)
+  - **CRITICAL**: Data provenance thiếu (URLs, licenses, checksums cho Construction Site + SODA datasets)
+  - **PASSED**: Data integrity, annotation preservation, provenance tracking, citation disclaimers, JPEG quality
+  - Cập nhật `docs/methods.md` — ghi rõ từng parameter cần justify + TODO sensitivity analysis
+  - Cập nhật `docs/literature.md` — ghi rõ từng citation verified/unverified + TODO items
+  - Cập nhật `docs/data_sources.md` — ghi rõ tất cả thông tin thiếu cho từng dataset/model
+  - Thêm Pre-Publication Checklist vào `CLAUDE.md`
+- Tạo `plan.md` — phân phối công việc thành 7 phases, dependency graph, ước tính thời gian
+- Restructure documentation: `CLAUDE.md` → hub, tách nội dung vào `docs/` (checklist, infrastructure, architecture)
+- **Sensitivity Analysis (Phase 1):**
+  - Viết `generation/sensitivity/ssim_lpips_sweep.py` — sweep SSIM/LPIPS trên CSV metrics (xong)
+  - Viết `generation/sensitivity/run_sensitivity.py` — all-in-one filter+export+train+eval (xong)
+  - Viết `generation/sensitivity/submit_all.py` — submit 6 SLURM jobs (xong)
+  - Chạy sweep analysis: 10 groups × 9 thresholds → `results/ssim_sweep_results.csv`
+  - Submit 6 YOLOv8 training jobs (loose/moderate/current/strict/tight/no_lpips) — **đang chạy**
+  - Key finding: LPIPS lọc thêm ~10% rain images, snow không có LPIPS data (gap)
+- Khảo sát 5 papers tương tự trên Scientific Data (2024-2025) → xác định validation requirements
+  - Cần ≥3 detection models (hiện chỉ có YOLOv8n)
+  - Cần public data deposit (HuggingFace/Zenodo) trước review
+  - Cần annotation quality verification
+- Viết draft Background & Summary: `docs/paper_background_summary.md`
+  - Ghi rõ fact/claim/citation status cho mỗi statement
+  - Flag 6 citations cần verify, 4 số liệu cần double-check

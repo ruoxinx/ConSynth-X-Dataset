@@ -130,7 +130,7 @@ def main():
     pipe.to("cuda")
     pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
 
-    rain_prompt = "make it a heavy rainy day, dark overcast sky, wet muddy ground"
+    rain_prompt = "a rainy day with dark overcast sky, rain falling, grey clouds"
     snow_prompt = "a cold winter day with snow, frost on surfaces, grey sky, snow on the ground"
 
     for i, idx in enumerate(indices):

@@ -11,6 +11,8 @@ ConSynth-X applies three augmentation pipelines to two base datasets, producing 
 | `original` | No augmentation (baseline) | Unchanged |
 | `weather` | Neural Style Transfer (MiDaS + VGG19) | Copied directly (pixel-level transform) |
 | `night` | img2img-turbo (CycleGAN-Turbo) | Copied directly (pixel-level transform) |
+| `night_rain` | Night → IP2P (rain) → Physics rain streaks | Copied directly (pixel-level transform) |
+| `night_snow` | Night → IP2P (snow) → Physics snowflakes | Copied directly (pixel-level transform) |
 | `small` | FLUX.1-Fill-dev outpainting | Bounding boxes re-mapped with offset compensation |
 
 ### Base Datasets
@@ -158,7 +160,83 @@ Day-to-night is a global illumination transform. Object positions and sizes rema
 
 ---
 
-## 4. Outpainting — Scale/Distance Augmentation (FLUX.1-Fill-dev)
+## 4. Night Weather Augmentation (IP2P + Physics on Night Images)
+
+### 4.1 Motivation
+
+Real construction sites experience combined adverse conditions — rain at night, snow at night. These compound conditions are harder for vision models than individual conditions alone (night-only or weather-only). To simulate these, we chain our day-to-night pipeline with weather augmentation.
+
+### 4.2 Pipeline
+
+```
+Night Image (from CycleGAN-Turbo day2night)
+    │
+    ▼
+Resize to max 768px (divisible by 8)
+    │
+    ▼
+InstructPix2Pix (IP2P)
+    │  - Rain prompt: "a rainy night with rain falling,
+    │    wet reflections on surfaces, dark overcast sky"
+    │  - Snow prompt: "a cold winter night with snow falling,
+    │    frost on surfaces, snow on the ground"
+    │  - image_guidance_scale=1.5, steps=30
+    │  - guidance_scale: 10.0 (rain), 8.0 (snow)
+    │
+    ▼
+Resize back to Original Resolution (LANCZOS)
+    │
+    ▼
+Physics Particle Overlay
+    │  - Rain: 3-layer streaks (far/mid/near) + atmospheric fog
+    │  - Snow: 3-layer flakes (far/mid/near) + screen blend
+    │
+    ▼
+SSIM/LPIPS Quality Filter
+    │  - Compare against ORIGINAL (not night) image
+    │  - Rain: SSIM [0.6, 0.95] + LPIPS < 0.35
+    │  - Snow: SSIM [0.5, 0.95]
+    │
+    ▼
+Output Arrow + Metadata CSV
+```
+
+### 4.3 Design Decisions
+
+1. **Night-first, then weather**: CycleGAN-Turbo produces the night base, then IP2P adds weather atmosphere (overcast, reflections) and physics adds particles. This order is chosen because IP2P prompts can reference night-specific elements (wet reflections, artificial lights).
+
+2. **Night-specific prompts**: Prompts differ from day-weather prompts to reference night phenomena (reflections, frost under artificial light) rather than day phenomena (overcast sky, grey clouds).
+
+3. **Quality comparison against original**: SSIM/LPIPS are computed against the **original day image** (not the intermediate night image), measuring total visual distance from source. This ensures the compound augmentation doesn't drift too far from the recognizable scene.
+
+4. **Same IP2P model & physics module**: Reuses `timbrooks/instruct-pix2pix` and `physics.py` from the day-weather pipeline for consistency.
+
+### 4.4 Annotation Handling
+
+Night weather is a pixel-level transform chain (CycleGAN → IP2P → physics overlay). Object positions and sizes remain unchanged. All annotations are **copied directly** from the original.
+
+### 4.5 Output Statistics
+
+| Dataset | Night Input | Rain Night | Snow Night |
+|---|---|---|---|
+| Construction Site (test) | 3,004 | Pending | Pending |
+| SODA | Pending | Pending | Pending |
+
+### 4.6 Configuration
+
+| Parameter | Rain Night | Snow Night |
+|---|---|---|
+| IP2P prompt | "a rainy night with rain falling, wet reflections on surfaces, dark overcast sky" | "a cold winter night with snow falling, frost on surfaces, snow on the ground" |
+| guidance_scale | 10.0 | 8.0 |
+| image_guidance_scale | 1.5 | 1.5 |
+| num_inference_steps | 30 | 30 |
+| Physics overlay | `add_natural_rain()` — 3-layer streaks + fog | `add_natural_snow()` — 3-layer flakes + screen blend |
+| SSIM range | [0.6, 0.95] | [0.5, 0.95] |
+| LPIPS threshold | < 0.35 | N/A |
+
+---
+
+## 5. Outpainting — Scale/Distance Augmentation (FLUX.1-Fill-dev)
 
 ### 4.1 Motivation
 
@@ -240,7 +318,7 @@ All annotation types are transferred: object bounding boxes (excavator, rebar, w
 
 ---
 
-## 5. Dual Format Support
+## 6. Dual Format Support
 
 All pipelines support two data formats:
 
@@ -255,7 +333,7 @@ Each pipeline has separate worker scripts for each format:
 
 ---
 
-## 6. Compute Infrastructure
+## 7. Compute Infrastructure
 
 All augmentation jobs run on the OSC SLURM cluster:
 
@@ -263,6 +341,7 @@ All augmentation jobs run on the OSC SLURM cluster:
 |---|---|---|---|---|
 | Weather (style transfer) | 1x V100 | 32 GB | ~4 hours | 100 images |
 | Day-to-Night | 1x A100 | 32 GB | ~2 hours | 100 images |
+| Night Weather (IP2P) | 1x A100 | 32 GB | ~6 hours | 500 images |
 | Outpainting (FLUX) | 1x A100 | 64 GB | ~4 hours | 50 images |
 
 - **Account**: `pgs0407`
@@ -271,7 +350,7 @@ All augmentation jobs run on the OSC SLURM cluster:
 
 ---
 
-## 7. Summary of Generated Data
+## 8. Summary of Generated Data
 
 ### Construction Site Dataset
 
@@ -280,8 +359,10 @@ All augmentation jobs run on the OSC SLURM cluster:
 | `original` | Baseline | 3,004 | Unchanged |
 | `weather` (6 styles) | Neural Style Transfer + SSIM filter | 10,266 | Copied |
 | `night` | CycleGAN-Turbo | 3,004 | Copied |
+| `night_rain` | Night → IP2P rain → Physics | Pending | Copied |
+| `night_snow` | Night → IP2P snow → Physics | Pending | Copied |
 | `small` | FLUX outpainting | 1,323 | Bbox transferred |
-| **Total** | | **17,597** | |
+| **Total** | | **17,597+** | |
 
 ### SODA Dataset
 
@@ -294,7 +375,7 @@ All augmentation jobs run on the OSC SLURM cluster:
 
 ---
 
-## 8. Key Design Decisions
+## 9. Key Design Decisions
 
 1. **Style transfer over GAN**: Neural style transfer with VGG19 was chosen over CycleGAN for weather because it provides finer control over intensity via style reference images and preserves more structural detail.
 
@@ -308,7 +389,7 @@ All augmentation jobs run on the OSC SLURM cluster:
 
 ---
 
-## 9. File Reference
+## 10. File Reference
 
 | Component | Location |
 |---|---|
@@ -319,6 +400,8 @@ All augmentation jobs run on the OSC SLURM cluster:
 | MiDaS + VGG19 lib | `generation/weather/Weather_Effect_Generator/` |
 | Day2Night workers | `generation/day2night/day2night_batch_worker.py`, `day2night_soda_worker.py` |
 | Day2Night SLURM | `generation/day2night/submit_day2night_batch.py`, `submit_day2night_soda.py` |
+| Night Weather worker | `generation/weather/rain_snow/diffusion/night_weather_batch_worker.py` |
+| Night Weather SLURM | `generation/weather/rain_snow/diffusion/submit_night_weather_test.py` |
 | Outpainting workers | `generation/outpainting/flux_pipeline_worker.py`, `flux_pipeline_worker_voc.py` |
 | Outpainting SLURM | `generation/outpainting/submit_outpainting_pipeline.py`, `submit_outpainting_soda.py` |
 | Arrow export utility | `generation/utils/export_arrow_to_train.py` |
