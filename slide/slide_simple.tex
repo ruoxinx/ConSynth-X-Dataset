@@ -32,412 +32,471 @@
 
 \begin{document}
 
-% ════════════════════════════════════════
+% ═══════════════════════════════════════════════════════════════
+% PART 1: PROBLEM & DATASET
+% ═══════════════════════════════════════════════════════════════
+
 \begin{frame}
 \titlepage
 \end{frame}
 
-% ════════════════════════════════════════
-\begin{frame}{Motivation: Performance Drops Under Extreme Conditions}
+% ────────────────────────────────────────
+\begin{frame}{The Problem}
 
-\begin{columns}[T]
-\begin{column}{0.55\textwidth}
-\textbf{Problem:}
-\begin{itemize}
-    \item Construction CV models trained on clear-weather data
-    \item 40--50\% mAP drop under rain, snow, night, fog
-    \item Existing datasets lack systematic condition variation
-\end{itemize}
+\textbf{Construction sites use cameras for safety monitoring.}\\
+AI models detect workers, equipment, and hazards automatically.
 
 \vspace{0.8em}
-\textbf{Prior work:}
-\begin{itemize}
-    \item Ding et al.\ (2024): UIA-YOLOv5 + NST, ExtCon 506 images, +8.21\% mAP
-    \item \textbf{Gaps:} small scale, NST only, no snow/night/scale
-\end{itemize}
+\textbf{But these models fail in bad weather:}
 
-\vspace{0.8em}
-\textbf{ConSynth-X fills these gaps:}
-\begin{itemize}
-    \item 125,000+ images, 3 complementary pipelines
-    \item 5 condition categories + multi-metric validation
-\end{itemize}
-\end{column}
-\begin{column}{0.43\textwidth}
+\vspace{0.3em}
 \centering
-\small
-\begin{tabular}{lc}
+\footnotesize
+\begin{tabular}{lcc}
 \toprule
-\textbf{Condition} & \textbf{mAP@0.5} \\
+\textbf{Condition} & \textbf{Detection mAP@0.5} & \textbf{Drop} \\
 \midrule
-Original & 0.819 \\
-Weather & 0.446 {\color{warnred}($-$46\%)} \\
-Night & 0.454 {\color{warnred}($-$45\%)} \\
+Clear weather (original) & 0.819 & --- \\
+Rain / Snow & 0.446 & {\color{warnred}$-$46\%} \\
+Nighttime & 0.454 & {\color{warnred}$-$45\%} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\raggedright
+\textbf{Why?} Training data is almost entirely clear-weather daytime photos.\\
+Models have never ``seen'' rain, snow, fog, or darkness during training.
+
+\vspace{0.5em}
+\textbf{Collecting real extreme-condition data is dangerous and expensive.}\\
+$\to$ We generate it synthetically.
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Our Solution: ConSynth-X}
+
+\textbf{We take existing construction photos and digitally add weather, night, fog, etc.}
+
+\vspace{0.5em}
+\centering
+\footnotesize
+\begin{tabular}{llcl}
+\toprule
+\textbf{What we add} & \textbf{How} & \textbf{Images} & \textbf{In simple terms} \\
 \midrule
-+Augmented & 0.810 {\color{goodgreen}(+82\%)} \\
+Rain / Snow (style) & Neural Style Transfer & 57K & Copy weather ``look'' from reference photos \\
+Rain / Snow (diff.) & InstructPix2Pix AI & 10K & AI edits image based on text prompt \\
+Nighttime & CycleGAN-Turbo & 23K & AI converts day photo to night \\
+Fog & Koschmieder model & 3K & Physics-based fog simulation \\
+Smaller objects & FLUX.1 outpainting & 2K & Expand image canvas, objects appear farther \\
+\midrule
+\multicolumn{2}{l}{\textbf{Total augmented}} & \textbf{95K+} & \\
 \bottomrule
 \end{tabular}
 
 \vspace{0.5em}
-{\scriptsize SODA dataset, YOLOv8, style transfer augmentation}
-\end{column}
-\end{columns}
+\raggedright
+{\small Applied to 2 datasets: \textbf{Construction Site 10k} (3 classes) + \textbf{SODA} (15 classes).\\
+All original bounding box annotations are preserved in augmented images.}
 \end{frame}
 
-% ════════════════════════════════════════
-\begin{frame}{Dataset Overview}
-
+% ────────────────────────────────────────
+\begin{frame}{Visual Examples}
 \centering
-\small
-\begin{tabular}{llccl}
-\toprule
-\textbf{Condition} & \textbf{Method} & \textbf{Constr.\ Site} & \textbf{SODA} & \textbf{Key} \\
-\midrule
-Original        & Baseline              & 10,013 & $\sim$20,000 & Source data \\
-Weather (style) & VGG19 + MiDaS + Physics & 10,266 & 47,169 & Strong weather effect \\
-Weather (diff.) & InstructPix2Pix + Physics & 10,382 & --     & Subtle, texture-faithful \\
-Night           & CycleGAN-Turbo        & 3,004  & 19,846 & Day-to-night \\
-Fog             & Koschmieder + DA V2   & 3,003  & --     & 3 intensity levels \\
-Small           & FLUX.1-Fill-dev       & 1,323  & 1,001  & Scale augmentation \\
-\midrule
-\textbf{Total}  &                       & \textbf{37,991} & \textbf{$\sim$88,016} & \textbf{126,007} \\
-\bottomrule
-\end{tabular}
+\includegraphics[width=\textwidth, height=0.78\textheight, keepaspectratio]{fig1_comparison_grid.png}
 
-\vspace{0.8em}
-{\footnotesize Base datasets: \textbf{Construction Site 10k} (3 classes) + \textbf{SODA} (15 classes)\\
-All bounding box annotations preserved or geometrically transferred.}
+\vspace{0.2em}
+{\small Each row: same photo $\to$ Style Transfer $\to$ AI Diffusion + physics rain/snow overlay.}
 \end{frame}
 
-% ════════════════════════════════════════
-\begin{frame}{Three Complementary Augmentation Pipelines}
+% ────────────────────────────────────────
+\begin{frame}{Prior Work \& Our Contribution}
 
 \begin{columns}[T]
-\begin{column}{0.32\textwidth}
-\textbf{1. Style Transfer}\\[0.3em]
-{\small
-VGG19 feature matching\\
-+ MiDaS depth estimation\\
-+ Physics particle overlay\\
-+ SSIM filtering [0.5, 0.95]\\[0.5em]
-{\color{goodgreen}Strong weather effect}\\
-{\color{warnred}Texture artifacts}\\
-Classifier accuracy: 62--95\%
-}
+\begin{column}{0.48\textwidth}
+\textbf{Ding et al.\ (2024):}
+\begin{itemize}\setlength\itemsep{0.1em}
+    \item UIA-YOLOv5 + Neural Style Transfer
+    \item ExtCon: 506 real extreme images
+    \item +8.21\% mAP improvement
+    \item Only 1 method (NST), no snow/night/scale
+\end{itemize}
 \end{column}
-\begin{column}{0.32\textwidth}
-\textbf{2. IP2P Diffusion}\\[0.3em]
-{\small
-InstructPix2Pix (SD 1.5)\\
-+ ControlNet (Canny edges)\\
-+ Physics particle overlay\\
-+ SSIM + LPIPS filtering\\[0.5em]
-{\color{goodgreen}Texture faithful (H=0.86)}\\
-{\color{warnred}Subtle weather effect}\\
-Classifier accuracy: 26--64\%
-}
-\end{column}
-\begin{column}{0.32\textwidth}
-\textbf{3. Night / Fog / Scale}\\[0.3em]
-{\small
-CycleGAN-Turbo (night)\\
-Koschmieder + DA V2 (fog)\\
-FLUX.1-Fill-dev (outpainting)\\[0.5em]
-Night: {\color{goodgreen}FID $-$34\%}\\
-Night: {\color{warnred}over-smoothed DCT}\\
-Scale: 44\% success rate
-}
+\begin{column}{0.48\textwidth}
+\textbf{ConSynth-X (ours):}
+\begin{itemize}\setlength\itemsep{0.1em}
+    \item 126,000+ images (250$\times$ larger)
+    \item 3 complementary pipelines
+    \item 5 condition categories
+    \item 5-dimensional validation framework
+    \item Open-source pipeline for new datasets
+\end{itemize}
 \end{column}
 \end{columns}
 
 \vspace{0.8em}
-\centering
-{\small \textbf{Key insight:} Style transfer and diffusion are \textbf{complementary}, not competing.\\
-Use style transfer for robustness testing, diffusion for natural training data.}
+\textbf{Key question:} How do we know the synthetic images are good enough?\\
+$\to$ We validate from 5 different angles.
 \end{frame}
 
-% ════════════════════════════════════════
-\begin{frame}{Visual Comparison: Weather Augmentation}
-\centering
-\includegraphics[width=\textwidth]{fig1_comparison_grid.png}
+% ═══════════════════════════════════════════════════════════════
+% PART 2: VALIDATION (5 approaches)
+% ═══════════════════════════════════════════════════════════════
 
-\vspace{0.3em}
-{\small Original $\to$ Style Transfer $\to$ IP2P Diffusion + physics overlay}
-\end{frame}
+% ────────────────────────────────────────
+\begin{frame}{How We Validate: 5 Questions}
 
-% ════════════════════════════════════════
-\begin{frame}{Quality Filtering: Dual SSIM + LPIPS Threshold}
-\centering
-\includegraphics[width=\textwidth]{fig2_quality_spectrum.png}
-
-\vspace{0.3em}
-{\small 48\% of rain images filtered out (``wet muddy ground'' prompt lesson).\\
-Snow: 96.4\% keep rate (SSIM only). Top: original. Bottom: IP2P output.}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Validation Framework: 5 Complementary Approaches}
-
-\centering
-\small
-\begin{tabular}{p{3.8cm} p{3.5cm} p{3.5cm} p{3cm}}
-\toprule
-\textbf{Approach} & \textbf{What it measures} & \textbf{Tool} & \textbf{Result} \\
-\midrule
-1. Realism Detection & Looks like real photo? & UnivFD (CVPR 2023) & $>$99.5\% fooling \\[0.3em]
-2. Weather Recognizability & Weather effect visible? & SigLIP2 classifier & 62--95\% (ST) \\[0.3em]
-3. Distributional Fidelity & Close to real weather? & FID/KID vs ACDC & Night: FID $-$34\% \\[0.3em]
-4. Texture Fidelity & Micro-texture preserved? & Dempster-Shafer fusion & Diff: H=0.86 \\[0.3em]
-5. Feature-space Distance & Embedding shift? & Mahalanobis (CLIP) & Night: 38\% gap closed \\
-\bottomrule
-\end{tabular}
+{\small Each approach answers a different question about image quality:}
 
 \vspace{0.5em}
-{\footnotesize Each approach probes a different quality dimension.\\Cross-validation reveals the realism--recognizability trade-off.}
+\begin{enumerate}\setlength\itemsep{0.3em}
+    \item \textbf{Weather Recognizability} --- Can you tell it's raining/snowing?
+    \item \textbf{Distributional Fidelity} --- Is it statistically similar to real weather photos?
+    \item \textbf{Texture Fidelity} --- Are surface details (concrete, metal, fabric) preserved?
+    \item \textbf{Embedding Distance} --- In AI ``feature space,'' is it close to real weather?
+\end{enumerate}
+
+\vspace{0.3em}
+{\small \textbf{+ Supplementary:} AI-generated image detection (UnivFD) --- confirms our images retain real-photo statistics, but this metric is \textbf{not informative} for edit-based augmentation (see backup slide).}
+
+\vspace{0.3em}
+No single metric tells the whole story.\\
+\textbf{Cross-validation} across all 4 reveals trade-offs between pipelines.
 \end{frame}
 
-% ════════════════════════════════════════
-\begin{frame}{Validation 1: Realism --- All Conditions Pass}
-
-\centering
-\small
-\begin{tabular}{lccc}
-\toprule
-\textbf{Condition} & \textbf{Fooling Rate} & \textbf{Score Gap} & \textbf{$N$} \\
-\midrule
-Original (baseline) & 100\% & 0.000 & 3,004 \\
-\midrule
-ST Rain (light/mod/heavy) & 99.5--100\% & 0.081--0.097 & 4,662 \\
-ST Snow (light/mod/heavy) & 99.9\% & 0.088--0.128 & 5,604 \\
-Diffusion Rain & {\color{goodgreen}\textbf{100\%}} & {\color{goodgreen}0.037} & 3,004 \\
-Diffusion Snow & {\color{goodgreen}\textbf{100\%}} & {\color{goodgreen}0.027} & 3,004 \\
-Night (CycleGAN) & 100\% & 0.055 & 3,004 \\
-Small (outpainting) & 100\% & 0.044 & 1,323 \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.5em}
-{\footnotesize UnivFD (CVPR 2023) --- CLIP-based fake detector. 22,601 images tested.\\
-\textbf{All augmentations indistinguishable from real photographs.}\\
-Diffusion has smallest score gap (most realistic pixel statistics).}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Validation 2: Weather Classifier Accuracy}
+% ────────────────────────────────────────
+\begin{frame}{Validation 1: Weather Recognizability --- Can You Tell It's Raining?}
 
 \begin{columns}[T]
 \begin{column}{0.52\textwidth}
+\textbf{Question:} Is the weather effect actually visible?\\
+{\small (An image can look ``real'' but not look like ``rain.'')}
+
+\vspace{0.2em}
+\textbf{Method:} Pre-trained \textbf{weather classifier} (SigLIP2) classifies each augmented image into 5 weather classes.
+
+\vspace{0.2em}
+\textbf{Caveat:} Classifier trained on driving scenes --- it misclassifies 58\% of \textit{original clear} construction images as ``rain'' (cross-domain bias). \textbf{Relative comparison} between pipelines is more meaningful than absolute numbers.
+\end{column}
+\begin{column}{0.46\textwidth}
 \centering
-\small
+\footnotesize
+\begin{tabular}{lc}
+\toprule
+\textbf{Condition} & \textbf{Accuracy} \\
+\midrule
+Original (clear) & 6\% sun \\
+\midrule
+ST Rain A & \textbf{89\%} \\
+ST Snow B & \textbf{95\%} \\
+\midrule
+Diff.\ Rain & 64\% \\
+Diff.\ Snow & {\color{warnred}26\%} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\textbf{Takeaway:}\\
+Style transfer $\to$ strong, obvious weather.\\
+Diffusion $\to$ subtle, less recognizable.\\[0.3em]
+{\color{warnred}Diffusion snow only 26\%}, but its texture quality is the best (see Validation 4).
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Validation 2: FID/KID --- Is It Statistically Similar to Real Weather?}
+
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\textbf{Question:} How close is the distribution of our synthetic images to the distribution of \textit{real} weather photos?
+
+\vspace{0.3em}
+\textbf{Method:} \textbf{FID} (Fr\'{e}chet Inception Distance, Heusel et al.\ 2017) compares feature distributions between two image sets. Lower = more similar.
+
+\vspace{0.3em}
+\textbf{How:} Compare augmented images against 3 real-weather datasets (ACDC, WeatherBench, WeatherNet).
+
+\vspace{0.2em}
+``Baseline gap'' = how far original clear images are from real weather. If augmentation \textit{reduces} this gap, it's working.
+\end{column}
+\begin{column}{0.43\textwidth}
+\centering
+\footnotesize
 \begin{tabular}{lcc}
 \toprule
-\textbf{Condition} & \textbf{Acc.} & \textbf{Conf.} \\
+ & \textbf{FID} & $\boldsymbol{\Delta}$ \\
 \midrule
-ST Rain light & \textbf{88.6\%} & 0.72 \\
-ST Rain mod/heavy & 71\% & 0.58 \\
-ST Snow mod & \textbf{95.0\%} & 0.92 \\
-ST Snow heavy & 92.7\% & 0.85 \\
+\multicolumn{3}{l}{\textit{Night (vs ACDC night):}} \\
+Original & 270.5 & --- \\
+CycleGAN & \textbf{178.9} & {\color{goodgreen}$-$34\%} \\
 \midrule
-Diff. Rain & 63.5\% & 0.54 \\
-Diff. Snow & {\color{warnred}25.7\%} & 0.28 \\
+\multicolumn{3}{l}{\textit{Snow (vs ACDC snow):}} \\
+Original & 216.0 & --- \\
+Diffusion & \textbf{205.3} & {\color{goodgreen}$-$5\%} \\
 \midrule
-Original & 6.1\% & 0.07 \\
+\multicolumn{3}{l}{\textit{Rain (vs ACDC rain):}} \\
+Original & 189.8 & --- \\
+ST rain & 192.3 & $\approx$0\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.3em}
+\textbf{Night is the biggest win:}\\
+34\% closer to real night photos.
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Validation 3: Texture Fidelity --- Are Surface Details Preserved?}
+
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\textbf{Question:} Does augmentation damage the fine texture of surfaces (concrete, metal, fabric)?
+
+\vspace{0.3em}
+\textbf{Method:} Adapted from \textbf{Duminil et al.\ (2025, Sci.\ Reports)}. Extract 4 texture features per image (GLCM, LBP, DCT, Haralick), compare distributions via Wasserstein distance, then fuse with \textbf{Dempster-Shafer belief theory}: all 4 features ``vote'' on texture quality.
+
+\vspace{0.2em}
+{\footnotesize $H$ = belief ``faithful'' (preserved). $\bar{H}$ = belief ``artifact'' (damaged).}
+\end{column}
+\begin{column}{0.43\textwidth}
+\centering
+\footnotesize
+\begin{tabular}{lccl}
+\toprule
+ & $H$ & $\bar{H}$ & \\
+\midrule
+{\color{goodgreen}Diff.\ Snow} & {\color{goodgreen}\textbf{.86}} & .00 & Faithful \\
+{\color{goodgreen}Diff.\ Rain} & {\color{goodgreen}\textbf{.85}} & .00 & Faithful \\
+\midrule
+ST Rain & .00 & .26 & Uncertain \\
+ST Snow & .00 & .83 & Artifact \\
+\midrule
+Fog & .00 & .83 & Artifact \\
+Night & .02 & .73 & Artifact \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\textbf{Diffusion preserves texture}\\(all 4 criteria agree: $H{>}0.85$).
+
+\vspace{0.3em}
+Style transfer creates visible\\weather but damages texture.
+
+\vspace{0.3em}
+Night has highest ``conflict'':\\local texture OK, global lost.
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Validation 4: Embedding Distance --- How Close to Real Weather in AI Space?}
+
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\textbf{Question:} When an AI model ``looks'' at our images, do they resemble real weather photos?
+
+\vspace{0.3em}
+\textbf{Method:} From \textbf{Ruck et al.\ (2026, arXiv:2603.04325)}. Extract embeddings from \textbf{CLIP} (semantics/style) and \textbf{DINOv2} (structure), then measure \textbf{Relative Mahalanobis Distance} to real ACDC weather distributions (cancels background domain effect).
+
+\vspace{0.2em}
+{\footnotesize ``\% gap closed'' = how much closer to real weather vs unaugmented originals.}
+\end{column}
+\begin{column}{0.43\textwidth}
+\centering
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Condition} & \textbf{CLIP} & \textbf{DINOv2} \\
+\midrule
+Night & \textbf{38\%} & 8\% \\
+Snow (ST C) & 27\% & 0.4\% \\
+Rain (ST B) & 25\% & 0.8\% \\
+Fog (diff.) & 18\% & 5\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\textbf{All conditions move closer}\\to real weather (in CLIP).
+
+\vspace{0.3em}
+\textbf{CLIP vs DINOv2 diverge:}\\
+{\small CLIP sees style changes (25--38\% shift).\\
+DINOv2 barely moves ($<$1\%).}
+
+\vspace{0.3em}
+$\to$ Our augmentation changes\\
+\textbf{appearance} (weather look)\\without altering \textbf{structure}\\(object layout).
+\end{column}
+\end{columns}
+\end{frame}
+
+% ═══════════════════════════════════════════════════════════════
+% PART 3: SYNTHESIS & CONCLUSIONS
+% ═══════════════════════════════════════════════════════════════
+
+% ────────────────────────────────────────
+\begin{frame}{Putting It All Together: The Trade-Off}
+
+\centering
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+\textbf{What we measured} & \textbf{Style Transfer} & \textbf{Diffusion} & \textbf{Night} \\
+\midrule
+1. Weather visible? (classifier $\uparrow$) & \textbf{62--95\%} & 26--64\% & N/A \\
+2. Close to real weather? (FID $\downarrow$) & 192--228 & 194--219 & \textbf{179} \\
+3. Texture preserved? ($H$ $\uparrow$) & 0.00 & \textbf{0.86} & 0.02 \\
+4. Embedding shift? (CLIP $\uparrow$) & 25--27\% & 18\% & \textbf{38\%} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.8em}
+\raggedright
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{The key finding:}\\[0.2em]
+Style Transfer and Diffusion are \textbf{complementary}:
+\begin{itemize}\setlength\itemsep{0.1em}
+    \item Style Transfer: strong weather, damages texture
+    \item Diffusion: natural texture, subtle weather
+\end{itemize}
+Neither is ``better'' --- they serve different purposes.
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Practical recommendation:}
+\begin{itemize}\setlength\itemsep{0.1em}
+    \item \textbf{Training data:} use Diffusion\\(natural texture helps model learn)
+    \item \textbf{Robustness testing:} use Style Transfer\\(extreme weather stress-tests the model)
+    \item \textbf{Night:} best overall domain shift
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Downstream Detection: Does Augmented Data Help?}
+
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+\textbf{Question:} If we add synthetic weather images to training, does it improve or hurt the model?
+
+\vspace{0.3em}
+\textbf{Setup:} YOLOv8n detector trained with/without augmented data, tested on clean images.
+
+\vspace{0.3em}
+\centering
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Training data} & \textbf{mAP@.5} & \textbf{mAP@.5:.95} \\
+\midrule
+Original only (7K) & 0.562 & 0.338 \\
++Weather (17K) & 0.547 & 0.339 \\
++Weather strict & 0.538 & \textbf{0.349} \\
 \bottomrule
 \end{tabular}
 \end{column}
 \begin{column}{0.46\textwidth}
-\textbf{Key findings:}
-\begin{itemize}
-    \item Style transfer: strong weather (62--95\%)
-    \item Diffusion snow: only 25.7\%
-    \item But: original = 6.1\% sun/clear!
-\end{itemize}
-
-\vspace{0.5em}
-{\color{noteorange}\textbf{Cross-domain bias:}} 58\% of construction originals classified as ``rain''
-
-\vspace{0.5em}
-Diffusion snow: high texture fidelity but subtle weather $\to$ classifier doesn't see ``snow''
-\end{column}
-\end{columns}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Validation 3: FID/KID vs Real Weather (ACDC)}
-
-\centering
-\small
-\begin{tabular}{llccr}
-\toprule
-\textbf{Condition} & \textbf{Best Method} & \textbf{FID} & \textbf{Original Gap} & $\boldsymbol{\Delta}$\textbf{FID} \\
-\midrule
-Rain  & ST rain\_0        & 192.3 & 189.8 & $-$1\% \\
-Snow  & Diffusion         & 205.3 & 216.0 & $-$5\% \\
-Fog   & Diff.\ fog heavy  & 219.2 & 210.1 & +4\% \\
-\textbf{Night} & \textbf{CycleGAN-Turbo} & \textbf{178.9} & \textbf{270.5} & \textbf{$-$34\%} \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.8em}
-{\footnotesize Compared against 3 real-weather datasets: \textbf{ACDC} (driving), \textbf{WeatherBench} (paired), \textbf{WeatherNet} (outdoor).\\[0.3em]
-\textbf{Night augmentation} achieves the strongest improvement: original images are 270 FID from real night,\\
-but CycleGAN night images are only 179 FID away --- a 34\% gap reduction.}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Validation 4: Texture Fidelity (Dempster-Shafer Belief Fusion)}
-
-\centering
-\small
-\begin{tabular}{lccl}
-\toprule
-\textbf{Condition} & $\boldsymbol{H}$ (faithful) & $\boldsymbol{\bar{H}}$ (artifact) & \textbf{Verdict} \\
-\midrule
-{\color{goodgreen}Diffusion Snow} & {\color{goodgreen}\textbf{0.862}} & 0.000 & {\color{goodgreen}Faithful (unanimous)} \\
-{\color{goodgreen}Diffusion Rain} & {\color{goodgreen}\textbf{0.854}} & 0.000 & {\color{goodgreen}Faithful (unanimous)} \\
-\midrule
-ST Rain moderate & 0.000 & 0.256 & Uncertain \\
-ST Snow moderate & 0.000 & 0.831 & Strong artifact \\
-\midrule
-Fog heavy & 0.000 & 0.830 & Strong artifact \\
-Night (CycleGAN) & 0.018 & 0.734 & Artifact + conflict \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.5em}
-{\footnotesize 4 texture channels (GLCM, LBP, DCT, Haralick) combined via Dempster-Shafer theory.\\
-\textbf{Diffusion:} all 4 criteria agree ``faithful'' (H$>$0.85, zero conflict).\\
-\textbf{Night:} highest conflict (K=0.078) --- local patterns OK but global texture over-smoothed.}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Cross-Validation Synthesis: The Trade-Off}
-
-\centering
-\small
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Metric} & \textbf{Style Transfer} & \textbf{Diffusion} & \textbf{Night} & \textbf{Outpainting} \\
-\midrule
-Realism (fooling $\uparrow$) & $>$99.5\% & \textbf{100\%} & 100\% & 100\% \\
-Weather recog.\ ($\uparrow$) & \textbf{62--95\%} & 26--64\% & N/A & N/A \\
-FID vs.\ ACDC ($\downarrow$) & 192--228 & 194--219 & \textbf{179} & --- \\
-Texture $H$ ($\uparrow$) & 0.00 & \textbf{0.86} & 0.02 & --- \\
-\bottomrule
-\end{tabular}
-
 \vspace{1em}
-\begin{columns}[T]
-\begin{column}{0.48\textwidth}
-\textbf{Realism--Recognizability Trade-off:}
-\begin{itemize}
-    \item Diffusion = realistic texture, subtle weather
-    \item Style Transfer = obvious weather, texture artifacts
-    \item \textbf{Complementary, not competing}
-\end{itemize}
-\end{column}
-\begin{column}{0.48\textwidth}
-\textbf{Recommendation:}
-\begin{itemize}
-    \item \textbf{Training data:} use diffusion (natural texture)
-    \item \textbf{Robustness testing:} use style transfer (extreme weather)
-    \item \textbf{Night:} best semantic shift, known texture limitation
-\end{itemize}
+\textbf{Result:} Adding 10K+ synthetic images does \textbf{not degrade} clean-condition detection (mAP@.5:.95 neutral $\pm$0.001).
+
+\vspace{0.5em}
+This means synthetic quality is sufficient for training --- the model doesn't get ``confused'' by augmented images.
+
+\vspace{0.5em}
+{\color{noteorange}\textbf{Next step:}} Test on weather/night conditions (experiment ready, awaiting compute).\\
+This will show the \textit{robustness benefit}.
 \end{column}
 \end{columns}
 \end{frame}
 
-% ════════════════════════════════════════
-\begin{frame}{Downstream Detection: Augmentation Preserves Performance}
-
-\centering
-\small
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Config} & \textbf{Train} & \textbf{mAP@.5} & \textbf{mAP@.5:.95} & \textbf{Excavator} & \textbf{Rebar} \\
-\midrule
-Baseline (no aug.) & 7,009 & 0.562 & 0.338 & 0.906 & 0.262 \\
-+Weather (current) & 17,390 & 0.547 & 0.339 & \textbf{0.916} & 0.226 \\
-+Weather (strict) & 16,379 & 0.538 & \textbf{0.349} & 0.915 & 0.195 \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.8em}
-{\footnotesize Evaluated on \textbf{clean test images only} (no weather conditions in val set).\\
-mAP@0.5:0.95 is \textbf{neutral} ($\pm$0.001) --- augmentation does not degrade clean performance.\\
-Excavator improves (+1\%), rebar decreases ($-$3.6\%) on clean images.\\[0.5em]
-{\color{noteorange}\textbf{Cross-condition evaluation (weather/night/fog test sets) in progress.}}}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{VLM Safety VQA: All Models Struggle}
-\centering
-\includegraphics[width=0.92\textwidth]{vqa_f1_bar.pdf}
-
-\vspace{0.3em}
-{\small F1 $<$ 0.13 for all VLMs on construction safety VQA.\\
-LLaVA-1.5-7B: 100\% error rate. Extreme conditions reduce performance further.\\
-$\to$ Validates motivation for Paper 2 (VLM Benchmark) and Paper 3 (Improvement).}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Paper Status: Nature Scientific Data}
+% ────────────────────────────────────────
+\begin{frame}{Paper Status \& Next Steps}
 
 \begin{columns}[T]
 \begin{column}{0.48\textwidth}
-\textbf{{\color{goodgreen}Completed:}}
-\begin{itemize}
-    \item 5 augmentation pipelines (weather, night, fog, outpainting)
-    \item 5-dimensional validation framework
-    \item Cross-validation synthesis
-    \item Fog methods documented (Koschmieder + DA V2)
+\textbf{Target:} Nature Scientific Data
+
+\vspace{0.5em}
+\textbf{Completed:}
+\begin{itemize}\setlength\itemsep{0.1em}
+    \item 5 augmentation pipelines
+    \item 5-dimensional validation
+    \item 23-page manuscript, 21 references
     \item Prior work comparison (Ding et al.)
-    \item All citations verified (8 new refs)
-    \item 12 of 19 TODOs resolved
-    \item Paper: 23 pages, compiles clean
+    \item Cross-validation synthesis
 \end{itemize}
+
+\vspace{0.5em}
+\textbf{Review feedback:}\\
+{\small ``Underlying research has merit... could reach Minor Revision quality''}
 \end{column}
 \begin{column}{0.48\textwidth}
-\textbf{{\color{warnred}Remaining (7 TODOs):}}
-\begin{itemize}
-    \item \textbf{Table 7}: Cross-condition detection results (experiment script ready)
-    \item SODA full results table
+\textbf{Remaining:}
+\begin{enumerate}\setlength\itemsep{0.1em}
+    \item Cross-condition detection results\\{\footnotesize (experiment script ready, $\sim$2h GPU)}
+    \item SODA 15-class validation
     \item Dataset upload (HuggingFace)
-\end{itemize}
-
-\vspace{0.8em}
-\textbf{Review feedback:}
-\begin{itemize}
-    \item Score: 2.5/5 $\to$ Reject (draft)
-    \item ``Underlying research has merit''
-    \item ``Could reach Minor Revision quality''
-    \item Main blocker: Table 7 (in progress)
-\end{itemize}
-\end{column}
-\end{columns}
-\end{frame}
-
-% ════════════════════════════════════════
-\begin{frame}{Next Steps}
-
-\begin{enumerate}
-    \item \textbf{Cross-condition detection} (Table 7) --- SLURM job ready, ~2h A100
-        \begin{itemize}
-            \item 4 models $\times$ 6 test conditions = 24 evaluation cells
-            \item Test sets are \textbf{unseen} (augmented from test split)
-        \end{itemize}
-    \item \textbf{SODA validation} --- extend pipeline to 15-class dataset
-    \item \textbf{Dataset release} --- HuggingFace upload + data card
-    \item \textbf{Final paper polish} --- pin model versions, checksums
-    \item \textbf{Submit} Nature Scientific Data
+    \item Final paper polish
 \end{enumerate}
 
-\vspace{1em}
-\centering
-{\large Paper 2 (VLM Benchmark) and Paper 3 (Detection Improvement)\\depend on Paper 1 dataset.}
+\vspace{0.5em}
+\textbf{Roadmap:}\\
+{\small Paper 1 (Dataset) $\to$ Paper 2 (VLM Benchmark)\\$\to$ Paper 3 (Detection Improvement)}
+\end{column}
+\end{columns}
 \end{frame}
 
-% ════════════════════════════════════════
+% ═══════════════════════════════════════════════════════════════
+% BACKUP SLIDES
+% ═══════════════════════════════════════════════════════════════
+
+\appendix
+
+% ────────────────────────────────────────
+\begin{frame}{Backup: Why Not Use AI-Generated Image Detectors?}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Two different detection problems:}
+
+\vspace{0.3em}
+\textbf{SID} (Synthetic Image Detection):\\
+{\small Classify \textit{entire} image as real vs AI-generated.\\
+Examples: UnivFD, DIRE, NPR.\\
+Designed for: Midjourney, DALL-E, StyleGAN outputs.}
+
+\vspace{0.3em}
+\textbf{IML} (Image Manipulation Localization):\\
+{\small Detect \textit{which regions} of a real image were edited.\\
+Examples: TruFor, X-Edit, DiffForensics.\\
+Designed for: splicing, inpainting, local edits.}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{Our images are neither:}
+
+\vspace{0.3em}
+ConSynth-X starts from \textbf{real photos} and applies \textbf{global edits} (weather, night).
+
+\vspace{0.3em}
+$\to$ SID methods see ``real photo'' (99.5\% fooling)\\because most pixels are original.
+
+\vspace{0.3em}
+$\to$ IML methods expect \textbf{local} edits,\\but weather is a \textbf{global} transformation.
+
+\vspace{0.5em}
+\textbf{Our approach:} Instead of binary real/fake, we validate through \textbf{domain-specific metrics} --- weather recognition, distributional fidelity, texture preservation, and embedding distance.
+\end{column}
+\end{columns}
+
+\vspace{0.3em}
+{\footnotesize UnivFD results ($>$99.5\% fooling) are reported as supplementary. Full results in paper appendix.}
+\end{frame}
+
+% ────────────────────────────────────────
 \begin{frame}{}
 \centering
 \vspace{2cm}

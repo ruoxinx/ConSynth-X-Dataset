@@ -111,7 +111,7 @@ We employ two complementary approaches for weather effect generation, both follo
 The first pipeline combines VGG19-based neural style transfer~\citep{gatys2016style} with MiDaS~\citep{ranftl2020midas} monocular depth estimation and physics-based particle rendering:
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Style transfer}: VGG19 feature matching transfers the color and texture characteristics from reference weather images to construction site images. We use six style reference images (3~rain intensities, 3~snow intensities).
+    \item \textbf{Style transfer}: VGG19 feature matching transfers the color and texture characteristics from reference weather images to construction site images. We use six style reference images (3~rain variants, 3~snow variants), each depicting a different weather scene. The variants are denoted A, B, C and differ in the reference image used, not in pipeline parameters --- all share the same \texttt{style\_weight} and optimization steps.
     \item \textbf{Depth estimation}: MiDaS DPT\_Large estimates per-pixel depth maps for depth-aware particle placement.
     \item \textbf{Physics overlay}: Multi-layer rain streaks or snowflakes are rendered with depth-dependent size, density, and opacity, simulating atmospheric perspective.
     \item \textbf{SSIM filtering}: Output images are filtered by structural similarity index (SSIM~$\in [0.5, 0.95]$) to remove images that are either too similar to the original (ineffective augmentation) or too degraded (corrupted).
@@ -161,7 +161,7 @@ Table~\ref{tab:weather-output} reports the number of images retained after filte
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{fig1_comparison_grid.pdf}
-\caption{\textbf{Visual comparison of weather augmentation methods.} Three construction site images shown as: original (left), neural style transfer rain\_0/snow\_0 (center), and InstructPix2Pix diffusion with physics overlay (right). Row~1: strong rain effect (SSIM=0.62); Row~2: subtle rain (SSIM=0.86); Row~3: snow (SSIM=0.74). Style transfer produces color/texture shifts with occasional artifacts (Row~2, center), while IP2P diffusion generates more physically consistent atmospheric effects including wet ground, overcast sky, and depth-aware rain streaks. SSIM and LPIPS scores are reported for the diffusion outputs.}
+\caption{\textbf{Visual comparison of weather augmentation methods.} Three construction site images shown as: original (left), neural style transfer rain~A / snow~A (center), and InstructPix2Pix diffusion with physics overlay (right). Row~1: strong rain effect (SSIM=0.62); Row~2: subtle rain (SSIM=0.86); Row~3: snow (SSIM=0.74). Style transfer produces color/texture shifts with occasional artifacts (Row~2, center), while IP2P diffusion generates more physically consistent atmospheric effects including wet ground, overcast sky, and depth-aware rain streaks. SSIM and LPIPS scores are reported for the diffusion outputs.}
 \label{fig:comparison-grid}
 \end{figure}
 
@@ -281,8 +281,8 @@ Small           & FLUX.1-Fill-dev       & 1,323  & 1,001  \\
 \toprule
 \textbf{Style} & \textbf{Constr.\ Site} & \textbf{SODA} \\
 \midrule
-rain\_0 / rain\_1 / rain\_2 & 2,211 / 1,243 / 1,208 & 8,392 / 8,059 / 9,541 \\
-snow\_0 / snow\_1 / snow\_2 & 2,159 / 1,649 / 1,796 & 9,818 / 7,485 / 3,874 \\
+rain\_A / rain\_B / rain\_C & 2,211 / 1,243 / 1,208 & 8,392 / 8,059 / 9,541 \\
+snow\_A / snow\_B / snow\_C & 2,159 / 1,649 / 1,796 & 9,818 / 7,485 / 3,874 \\
 \midrule
 \textbf{Total} & \textbf{10,266} & \textbf{47,169} \\
 \bottomrule
@@ -339,8 +339,8 @@ We first assess whether augmented images can be distinguished from real photogra
 \midrule
 Original (baseline)       & 1.000 & 0.246 & 0.000 & 3,004 \\
 \midrule
-ST Rain (light/mod/heavy) & 1.000 / 0.995 / 0.998 & 0.328--0.343 & 0.081--0.097 & 2,211 / 1,243 / 1,208 \\
-ST Snow (light/mod/heavy) & 0.999 / 0.999 / 0.999 & 0.334--0.374 & 0.088--0.128 & 2,159 / 1,649 / 1,796 \\
+ST Rain (A / B / C) & 1.000 / 0.995 / 0.998 & 0.328--0.343 & 0.081--0.097 & 2,211 / 1,243 / 1,208 \\
+ST Snow (A / B / C) & 0.999 / 0.999 / 0.999 & 0.334--0.374 & 0.088--0.128 & 2,159 / 1,649 / 1,796 \\
 Diffusion Rain            & 1.000 & 0.284 & 0.037 & 3,004 \\
 Diffusion Snow            & 1.000 & 0.274 & 0.027 & 3,004 \\
 Night (CycleGAN)          & 1.000 & 0.301 & 0.055 & 3,004 \\
@@ -367,12 +367,12 @@ While realism detection confirms that augmented images look like real photograph
 \midrule
 Original                & sun/clear    & 0.061 & 0.069 & 3,004 \\
 \midrule
-ST Rain light           & rain/storm   & \textbf{0.886} & 0.718 & 2,211 \\
-ST Rain moderate        & rain/storm   & 0.713 & 0.586 & 1,243 \\
-ST Rain heavy           & rain/storm   & 0.708 & 0.581 & 1,208 \\
-ST Snow light           & snow/frosty  & 0.618 & 0.570 & 2,159 \\
-ST Snow moderate        & snow/frosty  & \textbf{0.950} & 0.922 & 1,649 \\
-ST Snow heavy           & snow/frosty  & 0.927 & 0.846 & 1,796 \\
+ST Rain A               & rain/storm   & \textbf{0.886} & 0.718 & 2,211 \\
+ST Rain B               & rain/storm   & 0.713 & 0.586 & 1,243 \\
+ST Rain C               & rain/storm   & 0.708 & 0.581 & 1,208 \\
+ST Snow A               & snow/frosty  & 0.618 & 0.570 & 2,159 \\
+ST Snow B               & snow/frosty  & \textbf{0.950} & 0.922 & 1,649 \\
+ST Snow C               & snow/frosty  & 0.927 & 0.846 & 1,796 \\
 \midrule
 Diffusion Rain          & rain/storm   & 0.635 & 0.543 & 3,004 \\
 Diffusion Snow          & snow/frosty  & 0.257 & 0.275 & 3,004 \\
@@ -383,7 +383,7 @@ Small (outpainting)     & sun/clear    & 0.084 & 0.088 & 1,323 \\
 \end{tabular}
 \end{table}
 
-Style transfer achieves strong weather recognizability: 71--89\% for rain and 62--95\% for snow. Diffusion rain is moderate (63.5\%), while diffusion snow is notably low (25.7\%, with 49\% misclassified as rain). Two important caveats apply. First, original construction site images are classified as ``sun/clear'' only 6.1\% of the time (57.8\% as ``rain/storm''), revealing a cross-domain bias: the classifier was trained on natural outdoor/driving scenes, not construction sites with exposed earth and heavy equipment. Second, the night pipeline cannot be evaluated through this classifier as no ``night'' class exists; night validation relies on FID/KID (Section~\ref{sec:fid-kid}).
+Style transfer achieves strong weather recognizability across all three reference variants: 71--89\% for rain and 62--95\% for snow. Variation across variants reflects differences in the reference image tone rather than controllable intensity. Diffusion rain is moderate (63.5\%), while diffusion snow is notably low (25.7\%, with 49\% misclassified as rain). Two important caveats apply. First, original construction site images are classified as ``sun/clear'' only 6.1\% of the time (57.8\% as ``rain/storm''), revealing a cross-domain bias: the classifier was trained on natural outdoor/driving scenes, not construction sites with exposed earth and heavy equipment. Second, the night pipeline cannot be evaluated through this classifier as no ``night'' class exists; night validation relies on FID/KID (Section~\ref{sec:fid-kid}).
 
 The low diffusion snow accuracy (25.7\%) contrasts with its high texture fidelity (Section~\ref{sec:texture}) and low FID (Section~\ref{sec:fid-kid}), suggesting that IP2P diffusion produces atmospheric changes (grey sky, diffused lighting) without generating visually prominent snow particles. This ``subtle weather'' characteristic is complementary to the ``obvious weather'' of style transfer.
 
@@ -404,7 +404,7 @@ We measure how closely augmented images approximate real weather photography usi
 \toprule
 \textbf{Condition} & \textbf{Best Method} & \textbf{FID} & \textbf{KID} & \textbf{Original Gap} & $\boldsymbol{\Delta}$\textbf{FID} \\
 \midrule
-Rain  & ST rain\_0        & 192.3 & 0.173 & 189.8 & $-$1\% \\
+Rain  & ST rain A        & 192.3 & 0.173 & 189.8 & $-$1\% \\
 Snow  & Diffusion         & 205.3 & 0.183 & 216.0 & $-$5\% \\
 Fog   & Diff.\ fog heavy  & 219.2 & 0.192 & 210.1 & +4\% \\
 Night & CycleGAN-Turbo    & \textbf{178.9} & \textbf{0.175} & 270.5 & \textbf{$-$34\%} \\
@@ -428,8 +428,8 @@ Following Ruck et al.~\citep{ruck2026scalable}, we compute per-image relative Ma
 \textbf{Condition (Best Method)} & \textbf{CLIP Gap Closed} & \textbf{DINOv2 Gap Closed} \\
 \midrule
 Night (CycleGAN-Turbo) & \textbf{38\%} & 8\% \\
-Snow (ST snow\_2)       & 27\%          & 0.4\% \\
-Rain (ST rain\_1)       & 25\%          & 0.8\% \\
+Snow (ST snow C)       & 27\%          & 0.4\% \\
+Rain (ST rain B)       & 25\%          & 0.8\% \\
 Fog (diff.\ fog heavy)  & 18\%          & 5\% \\
 \bottomrule
 \end{tabular}
@@ -455,12 +455,12 @@ To detect micro-level artifacts not captured by distributional metrics, we asses
 Diffusion Snow     & \textbf{0.862} & 0.000 & 0.138 & 0.000 & Faithful \\
 Diffusion Rain     & \textbf{0.854} & 0.000 & 0.146 & 0.000 & Faithful \\
 \midrule
-ST Rain moderate   & 0.000 & 0.256 & 0.744 & 0.000 & Uncertain \\
-ST Rain heavy      & 0.000 & 0.292 & 0.708 & 0.000 & Uncertain \\
-ST Rain light      & 0.000 & 0.503 & 0.497 & 0.000 & Mild artifact \\
-ST Snow light      & 0.017 & 0.439 & 0.529 & 0.014 & Uncertain \\
-ST Snow heavy      & 0.000 & 0.623 & 0.377 & 0.000 & Artifact \\
-ST Snow moderate   & 0.000 & 0.831 & 0.169 & 0.000 & Strong artifact \\
+ST Rain B          & 0.000 & 0.256 & 0.744 & 0.000 & Uncertain \\
+ST Rain C          & 0.000 & 0.292 & 0.708 & 0.000 & Uncertain \\
+ST Rain A          & 0.000 & 0.503 & 0.497 & 0.000 & Mild artifact \\
+ST Snow A          & 0.017 & 0.439 & 0.529 & 0.014 & Uncertain \\
+ST Snow C          & 0.000 & 0.623 & 0.377 & 0.000 & Artifact \\
+ST Snow B          & 0.000 & 0.831 & 0.169 & 0.000 & Strong artifact \\
 \midrule
 Diff.\ Fog light   & 0.054 & 0.491 & 0.385 & 0.069 & Mild artifact \\
 Diff.\ Fog medium  & 0.000 & 0.675 & 0.325 & 0.000 & Artifact \\
