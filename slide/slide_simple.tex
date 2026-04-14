@@ -14,6 +14,8 @@
 \usepackage{hyperref}
 \usepackage{array}
 \usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
 \graphicspath{{images/}}
 
 \definecolor{linkblue}{RGB}{0,90,170}
@@ -43,13 +45,16 @@
 % ────────────────────────────────────────
 \begin{frame}{The Problem}
 
-\textbf{Construction sites use cameras for safety monitoring.}\\
-AI models detect workers, equipment, and hazards automatically.
+\textbf{Goal:} Provide a comprehensive dataset for construction site computer vision that enables \textbf{training and evaluating} models across diverse extreme field conditions.
 
-\vspace{0.8em}
-\textbf{But these models fail in bad weather:}
+\vspace{0.6em}
+\textbf{Why this matters:}
+\begin{itemize}\setlength\itemsep{0.15em}
+    \item Construction sites face rain, snow, fog, low light, glare
+    \item Models trained on clean data fail dramatically in the field:
+\end{itemize}
 
-\vspace{0.3em}
+\vspace{0.2em}
 \centering
 \footnotesize
 \begin{tabular}{lcc}
@@ -62,14 +67,15 @@ Nighttime & 0.454 & {\color{warnred}$-$45\%} \\
 \bottomrule
 \end{tabular}
 
-\vspace{0.8em}
+\vspace{0.6em}
 \raggedright
-\textbf{Why?} Training data is almost entirely clear-weather daytime photos.\\
-Models have never ``seen'' rain, snow, fog, or darkness during training.
+\begin{itemize}\setlength\itemsep{0.15em}
+    \item No existing dataset covers multiple extreme conditions for construction
+    \item Collecting real extreme-condition data is dangerous and expensive
+\end{itemize}
 
-\vspace{0.5em}
-\textbf{Collecting real extreme-condition data is dangerous and expensive.}\\
-$\to$ We generate it synthetically.
+\vspace{0.3em}
+$\to$ We synthetically generate a multi-condition dataset to fill this gap.
 \end{frame}
 
 % ────────────────────────────────────────
@@ -292,45 +298,113 @@ Night has highest ``conflict'':\\local texture OK, global lost.
 \end{frame}
 
 % ────────────────────────────────────────
-\begin{frame}{Validation 4: Embedding Distance --- How Close to Real Weather in AI Space?}
+\begin{frame}{Validation 4: Embedding Distance --- The Idea}
 
-\begin{columns}[T]
-\begin{column}{0.55\textwidth}
-\textbf{Question:} When an AI model ``looks'' at our images, do they resemble real weather photos?
+\textbf{Question:} In AI ``feature space,'' are our augmented images closer to \textit{real} weather photos?
 
 \vspace{0.3em}
-\textbf{Method:} From \textbf{Ruck et al.\ (2026, arXiv:2603.04325)}. Extract embeddings from \textbf{CLIP} (semantics/style) and \textbf{DINOv2} (structure), then measure \textbf{Relative Mahalanobis Distance} to real ACDC weather distributions (cancels background domain effect).
+\textbf{Method:} Relative Mahalanobis Distance (Ruck et al.\ 2026). Subtract background to isolate weather signal.
 
 \vspace{0.2em}
-{\footnotesize ``\% gap closed'' = how much closer to real weather vs unaugmented originals.}
-\end{column}
-\begin{column}{0.43\textwidth}
+\centering
+\begin{tikzpicture}[
+    every node/.style={font=\footnotesize},
+    blob/.style={ellipse, draw, minimum width=2.2cm, minimum height=1cm, align=center},
+    >={Stealth[length=2mm]}
+]
+% Number line
+\draw[->, thick, gray!50] (-0.5,0) -- (11.5,0);
+\node[below, font=\scriptsize, gray] at (11.5,0) {distance to real weather};
+
+% Real weather (ACDC) cluster
+\node[blob, fill=goodgreen!15, draw=goodgreen] (real) at (1.5,0.8) {Real weather\\(ACDC)};
+\draw[goodgreen, thick] (1.5,0) -- (1.5,0.3);
+\node[below, font=\scriptsize\bfseries, goodgreen] at (1.5,-0.2) {$-d_{rel} \approx 0$};
+
+% Augmented
+\node[blob, fill=linkblue!15, draw=linkblue] (aug) at (5.5,0.8) {Augmented\\(ours)};
+\draw[linkblue, thick] (5.5,0) -- (5.5,0.3);
+\node[below, font=\scriptsize\bfseries, linkblue] at (5.5,-0.2) {$-d_{rel} = -25.6$};
+
+% Original clear
+\node[blob, fill=warnred!15, draw=warnred] (orig) at (9.5,0.8) {Original\\(clear day)};
+\draw[warnred, thick] (9.5,0) -- (9.5,0.3);
+\node[below, font=\scriptsize\bfseries, warnred] at (9.5,-0.2) {$-d_{rel} = -39.3$};
+
+% Gap arrows
+\draw[<->, thick, goodgreen!70] (1.7,-0.7) -- (5.3,-0.7);
+\node[below, font=\scriptsize, goodgreen!80] at (3.5,-0.7) {remaining gap};
+
+\draw[<->, thick, linkblue!70] (5.7,-0.7) -- (9.3,-0.7);
+\node[below, font=\scriptsize\bfseries, linkblue] at (7.5,-0.7) {gap closed = \textbf{38\%}};
+
+\end{tikzpicture}
+
+\vspace{0.2em}
+\raggedright
+{\small \textbf{Example:} Night (CLIP). Original is $-39.3$ from real ACDC night. CycleGAN augmentation moves it to $-25.6$ --- closing 38\% of the gap.}
+
+\vspace{0.2em}
+{\small \textbf{``\% gap closed''} $= \dfrac{\text{original} - \text{augmented}}{\text{original} - \text{baseline}} \times 100$}
+
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Validation 4: Results \& Cross-Domain Limitation}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
 \centering
 \footnotesize
+\textbf{CLIP (semantic/style)}
+
+\vspace{0.3em}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Condition} & \textbf{CLIP} & \textbf{DINOv2} \\
+\textbf{Condition} & \textbf{Best method} & \textbf{Gap closed} \\
 \midrule
-Night & \textbf{38\%} & 8\% \\
-Snow (ST C) & 27\% & 0.4\% \\
-Rain (ST B) & 25\% & 0.8\% \\
-Fog (diff.) & 18\% & 5\% \\
+Night & CycleGAN & \textbf{38\%} \\
+Snow & ST heavy & 27\% \\
+Rain & ST moderate & 25\% \\
+Fog & Physics & 18\% \\
 \bottomrule
 \end{tabular}
 
 \vspace{0.5em}
-\textbf{All conditions move closer}\\to real weather (in CLIP).
+{\color{goodgreen}\textbf{All conditions move closer}}\\
+{\color{goodgreen}to real weather in CLIP space.}
 
 \vspace{0.3em}
-\textbf{CLIP vs DINOv2 diverge:}\\
-{\small CLIP sees style changes (25--38\% shift).\\
-DINOv2 barely moves ($<$1\%).}
+{\small CLIP captures ``weather look'' (style/semantics) which is relatively \textbf{domain-agnostic}: rain looks like rain whether on a road or a construction site.}
+\end{column}
+\begin{column}{0.48\textwidth}
+\centering
+\footnotesize
+\textbf{DINOv2 (texture/structure)}
 
 \vspace{0.3em}
-$\to$ Our augmentation changes\\
-\textbf{appearance} (weather look)\\without altering \textbf{structure}\\(object layout).
+\begin{tabular}{lcc}
+\toprule
+\textbf{Condition} & \textbf{Best method} & \textbf{Gap closed} \\
+\midrule
+Night & CycleGAN & 8\% \\
+Snow & IP2P & 0.4\% \\
+Rain & IP2P & 0.8\% \\
+Fog & Physics & 5\% \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+{\color{warnred}\textbf{Near-zero movement.}}\\
+{\color{warnred}But this is a \textbf{metric limitation}:}
+
+\vspace{0.3em}
+{\small DINOv2 captures texture/structure. Reference is ACDC (\textit{driving} scenes) --- wet roads $\neq$ wet concrete. The \textbf{cross-domain structural gap} overwhelms the weather signal.}
 \end{column}
 \end{columns}
+
+\vspace{0.5em}
+{\small \textbf{Takeaway:} CLIP results validate our augmentation. DINOv2 gap reflects \textbf{domain mismatch} (driving vs.\ construction), not augmentation failure. A construction-specific weather reference would be needed --- but that is exactly what does not exist yet.}
 \end{frame}
 
 % ═══════════════════════════════════════════════════════════════
