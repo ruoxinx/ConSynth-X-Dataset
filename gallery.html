@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gallery — ConSynth-X</title>
+  <meta name="description" content="Sample gallery of ConSynth-X augmentation outputs across weather, night, fog, and scale conditions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0C0F14;
+      --bg-secondary: #12161E;
+      --bg-card: #181D28;
+      --bg-card-hover: #1E2433;
+      --border: #2A3044;
+      --border-accent: #3A4560;
+      --text-primary: #E8EAF0;
+      --text-secondary: #8B95AE;
+      --text-muted: #5A6580;
+      --accent-orange: #FF6B35;
+      --accent-amber: #FFB800;
+      --accent-blue: #4A9EFF;
+      --accent-cyan: #00D4AA;
+      --accent-red: #FF4757;
+      --accent-purple: #A78BFA;
+      --grid-line: rgba(74, 158, 255, 0.08);
+      --grid-color: rgba(74, 158, 255, 0.04);
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-body: 'Source Sans 3', sans-serif;
+      --radius: 6px;
+      --radius-lg: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+    }
+
+    .blueprint-grid {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+    }
+
+    .content-wrapper { position: relative; z-index: 2; }
+
+    /* Nav */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      padding: 1rem 0;
+      backdrop-filter: blur(20px);
+      background: rgba(12, 15, 20, 0.85);
+      border-bottom: 1px solid var(--border);
+    }
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo {
+      font-family: var(--font-display); font-weight: 800; font-size: 1.25rem;
+      color: var(--text-primary); text-decoration: none; letter-spacing: -0.02em;
+    }
+    .nav-logo span { color: var(--accent-orange); }
+    .back-link {
+      font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);
+      text-decoration: none; display: flex; align-items: center; gap: 0.5rem;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--accent-orange); }
+
+    /* Page Header */
+    .page-header {
+      padding: 4rem 0 2rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+    }
+    .page-header h1 {
+      font-family: var(--font-display); font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.5rem;
+    }
+    .page-header h1 .hl { color: var(--accent-orange); }
+    .page-header p { color: var(--text-secondary); font-size: 1.1rem; max-width: 700px; }
+    .page-stats {
+      display: flex; gap: 2.5rem; margin-top: 1.5rem;
+      font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);
+    }
+    .page-stats strong { color: var(--text-primary); font-size: 1.1rem; }
+
+    /* Tabs */
+    .gallery-tabs {
+      display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap;
+      position: sticky; top: 60px; z-index: 50;
+      background: rgba(12, 15, 20, 0.9); backdrop-filter: blur(12px);
+      padding: 1rem 0; margin-left: -0.5rem; padding-left: 0.5rem;
+    }
+    .gallery-tab {
+      font-family: var(--font-mono); font-size: 0.75rem;
+      padding: 0.5rem 1.25rem; border-radius: 100px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-secondary); cursor: pointer;
+      transition: all 0.25s ease; letter-spacing: 0.04em;
+    }
+    .gallery-tab:hover { border-color: var(--border-accent); color: var(--text-primary); }
+    .gallery-tab.active { background: var(--accent-orange); border-color: var(--accent-orange); color: #fff; }
+    .tab-count { font-size: 0.6rem; opacity: 0.6; margin-left: 2px; }
+
+    /* Gallery Grid */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      padding-bottom: 4rem;
+    }
+    .gallery-item {
+      aspect-ratio: 4/3; border-radius: var(--radius-lg); overflow: hidden;
+      position: relative; cursor: pointer; border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    .gallery-item:hover { border-color: var(--accent-orange); transform: scale(1.03); z-index: 2; }
+    .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .gallery-item-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 0.75rem;
+      background: linear-gradient(transparent, rgba(12, 15, 20, 0.95));
+      display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .gallery-item-label span {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .gallery-item-label .condition-tag { padding: 0.15rem 0.5rem; border-radius: 3px; font-size: 0.6rem; }
+
+    /* Lightbox */
+    .lightbox {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(10px);
+      align-items: center; justify-content: center; cursor: zoom-out;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img {
+      max-width: 90vw; max-height: 85vh; border-radius: var(--radius-lg);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+    .lightbox-caption {
+      position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);
+      background: rgba(12, 15, 20, 0.8); padding: 0.5rem 1.25rem;
+      border-radius: 100px; white-space: nowrap;
+    }
+    .lightbox-close {
+      position: absolute; top: 1.5rem; right: 2rem;
+      background: none; border: none; color: var(--text-secondary);
+      cursor: pointer; font-size: 1.5rem; transition: color 0.2s;
+    }
+    .lightbox-close:hover { color: var(--text-primary); }
+    .lightbox-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(12,15,20,0.6); border: 1px solid var(--border);
+      border-radius: 50%; width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); cursor: pointer; transition: all 0.2s;
+    }
+    .lightbox-nav:hover { background: rgba(255,107,53,0.15); color: var(--accent-orange); border-color: var(--accent-orange); }
+    .lightbox-prev { left: 1.5rem; }
+    .lightbox-next { right: 1.5rem; }
+
+    /* Footer */
+    footer {
+      padding: 2rem 0; border-top: 1px solid var(--border);
+      font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted);
+      text-align: center;
+    }
+
+    @media (max-width: 1024px) { .gallery-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); } .page-stats { flex-direction: column; gap: 0.75rem; } }
+    @media (max-width: 480px) { .gallery-grid { grid-template-columns: 1fr; } }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div class="blueprint-grid"></div>
+  <div class="content-wrapper">
+
+    <nav>
+      <div class="container">
+        <a href="index.html" class="nav-logo">Con<span>Synth</span>-X</a>
+        <a href="index.html" class="back-link">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Home
+        </a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="page-header">
+        <h1><span class="hl">Sample</span> Gallery</h1>
+        <p>Real augmentation outputs from the ConSynth-X dataset. 48 samples extracted from 19 Arrow files across both Construction Site 10K and SODA datasets.</p>
+        <div class="page-stats">
+          <div><strong>48</strong> samples</div>
+          <div><strong>7</strong> conditions</div>
+          <div><strong>2</strong> datasets (CS + SODA)</div>
+          <div><strong>19</strong> Arrow source files</div>
+        </div>
+      </div>
+
+      <div class="gallery-tabs" id="tabs">
+        <button class="gallery-tab active" data-filter="all">All <span class="tab-count">48</span></button>
+        <button class="gallery-tab" data-filter="style-rain">ST Rain <span class="tab-count">7</span></button>
+        <button class="gallery-tab" data-filter="style-snow">ST Snow <span class="tab-count">7</span></button>
+        <button class="gallery-tab" data-filter="diff-rain">IP2P Rain <span class="tab-count">7</span></button>
+        <button class="gallery-tab" data-filter="diff-snow">IP2P Snow <span class="tab-count">7</span></button>
+        <button class="gallery-tab" data-filter="fog">Fog <span class="tab-count">6</span></button>
+        <button class="gallery-tab" data-filter="night">Night <span class="tab-count">7</span></button>
+        <button class="gallery-tab" data-filter="small">Outpainted <span class="tab-count">7</span></button>
+      </div>
+
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Style Transfer Rain -->
+        <div class="gallery-item" data-category="style-rain"><img src="samples/cs_style_rain_000.jpg" alt="Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <div class="gallery-item" data-category="style-rain"><img src="samples/cs_style_rain_025.jpg" alt="Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <div class="gallery-item" data-category="style-rain"><img src="samples/cs_style_rain_050.jpg" alt="Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <div class="gallery-item" data-category="style-rain"><img src="samples/cs_style_rain_075.jpg" alt="Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <div class="gallery-item" data-category="style-rain"><img src="samples/soda_style_rain_000.jpg" alt="SODA Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <div class="gallery-item" data-category="style-rain"><img src="samples/soda_style_rain_033.jpg" alt="SODA Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <div class="gallery-item" data-category="style-rain"><img src="samples/soda_style_rain_066.jpg" alt="SODA Style Transfer Rain" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(74,158,255,0.15);color:var(--accent-blue);">rain</span></div></div>
+        <!-- Style Transfer Snow -->
+        <div class="gallery-item" data-category="style-snow"><img src="samples/cs_style_snow_000.jpg" alt="Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="style-snow"><img src="samples/cs_style_snow_025.jpg" alt="Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="style-snow"><img src="samples/cs_style_snow_050.jpg" alt="Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="style-snow"><img src="samples/cs_style_snow_075.jpg" alt="Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="style-snow"><img src="samples/soda_style_snow_000.jpg" alt="SODA Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="style-snow"><img src="samples/soda_style_snow_033.jpg" alt="SODA Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="style-snow"><img src="samples/soda_style_snow_066.jpg" alt="SODA Style Transfer Snow" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; Style Transfer</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <!-- IP2P Diffusion Rain -->
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/cs_diff_rain_000.jpg" alt="IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/cs_diff_rain_025.jpg" alt="IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/cs_diff_rain_050.jpg" alt="IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/cs_diff_rain_075.jpg" alt="IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/soda_diff_rain_000.jpg" alt="SODA IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/soda_diff_rain_033.jpg" alt="SODA IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <div class="gallery-item" data-category="diff-rain"><img src="samples/soda_diff_rain_066.jpg" alt="SODA IP2P Rain" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(0,212,170,0.15);color:var(--accent-cyan);">rain</span></div></div>
+        <!-- IP2P Diffusion Snow -->
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/cs_diff_snow_000.jpg" alt="IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/cs_diff_snow_025.jpg" alt="IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/cs_diff_snow_050.jpg" alt="IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/cs_diff_snow_075.jpg" alt="IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/soda_diff_snow_000.jpg" alt="SODA IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/soda_diff_snow_033.jpg" alt="SODA IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <div class="gallery-item" data-category="diff-snow"><img src="samples/soda_diff_snow_066.jpg" alt="SODA IP2P Snow" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; IP2P Diffusion</span><span class="condition-tag" style="background:rgba(167,139,250,0.15);color:var(--accent-purple);">snow</span></div></div>
+        <!-- Fog -->
+        <div class="gallery-item" data-category="fog"><img src="samples/cs_fog_light_000.jpg" alt="Fog Light" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Koschmieder</span><span class="condition-tag" style="background:rgba(139,149,174,0.2);color:var(--text-secondary);">fog_light</span></div></div>
+        <div class="gallery-item" data-category="fog"><img src="samples/cs_fog_light_050.jpg" alt="Fog Light" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Koschmieder</span><span class="condition-tag" style="background:rgba(139,149,174,0.2);color:var(--text-secondary);">fog_light</span></div></div>
+        <div class="gallery-item" data-category="fog"><img src="samples/cs_fog_medium_000.jpg" alt="Fog Medium" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Koschmieder</span><span class="condition-tag" style="background:rgba(139,149,174,0.25);color:var(--text-secondary);">fog_medium</span></div></div>
+        <div class="gallery-item" data-category="fog"><img src="samples/cs_fog_medium_050.jpg" alt="Fog Medium" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Koschmieder</span><span class="condition-tag" style="background:rgba(139,149,174,0.25);color:var(--text-secondary);">fog_medium</span></div></div>
+        <div class="gallery-item" data-category="fog"><img src="samples/cs_fog_heavy_000.jpg" alt="Fog Heavy" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Koschmieder</span><span class="condition-tag" style="background:rgba(139,149,174,0.3);color:var(--text-secondary);">fog_heavy</span></div></div>
+        <div class="gallery-item" data-category="fog"><img src="samples/cs_fog_heavy_050.jpg" alt="Fog Heavy" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; Koschmieder</span><span class="condition-tag" style="background:rgba(139,149,174,0.3);color:var(--text-secondary);">fog_heavy</span></div></div>
+        <!-- Night -->
+        <div class="gallery-item" data-category="night"><img src="samples/cs_night_000.jpg" alt="Night" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <div class="gallery-item" data-category="night"><img src="samples/cs_night_025.jpg" alt="Night" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <div class="gallery-item" data-category="night"><img src="samples/cs_night_050.jpg" alt="Night" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <div class="gallery-item" data-category="night"><img src="samples/cs_night_075.jpg" alt="Night" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <div class="gallery-item" data-category="night"><img src="samples/soda_night_000.jpg" alt="SODA Night" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <div class="gallery-item" data-category="night"><img src="samples/soda_night_033.jpg" alt="SODA Night" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <div class="gallery-item" data-category="night"><img src="samples/soda_night_066.jpg" alt="SODA Night" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; CycleGAN-Turbo</span><span class="condition-tag" style="background:rgba(255,184,0,0.15);color:var(--accent-amber);">nighttime</span></div></div>
+        <!-- Outpainted -->
+        <div class="gallery-item" data-category="small"><img src="samples/cs_small_000.jpg" alt="Outpainted" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+        <div class="gallery-item" data-category="small"><img src="samples/cs_small_025.jpg" alt="Outpainted" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+        <div class="gallery-item" data-category="small"><img src="samples/cs_small_050.jpg" alt="Outpainted" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+        <div class="gallery-item" data-category="small"><img src="samples/cs_small_075.jpg" alt="Outpainted" loading="lazy"><div class="gallery-item-label"><span>CS &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+        <div class="gallery-item" data-category="small"><img src="samples/soda_small_000.jpg" alt="SODA Outpainted" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+        <div class="gallery-item" data-category="small"><img src="samples/soda_small_033.jpg" alt="SODA Outpainted" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+        <div class="gallery-item" data-category="small"><img src="samples/soda_small_066.jpg" alt="SODA Outpainted" loading="lazy"><div class="gallery-item-label"><span>SODA &mdash; FLUX Outpainting</span><span class="condition-tag" style="background:rgba(255,107,53,0.15);color:var(--accent-orange);">small</span></div></div>
+      </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+      <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <button class="lightbox-nav lightbox-prev" onclick="navLightbox(-1)" aria-label="Previous">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <img id="lightboxImg" src="" alt="">
+      <button class="lightbox-nav lightbox-next" onclick="navLightbox(1)" aria-label="Next">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
+
+    <footer>ConSynth-X &copy; 2026 &mdash; <a href="index.html" style="color:var(--text-muted);text-decoration:none;">Back to Home</a></footer>
+  </div>
+
+  <script>
+    // Filter tabs
+    const tabs = document.querySelectorAll('.gallery-tab');
+    const items = document.querySelectorAll('.gallery-item');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const filter = tab.dataset.filter;
+        items.forEach((item, i) => {
+          if (filter === 'all' || item.dataset.category === filter) {
+            item.style.display = '';
+            item.style.opacity = '0'; item.style.transform = 'translateY(15px)';
+            setTimeout(() => { item.style.transition = 'all 0.35s ease'; item.style.opacity = '1'; item.style.transform = 'translateY(0)'; }, i * 25);
+          } else { item.style.display = 'none'; }
+        });
+      });
+    });
+
+    // Lightbox with prev/next
+    let currentIdx = 0;
+    let visibleItems = [];
+
+    function getVisibleItems() {
+      return [...document.querySelectorAll('.gallery-item')].filter(i => i.style.display !== 'none');
+    }
+
+    function openLightbox(idx) {
+      visibleItems = getVisibleItems();
+      currentIdx = idx;
+      showLightboxImage();
+      document.getElementById('lightbox').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function showLightboxImage() {
+      const item = visibleItems[currentIdx];
+      if (!item) return;
+      const img = item.querySelector('img');
+      document.getElementById('lightboxImg').src = img.src;
+      const label = item.querySelector('.gallery-item-label span:first-child');
+      const tag = item.querySelector('.condition-tag');
+      document.getElementById('lightboxCaption').textContent =
+        (label ? label.textContent : '') + (tag ? ' \u2014 ' + tag.textContent : '') +
+        ` (${currentIdx + 1}/${visibleItems.length})`;
+    }
+
+    function closeLightbox() {
+      document.getElementById('lightbox').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function navLightbox(dir) {
+      currentIdx = (currentIdx + dir + visibleItems.length) % visibleItems.length;
+      showLightboxImage();
+    }
+
+    items.forEach(item => {
+      item.addEventListener('click', () => {
+        visibleItems = getVisibleItems();
+        currentIdx = visibleItems.indexOf(item);
+        openLightbox(currentIdx);
+      });
+    });
+
+    document.getElementById('lightbox').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft') navLightbox(-1);
+      if (e.key === 'ArrowRight') navLightbox(1);
+    });
+  </script>
+</body>
+</html>

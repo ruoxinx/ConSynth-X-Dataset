@@ -1,0 +1,2673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConSynth-X — Construction CV Robustness Under Extreme Conditions</title>
+  <meta name="description" content="ConSynth-X: A large-scale benchmark dataset for evaluating construction computer vision model robustness under extreme field conditions.">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== CSS Variables ===== */
+    :root {
+      --bg-primary: #0C0F14;
+      --bg-secondary: #12161E;
+      --bg-card: #181D28;
+      --bg-card-hover: #1E2433;
+      --border: #2A3044;
+      --border-accent: #3A4560;
+      --text-primary: #E8EAF0;
+      --text-secondary: #8B95AE;
+      --text-muted: #5A6580;
+      --accent-orange: #FF6B35;
+      --accent-amber: #FFB800;
+      --accent-blue: #4A9EFF;
+      --accent-cyan: #00D4AA;
+      --accent-red: #FF4757;
+      --accent-purple: #A78BFA;
+      --grid-color: rgba(74, 158, 255, 0.04);
+      --grid-line: rgba(74, 158, 255, 0.08);
+      --font-display: 'Syne', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-body: 'Source Sans 3', sans-serif;
+      --radius: 6px;
+      --radius-lg: 12px;
+    }
+
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    /* ===== Blueprint Grid Background ===== */
+    .blueprint-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size:
+        100px 100px,
+        100px 100px,
+        20px 20px,
+        20px 20px;
+    }
+
+    /* ===== Particle Canvas ===== */
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+
+    /* ===== Layout ===== */
+    .content-wrapper {
+      position: relative;
+      z-index: 2;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    section {
+      padding: 6rem 0;
+    }
+
+    /* ===== Navigation ===== */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1rem 0;
+      backdrop-filter: blur(20px);
+      background: rgba(12, 15, 20, 0.8);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-logo span {
+      color: var(--accent-orange);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      transition: color 0.2s;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent-orange);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-links a:hover::after { width: 100%; }
+
+    /* ===== Hero ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding-top: 5rem;
+    }
+
+    .hero-content {
+      max-width: 900px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      background: rgba(255, 107, 53, 0.1);
+      border: 1px solid rgba(255, 107, 53, 0.25);
+      border-radius: 100px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent-orange);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-orange);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 7vw, 5.5rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease 0.15s forwards;
+    }
+
+    .hero h1 .highlight {
+      background: linear-gradient(135deg, var(--accent-orange), var(--accent-amber));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 640px;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease 0.3s forwards;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeInUp 0.8s ease 0.45s forwards;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.75rem;
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: all 0.25s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-orange);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: #ff8355;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(255, 107, 53, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-accent);
+    }
+
+    .btn-secondary:hover {
+      color: var(--text-primary);
+      border-color: var(--text-secondary);
+      transform: translateY(-2px);
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      margin-top: 4rem;
+      padding-top: 3rem;
+      border-top: 1px solid var(--border);
+      opacity: 0;
+      animation: fadeInUp 0.8s ease 0.6s forwards;
+    }
+
+    .hero-stat-value {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .hero-stat-value .unit {
+      font-size: 1.2rem;
+      color: var(--accent-orange);
+      margin-left: 2px;
+    }
+
+    .hero-stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-top: 0.25rem;
+    }
+
+    /* ===== Section Headers ===== */
+    .section-header {
+      margin-bottom: 4rem;
+    }
+
+    .section-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent-orange);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-tag::before {
+      content: '';
+      width: 24px;
+      height: 1px;
+      background: var(--accent-orange);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin-top: 1rem;
+    }
+
+    /* ===== Motivation ===== */
+    .motivation-section {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 5rem;
+    }
+
+    .motivation-content {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .motivation-text p {
+      color: var(--text-secondary);
+      font-size: 1.05rem;
+      line-height: 1.8;
+      margin-bottom: 1.25rem;
+    }
+
+    .motivation-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    .motivation-text strong {
+      color: var(--text-primary);
+    }
+
+    .motivation-text em {
+      color: var(--accent-amber);
+      font-style: normal;
+    }
+
+    .motivation-callout {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-red);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      position: sticky;
+      top: 6rem;
+    }
+
+    .motivation-callout-title {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--accent-red);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .motivation-callout-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .motivation-callout-stat:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .motivation-callout-num {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .motivation-callout-desc {
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .motivation-ref {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .motivation-content {
+        grid-template-columns: 1fr;
+      }
+      .motivation-callout {
+        position: static;
+      }
+    }
+
+    /* ===== Dataset Overview ===== */
+    .dataset-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .dataset-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dataset-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .dataset-card:hover {
+      border-color: var(--border-accent);
+      background: var(--bg-card-hover);
+      transform: translateY(-3px);
+    }
+
+    .dataset-card:hover::before { opacity: 1; }
+
+    .dataset-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      font-size: 1.5rem;
+    }
+
+    .dataset-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .dataset-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .dataset-card .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat-row .stat-num {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .stat-row .stat-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ===== Augmentation Pipeline ===== */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .pipeline-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .pipeline-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-3px);
+    }
+
+    /* ===== Image Comparison Slider ===== */
+    .compare-slider {
+      position: relative;
+      height: 260px;
+      overflow: hidden;
+      cursor: col-resize;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .compare-slider img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .compare-slider .compare-before {
+      z-index: 1;
+      clip-path: inset(0 50% 0 0);
+    }
+
+    .compare-slider .compare-after {
+      z-index: 0;
+    }
+
+    .compare-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: var(--accent-orange);
+      z-index: 3;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .compare-handle::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 2px solid var(--accent-orange);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      pointer-events: auto;
+      cursor: col-resize;
+    }
+
+    .compare-handle::after {
+      content: '\2194';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--accent-orange);
+      font-size: 1rem;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .compare-label {
+      position: absolute;
+      bottom: 10px;
+      z-index: 4;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(12, 15, 20, 0.75);
+      padding: 3px 10px;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .compare-label-before { left: 10px; }
+    .compare-label-after { right: 10px; }
+
+    .pipeline-info {
+      padding: 1.5rem;
+    }
+
+    .pipeline-method-tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .pipeline-info h3 {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .pipeline-info p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .pipeline-stats {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .pipeline-stat {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .pipeline-stat strong {
+      color: var(--accent-amber);
+    }
+
+    .pipeline-stat span {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    /* ===== Condition Taxonomy ===== */
+    .taxonomy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    .taxonomy-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .taxonomy-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .taxonomy-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: block;
+      filter: grayscale(0.3);
+    }
+
+    .taxonomy-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .taxonomy-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .taxonomy-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+
+    .taxonomy-count {
+      position: absolute;
+      top: 1.75rem;
+      right: 1.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    /* ===== Validation Metrics ===== */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-3px);
+    }
+
+    .metric-ring {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 1.5rem;
+      position: relative;
+    }
+
+    .metric-ring svg {
+      transform: rotate(-90deg);
+    }
+
+    .metric-ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 6;
+    }
+
+    .metric-ring-fill {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.5s ease;
+    }
+
+    .metric-ring-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .metric-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-card p {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .metric-detail {
+      margin-top: 1.25rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .metric-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .metric-bar-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      width: 80px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .metric-bar-track {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 1.5s ease;
+    }
+
+    .metric-bar-value {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      width: 40px;
+      flex-shrink: 0;
+    }
+
+    /* ===== Download Section ===== */
+    .download-section {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .download-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .download-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .download-card p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+      flex: 1;
+    }
+
+    .license-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--accent-cyan);
+      padding: 0.35rem 0.75rem;
+      background: rgba(0, 212, 170, 0.08);
+      border: 1px solid rgba(0, 212, 170, 0.2);
+      border-radius: var(--radius);
+      margin-bottom: 1.25rem;
+      width: fit-content;
+    }
+
+    /* ===== Gallery CTA ===== */
+    .gallery-cta {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.3s ease;
+    }
+
+    .gallery-cta:hover {
+      border-color: var(--accent-orange);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(255, 107, 53, 0.1);
+    }
+
+    .gallery-cta-preview {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      overflow: hidden;
+    }
+
+    .gallery-cta-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      aspect-ratio: 4/3;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .gallery-cta:hover .gallery-cta-preview img { transform: scale(1.05); }
+
+    .gallery-cta-content {
+      padding: 2rem 2rem 2rem 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .gallery-cta-content h3 {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .gallery-cta-content p {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+
+    .gallery-cta-link {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--accent-orange);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: gap 0.2s;
+    }
+
+    .gallery-cta:hover .gallery-cta-link { gap: 0.75rem; }
+
+    @media (max-width: 768px) {
+      .gallery-cta { grid-template-columns: 1fr; }
+      .gallery-cta-content { padding: 1.5rem; }
+      .gallery-cta-preview { max-height: 200px; }
+    }
+
+    /* ===== (Gallery page styles moved to gallery.html) ===== */
+    .gallery-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .gallery-tab {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.25s ease;
+      letter-spacing: 0.04em;
+    }
+
+    .gallery-tab:hover {
+      border-color: var(--border-accent);
+      color: var(--text-primary);
+    }
+
+    .gallery-tab.active {
+      background: var(--accent-orange);
+      border-color: var(--accent-orange);
+      color: #fff;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .gallery-item {
+      aspect-ratio: 4/3;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+    }
+
+    .gallery-item:hover {
+      border-color: var(--accent-orange);
+      transform: scale(1.03);
+      z-index: 2;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .gallery-item-visual {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .tab-count {
+      font-size: 0.6rem;
+      opacity: 0.6;
+      margin-left: 2px;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+
+    .lightbox.open {
+      display: flex;
+    }
+
+    .lightbox img {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .lightbox-caption {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      background: rgba(12, 15, 20, 0.8);
+      padding: 0.5rem 1.25rem;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 2rem;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 1.5rem;
+      transition: color 0.2s;
+    }
+
+    .lightbox-close:hover { color: var(--text-primary); }
+
+    .gallery-item-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 0.75rem;
+      background: linear-gradient(transparent, rgba(12, 15, 20, 0.95));
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+
+    .gallery-item-label span {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .gallery-item-label .condition-tag {
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.6rem;
+    }
+
+    /* Simulated image backgrounds for gallery items */
+    .sim-original {
+      background: linear-gradient(135deg, #2a3545 0%, #354560 40%, #2a3a50 70%, #1e2d40 100%);
+    }
+    .sim-original::before {
+      content: '';
+      position: absolute;
+      bottom: 30%;
+      left: 10%;
+      width: 25%;
+      height: 35%;
+      background: rgba(255, 180, 50, 0.15);
+      border-radius: 4px;
+      border: 1px solid rgba(255, 180, 50, 0.2);
+    }
+    .sim-original::after {
+      content: '';
+      position: absolute;
+      bottom: 30%;
+      right: 15%;
+      width: 15%;
+      height: 25%;
+      background: rgba(100, 200, 255, 0.1);
+      border-radius: 4px;
+      border: 1px solid rgba(100, 200, 255, 0.15);
+    }
+
+    .sim-rain {
+      background: linear-gradient(180deg, #1a2535 0%, #0d1825 60%, #152030 100%);
+    }
+    .sim-rain::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        100deg, transparent, transparent 3px,
+        rgba(150, 200, 255, 0.06) 3px, rgba(150, 200, 255, 0.06) 4px
+      );
+      animation: rain-move 0.4s linear infinite;
+    }
+    .sim-rain::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20%;
+      background: linear-gradient(transparent, rgba(100, 160, 220, 0.08));
+    }
+
+    .sim-snow {
+      background: linear-gradient(180deg, #202838 0%, #1a2535 60%, #252e40 100%);
+    }
+    .sim-snow::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 50% 35%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.6) 0%, transparent 100%),
+        radial-gradient(2px 2px at 30% 55%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(1px 1px at 70% 65%, rgba(255,255,255,0.5) 0%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 15% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+        radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+        radial-gradient(2px 2px at 90% 50%, rgba(255,255,255,0.4) 0%, transparent 100%);
+      animation: snow-drift 4s linear infinite;
+    }
+
+    .sim-night {
+      background: linear-gradient(180deg, #060810 0%, #0a0e1a 50%, #080c15 100%);
+    }
+    .sim-night::before {
+      content: '';
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 200, 80, 0.35), rgba(255, 180, 60, 0.1) 50%, transparent 70%);
+      top: 15%;
+      right: 20%;
+    }
+    .sim-night::after {
+      content: '';
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 220, 150, 0.2), transparent 70%);
+      top: 40%;
+      left: 25%;
+    }
+
+    .sim-night-rain {
+      background: linear-gradient(180deg, #08101a 0%, #0a1420 60%, #0c1525 100%);
+    }
+    .sim-night-rain::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        95deg, transparent, transparent 4px,
+        rgba(100, 160, 220, 0.04) 4px, rgba(100, 160, 220, 0.04) 5px
+      );
+      animation: rain-move 0.35s linear infinite;
+    }
+    .sim-night-rain::after {
+      content: '';
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 200, 100, 0.2), transparent 70%);
+      top: 20%;
+      right: 25%;
+    }
+
+    .sim-outpaint {
+      background: linear-gradient(135deg, #1a2030, #202840);
+      position: relative;
+    }
+    .sim-outpaint::before {
+      content: '';
+      position: absolute;
+      top: 20%;
+      left: 20%;
+      right: 20%;
+      bottom: 20%;
+      background: linear-gradient(135deg, #2a3545, #354560);
+      border: 1px dashed rgba(74, 158, 255, 0.3);
+      border-radius: 4px;
+    }
+    .sim-outpaint::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border: 2px dashed rgba(74, 158, 255, 0.1);
+      border-radius: var(--radius-lg);
+    }
+
+    .sim-fog {
+      background: linear-gradient(180deg, #252d3a 0%, #2a3545 40%, #303d50 100%);
+      position: relative;
+    }
+    .sim-fog::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 120% 60% at 30% 50%, rgba(180, 200, 220, 0.12), transparent),
+        radial-gradient(ellipse 100% 40% at 70% 60%, rgba(180, 200, 220, 0.08), transparent);
+    }
+
+    @keyframes snow-drift {
+      from { transform: translateY(-5px) translateX(0); }
+      to { transform: translateY(5px) translateX(3px); }
+    }
+
+    /* ===== Architecture Flow ===== */
+    .flow-container {
+      position: relative;
+      padding: 3rem 0;
+    }
+
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .flow-node {
+      padding: 1rem 1.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      text-align: center;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .flow-node:hover {
+      border-color: var(--accent-orange);
+      transform: translateY(-2px);
+    }
+
+    .flow-node-label {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .flow-node.source { border-color: var(--accent-blue); }
+    .flow-node.process { border-color: var(--accent-orange); }
+    .flow-node.filter { border-color: var(--accent-amber); }
+    .flow-node.output { border-color: var(--accent-cyan); }
+
+    .flow-arrow {
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .flow-arrow-down {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .flow-branch {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .flow-branch-item {
+      padding: 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .flow-branch-item:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .flow-branch-item h4 {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .flow-branch-item p {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .flow-branch-item .flow-count {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 0.5rem;
+    }
+
+    /* ===== Citation Section ===== */
+    .citation-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .citation-block::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--accent-orange);
+    }
+
+    .citation-block pre {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 0;
+    }
+
+    .citation-block pre .key {
+      color: var(--accent-orange);
+    }
+
+    .citation-block pre .value {
+      color: var(--text-primary);
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+    }
+
+    .copy-btn.copied {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* ===== Mobile Menu ===== */
+    .mobile-toggle {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      color: var(--text-primary);
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(12, 15, 20, 0.98);
+      backdrop-filter: blur(20px);
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .mobile-menu.open { display: flex; }
+
+    .mobile-menu a {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .mobile-menu a:hover { color: var(--accent-orange); }
+
+    .mobile-close {
+      position: absolute;
+      top: 1.5rem;
+      right: 2rem;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 1.5rem;
+    }
+
+    /* ===== Key Findings ===== */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .finding-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .finding-card:hover {
+      border-color: var(--border-accent);
+      transform: translateY(-2px);
+    }
+
+    .finding-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+    }
+
+    .finding-card .finding-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+      font-size: 1.25rem;
+    }
+
+    .finding-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .finding-card p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .finding-highlight {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-top: 1rem;
+      color: var(--text-secondary);
+    }
+
+    .finding-highlight strong {
+      color: var(--accent-amber);
+    }
+
+    /* ===== Footer ===== */
+    footer {
+      padding: 3rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    footer .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-text {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text-secondary); }
+
+    /* ===== Animations ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes rain-move {
+      from { transform: translateY(-10px); }
+      to { transform: translateY(0); }
+    }
+
+    /* Scroll-triggered animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1024px) {
+      .dataset-grid,
+      .taxonomy-grid,
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .mobile-toggle { display: block; }
+      .hero-stats { flex-direction: column; gap: 1.5rem; }
+      .dataset-grid,
+      .pipeline-grid,
+      .taxonomy-grid,
+      .metrics-grid,
+      .download-grid,
+      .findings-grid { grid-template-columns: 1fr; }
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+      .flow-branch { grid-template-columns: repeat(2, 1fr); }
+      section { padding: 4rem 0; }
+    }
+
+    /* ===== Scrollbar ===== */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <!-- Blueprint grid background -->
+  <div class="blueprint-grid"></div>
+
+  <!-- Particle effects -->
+  <canvas id="particles"></canvas>
+
+  <div class="content-wrapper">
+
+    <!-- Navigation -->
+    <nav>
+      <div class="container">
+        <a href="#" class="nav-logo">Con<span>Synth</span>-X</a>
+        <ul class="nav-links">
+          <li><a href="#dataset">Dataset</a></li>
+          <li><a href="#pipeline">Pipeline</a></li>
+          <li><a href="gallery.html">Gallery</a></li>
+          <li><a href="#taxonomy">Taxonomy</a></li>
+          <li><a href="#validation">Validation</a></li>
+          <li><a href="#download">Download</a></li>
+        </ul>
+        <button class="mobile-toggle" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
+          <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <button class="mobile-close" onclick="this.parentElement.classList.remove('open')" aria-label="Close menu">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <a href="#dataset" onclick="this.parentElement.classList.remove('open')">Dataset</a>
+      <a href="#pipeline" onclick="this.parentElement.classList.remove('open')">Pipeline</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="#taxonomy" onclick="this.parentElement.classList.remove('open')">Taxonomy</a>
+      <a href="#findings" onclick="this.parentElement.classList.remove('open')">Findings</a>
+      <a href="#validation" onclick="this.parentElement.classList.remove('open')">Validation</a>
+      <a href="#download" onclick="this.parentElement.classList.remove('open')">Download</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="dot"></span>
+            Open-Source Research Dataset
+          </div>
+          <h1>
+            <span class="highlight">ConSynth-X</span><br>
+            Construction CV Under<br>
+            Extreme Conditions
+          </h1>
+          <p class="hero-subtitle">
+            A large-scale benchmark dataset with synthetic augmentation pipeline
+            for evaluating construction computer vision model robustness under
+            weather, lighting, scale, and domain shift conditions.
+          </p>
+          <div class="hero-actions">
+            <a href="#download" class="btn btn-primary">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download Dataset
+            </a>
+            <a href="https://github.com/ruoxinx/ConSynth-X" class="btn btn-secondary" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              GitHub
+            </a>
+          </div>
+          <div class="hero-stats">
+            <div>
+              <div class="hero-stat-value">30<span class="unit">K+</span></div>
+              <div class="hero-stat-label">Total Images</div>
+            </div>
+            <div>
+              <div class="hero-stat-value">18</div>
+              <div class="hero-stat-label">Object Classes</div>
+            </div>
+            <div>
+              <div class="hero-stat-value">40<span class="unit">+</span></div>
+              <div class="hero-stat-label">Condition Labels</div>
+            </div>
+            <div>
+              <div class="hero-stat-value">4</div>
+              <div class="hero-stat-label">Augmentation Pipelines</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Motivation -->
+    <section id="motivation" class="motivation-section">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">00 &mdash; Motivation</div>
+          <h2 class="section-title">Why ConSynth-X?</h2>
+        </div>
+
+        <div class="motivation-content reveal reveal-delay-1">
+          <div class="motivation-text">
+            <p>
+              Computer vision models for construction site monitoring have demonstrated strong performance under controlled conditions &mdash; but construction sites don't stop for good weather. They operate continuously through <strong>rain, snow, fog, darkness, and glare</strong>, exposing deployed vision systems to conditions rarely represented in training data.
+            </p>
+            <p>
+              The gap is measurable: our cross-condition evaluation shows object detection accuracy drops <em>40&ndash;50%</em> when models trained on clear-weather images are tested under adverse conditions. Existing construction datasets (Construction Site 10K, SODA) predominantly contain favorable-condition imagery, and prior synthetic augmentation efforts remain limited in scale (506 images in ExtCon), method diversity (style transfer only), and condition coverage (no snow, nighttime, or scale variation).
+            </p>
+            <p>
+              ConSynth-X addresses this gap with <strong>three complementary synthetic augmentation pipelines</strong> &mdash; neural style transfer, text-guided diffusion, and outpainting &mdash; applied to two large-scale source datasets, producing <strong>125,000+ images</strong> spanning weather, lighting, and scale conditions. Each image carries multi-label condition annotations validated through five independent quality metrics. The result is the first large-scale, publicly available dataset that systematically pairs construction site imagery with controlled extreme conditions and comprehensive multi-metric validation.
+            </p>
+          </div>
+
+          <div class="motivation-callout reveal reveal-delay-2">
+            <div class="motivation-callout-title">
+              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              The Robustness Gap
+            </div>
+            <div class="motivation-callout-stat">
+              <span class="motivation-callout-num" style="color: var(--accent-red);">-46%</span>
+              <span class="motivation-callout-desc">mAP drop under weather (0.819 &rarr; 0.446 on SODA)</span>
+            </div>
+            <div class="motivation-callout-stat">
+              <span class="motivation-callout-num" style="color: var(--accent-amber);">-45%</span>
+              <span class="motivation-callout-desc">mAP drop at nighttime (0.819 &rarr; 0.454 on SODA)</span>
+            </div>
+            <div class="motivation-callout-stat">
+              <span class="motivation-callout-num" style="color: var(--accent-purple);">F1=0.12</span>
+              <span class="motivation-callout-desc">Best VLM (InternVL2.5-26B) on clean construction images</span>
+            </div>
+            <div class="motivation-ref">
+              Based on YOLOv8 cross-condition evaluation on SODA and VLM benchmark on Construction Site 10K. See validation section for methodology.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dataset Overview -->
+    <section id="dataset">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">01 &mdash; Dataset</div>
+          <h2 class="section-title">Two Construction Datasets,<br>Unified Under Extreme Conditions</h2>
+          <p class="section-desc">Multi-source construction imagery with comprehensive object annotations, augmented through four synthetic pipelines for robustness evaluation.</p>
+        </div>
+
+        <div class="dataset-grid">
+          <div class="dataset-card reveal reveal-delay-1">
+            <div class="dataset-card-icon" style="background: rgba(255, 107, 53, 0.1); color: var(--accent-orange);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <h3>Construction Site 10K</h3>
+            <p>HuggingFace dataset covering excavator, rebar, and worker classes. Provides image captions, 4 safety rule violations with bounding boxes, and visual grounding annotations.</p>
+            <div class="stat-row">
+              <div>
+                <div class="stat-num" style="color: var(--accent-orange);">10,013</div>
+                <div class="stat-label">Images</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="stat-num" style="font-size: 1.25rem;">3</div>
+                <div class="stat-label">Classes</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dataset-card reveal reveal-delay-2">
+            <div class="dataset-card-icon" style="background: rgba(74, 158, 255, 0.1); color: var(--accent-blue);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+            </div>
+            <h3>SODA Construction</h3>
+            <p>Two complementary variants: <strong>SODA VOC</strong> (full object detection, 15 classes across workers, materials, machines, and site layout) and <strong>SODA-ktsh</strong> (full captioning with 16 construction scene categories).</p>
+            <div class="stat-row">
+              <div>
+                <div class="stat-num" style="color: var(--accent-blue);">20,000<span style="font-size: 0.8rem;">+</span></div>
+                <div class="stat-label">Images</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="stat-num" style="font-size: 1.25rem;">15</div>
+                <div class="stat-label">Classes</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dataset-card reveal reveal-delay-3">
+            <div class="dataset-card-icon" style="background: rgba(0, 212, 170, 0.1); color: var(--accent-cyan);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <h3>Augmented Variants</h3>
+            <p>Synthetic images generated through weather, night, night-weather, and outpainting pipelines with quality filtering.</p>
+            <div class="stat-row">
+              <div>
+                <div class="stat-num" style="color: var(--accent-cyan);">15,593</div>
+                <div class="stat-label">Augmented Images</div>
+              </div>
+              <div style="text-align: right;">
+                <div class="stat-num" style="font-size: 1.25rem;">6</div>
+                <div class="stat-label">Conditions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Augmentation Pipeline -->
+    <section id="pipeline" style="background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">02 &mdash; Augmentation Pipeline</div>
+          <h2 class="section-title">Four Synthetic Pipelines,<br>Controlled Condition Generation</h2>
+          <p class="section-desc">Each pipeline transforms clean construction images into specific extreme condition variants while preserving annotation integrity.</p>
+        </div>
+
+        <div class="pipeline-grid">
+          <!-- Weather Style Transfer -->
+          <div class="pipeline-card reveal reveal-delay-1">
+            <div class="compare-slider" data-slider>
+              <img class="compare-before" src="samples/pairs/style_rain_original.jpg" alt="Original">
+              <img class="compare-after" src="samples/pairs/style_rain_augmented.jpg" alt="Style Transfer Rain">
+              <div class="compare-handle"></div>
+              <span class="compare-label compare-label-before">Original</span>
+              <span class="compare-label compare-label-after">Rain ST</span>
+            </div>
+            <div class="pipeline-info">
+              <div class="pipeline-method-tag">VGG19 + MiDaS + Physics Overlay</div>
+              <h3>Weather Augmentation</h3>
+              <p>Neural style transfer with depth-aware rain/snow particle overlay. Six intensity levels with SSIM quality filtering.</p>
+              <div class="pipeline-stats">
+                <div class="pipeline-stat"><strong>10,266</strong> <span>images</span></div>
+                <div class="pipeline-stat"><strong>6</strong> <span>styles</span></div>
+                <div class="pipeline-stat"><strong>0.5&ndash;0.95</strong> <span>SSIM range</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day to Night -->
+          <div class="pipeline-card reveal reveal-delay-2">
+            <div class="compare-slider" data-slider>
+              <img class="compare-before" src="samples/pairs/night_original.jpg" alt="Original Day">
+              <img class="compare-after" src="samples/pairs/night_augmented.jpg" alt="Night">
+              <div class="compare-handle"></div>
+              <span class="compare-label compare-label-before">Day</span>
+              <span class="compare-label compare-label-after">Night</span>
+            </div>
+            <div class="pipeline-info">
+              <div class="pipeline-method-tag">CycleGAN-Turbo (img2img)</div>
+              <h3>Day-to-Night Translation</h3>
+              <p>One-step image translation preserving scene structure. 1:1 mapping with FP16 precision on A100 GPUs.</p>
+              <div class="pipeline-stats">
+                <div class="pipeline-stat"><strong>3,004</strong> <span>images</span></div>
+                <div class="pipeline-stat"><strong>1:1</strong> <span>mapping</span></div>
+                <div class="pipeline-stat"><strong>&minus;34%</strong> <span>FID improvement</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Fog -->
+          <div class="pipeline-card reveal reveal-delay-3">
+            <div class="compare-slider" data-slider>
+              <img class="compare-before" src="samples/pairs/fog_heavy_original.jpg" alt="Original">
+              <img class="compare-after" src="samples/pairs/fog_heavy_augmented.jpg" alt="Fog Heavy">
+              <div class="compare-handle"></div>
+              <span class="compare-label compare-label-before">Original</span>
+              <span class="compare-label compare-label-after">Fog</span>
+            </div>
+            <div class="pipeline-info">
+              <div class="pipeline-method-tag">Koschmieder + Depth Anything V2</div>
+              <h3>Fog Augmentation</h3>
+              <p>Physics-based atmospheric scattering with depth-aware fog density. Three intensity levels via attenuation coefficient.</p>
+              <div class="pipeline-stats">
+                <div class="pipeline-stat"><strong>3,003</strong> <span>images</span></div>
+                <div class="pipeline-stat"><strong>3</strong> <span>levels</span></div>
+                <div class="pipeline-stat"><strong>SSIM+LPIPS</strong> <span>filter</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Outpainting -->
+          <div class="pipeline-card reveal reveal-delay-4">
+            <div class="compare-slider" data-slider>
+              <img class="compare-before" src="samples/pairs/small_original.jpg" alt="Original">
+              <img class="compare-after" src="samples/pairs/small_augmented.jpg" alt="Outpainted Small">
+              <div class="compare-handle"></div>
+              <span class="compare-label compare-label-before">Original</span>
+              <span class="compare-label compare-label-after">Outpainted</span>
+            </div>
+            <div class="pipeline-info">
+              <div class="pipeline-method-tag">FLUX.1-Fill-dev Inpainting</div>
+              <h3>Scale / Distance Outpainting</h3>
+              <p>Canvas expansion with Gaussian scale factors, making objects appear smaller and more distant. Bounding box coordinates explicitly transferred.</p>
+              <div class="pipeline-stats">
+                <div class="pipeline-stat"><strong>1,323</strong> <span>images</span></div>
+                <div class="pipeline-stat"><strong>0.20&ndash;0.40</strong> <span>scale factor</span></div>
+                <div class="pipeline-stat"><strong>44%</strong> <span>pass rate</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery CTA -->
+    <section id="gallery" style="padding: 4rem 0;">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">03 &mdash; Sample Gallery</div>
+          <h2 class="section-title">See the Data</h2>
+        </div>
+        <a href="gallery.html" class="gallery-cta reveal reveal-delay-1">
+          <div class="gallery-cta-preview">
+            <img src="samples/cs_style_rain_000.jpg" alt="" loading="lazy">
+            <img src="samples/cs_night_000.jpg" alt="" loading="lazy">
+            <img src="samples/cs_diff_snow_000.jpg" alt="" loading="lazy">
+            <img src="samples/cs_fog_heavy_000.jpg" alt="" loading="lazy">
+          </div>
+          <div class="gallery-cta-content">
+            <h3>Browse 48 Real Augmentation Samples</h3>
+            <p>Filter by condition, click to zoom, navigate with arrow keys. Samples from both Construction Site 10K and SODA across all 7 augmentation conditions.</p>
+            <span class="gallery-cta-link">
+              Open Gallery
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Architecture / Pipeline Flow -->
+    <section id="architecture" style="background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">04 &mdash; Architecture</div>
+          <h2 class="section-title">End-to-End Pipeline Flow</h2>
+          <p class="section-desc">From raw construction images to validated, multi-condition augmented dataset with quality filtering at every stage.</p>
+        </div>
+
+        <div class="flow-container reveal">
+          <!-- Source row -->
+          <div class="flow-row">
+            <div class="flow-node source">
+              Construction Site 10K
+              <div class="flow-node-label">HuggingFace &bull; 3 classes</div>
+            </div>
+            <span class="flow-arrow">+</span>
+            <div class="flow-node source">
+              SODA 20K
+              <div class="flow-node-label">Pascal VOC &bull; 15 classes</div>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-node" style="border-color: var(--text-muted);">
+              30K+ Source Images
+              <div class="flow-node-label">Multi-label annotations</div>
+            </div>
+          </div>
+
+          <div class="flow-arrow-down">&darr;</div>
+
+          <!-- Pipeline branches -->
+          <div class="flow-branch">
+            <div class="flow-branch-item" style="border-top: 2px solid var(--accent-blue);">
+              <h4>Weather ST</h4>
+              <p>VGG19 + MiDaS + Physics</p>
+              <div class="flow-count" style="color: var(--accent-blue);">10,266</div>
+              <p>6 rain/snow styles</p>
+            </div>
+            <div class="flow-branch-item" style="border-top: 2px solid var(--accent-amber);">
+              <h4>Day &rarr; Night</h4>
+              <p>CycleGAN-Turbo</p>
+              <div class="flow-count" style="color: var(--accent-amber);">3,004</div>
+              <p>1:1 mapping</p>
+            </div>
+            <div class="flow-branch-item" style="border-top: 2px solid var(--accent-purple);">
+              <h4>Night Weather</h4>
+              <p>IP2P + Physics</p>
+              <div class="flow-count" style="color: var(--accent-purple);">TBD</div>
+              <p>Rain + Snow on night</p>
+            </div>
+            <div class="flow-branch-item" style="border-top: 2px solid var(--accent-cyan);">
+              <h4>Outpainting</h4>
+              <p>FLUX.1-Fill-dev</p>
+              <div class="flow-count" style="color: var(--accent-cyan);">1,323</div>
+              <p>Scale augmentation</p>
+            </div>
+          </div>
+
+          <div class="flow-arrow-down">&darr;</div>
+
+          <!-- Filter row -->
+          <div class="flow-row">
+            <div class="flow-node filter">
+              SSIM / LPIPS Filter
+              <div class="flow-node-label">Quality gating</div>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-node filter">
+              Weather Classifier
+              <div class="flow-node-label">SigLIP2 validation</div>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-node filter">
+              FID / KID
+              <div class="flow-node-label">vs ACDC, WeatherBench</div>
+            </div>
+            <span class="flow-arrow">&rarr;</span>
+            <div class="flow-node filter">
+              Texture Analysis
+              <div class="flow-node-label">GLCM + LBP + DCT</div>
+            </div>
+          </div>
+
+          <div class="flow-arrow-down">&darr;</div>
+
+          <!-- Output row -->
+          <div class="flow-row">
+            <div class="flow-node output" style="padding: 1.25rem 3rem;">
+              <strong style="font-family: var(--font-display); font-size: 1.1rem;">ConSynth-X Dataset</strong>
+              <div class="flow-node-label">45K+ validated images &bull; 40+ conditions &bull; Multi-label annotations</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Condition Taxonomy -->
+    <section id="taxonomy">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">05 &mdash; Taxonomy</div>
+          <h2 class="section-title">40+ Extreme Condition Labels<br>Across Six Categories</h2>
+          <p class="section-desc">Multi-label annotation system capturing the complex, overlapping nature of real construction site conditions.</p>
+        </div>
+
+        <div class="taxonomy-grid">
+          <div class="taxonomy-card reveal reveal-delay-1">
+            <span class="taxonomy-count">5 labels</span>
+            <span class="taxonomy-icon">
+              <svg width="32" height="32" fill="none" stroke="var(--accent-blue)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0018 8h-1.26A8 8 0 104 16.25"/><path d="M8 16l-1 4M12 14l-1 6M16 16l-1 4"/></svg>
+            </span>
+            <h3>Weather</h3>
+            <div class="taxonomy-labels">
+              <span class="taxonomy-label">rain</span>
+              <span class="taxonomy-label">snow</span>
+              <span class="taxonomy-label">fog</span>
+              <span class="taxonomy-label">haze</span>
+              <span class="taxonomy-label">wet_surface</span>
+            </div>
+          </div>
+
+          <div class="taxonomy-card reveal reveal-delay-2">
+            <span class="taxonomy-count">6 labels</span>
+            <span class="taxonomy-icon">
+              <svg width="32" height="32" fill="none" stroke="var(--accent-amber)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </span>
+            <h3>Lighting</h3>
+            <div class="taxonomy-labels">
+              <span class="taxonomy-label">low_light</span>
+              <span class="taxonomy-label">backlight</span>
+              <span class="taxonomy-label">glare</span>
+              <span class="taxonomy-label">shadow_heavy</span>
+              <span class="taxonomy-label">nighttime</span>
+              <span class="taxonomy-label">daylight</span>
+            </div>
+          </div>
+
+          <div class="taxonomy-card reveal reveal-delay-3">
+            <span class="taxonomy-count">3 labels</span>
+            <span class="taxonomy-icon">
+              <svg width="32" height="32" fill="none" stroke="var(--accent-cyan)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+            </span>
+            <h3>Scale / Size</h3>
+            <div class="taxonomy-labels">
+              <span class="taxonomy-label">small_distant</span>
+              <span class="taxonomy-label">medium</span>
+              <span class="taxonomy-label">large_closeup</span>
+            </div>
+          </div>
+
+          <div class="taxonomy-card reveal reveal-delay-1">
+            <span class="taxonomy-count">5 labels</span>
+            <span class="taxonomy-icon">
+              <svg width="32" height="32" fill="none" stroke="var(--accent-red)" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <h3>Image Quality</h3>
+            <div class="taxonomy-labels">
+              <span class="taxonomy-label">motion_blur</span>
+              <span class="taxonomy-label">defocus_blur</span>
+              <span class="taxonomy-label">noise</span>
+              <span class="taxonomy-label">low_resolution</span>
+              <span class="taxonomy-label">compression</span>
+            </div>
+          </div>
+
+          <div class="taxonomy-card reveal reveal-delay-2">
+            <span class="taxonomy-count">3 labels</span>
+            <span class="taxonomy-icon">
+              <svg width="32" height="32" fill="none" stroke="var(--accent-orange)" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </span>
+            <h3>Scene Complexity</h3>
+            <div class="taxonomy-labels">
+              <span class="taxonomy-label">clutter</span>
+              <span class="taxonomy-label">occlusion</span>
+              <span class="taxonomy-label">dense_equipment</span>
+            </div>
+          </div>
+
+          <div class="taxonomy-card reveal reveal-delay-3">
+            <span class="taxonomy-count">3 labels</span>
+            <span class="taxonomy-icon">
+              <svg width="32" height="32" fill="none" stroke="var(--accent-purple)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            </span>
+            <h3>Domain Shift</h3>
+            <div class="taxonomy-labels">
+              <span class="taxonomy-label">different_site</span>
+              <span class="taxonomy-label">different_country</span>
+              <span class="taxonomy-label">seasonal_change</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Validation Metrics -->
+    <section id="validation" style="background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">06 &mdash; Validation</div>
+          <h2 class="section-title">Four Complementary<br>Validation Approaches</h2>
+          <p class="section-desc">Rigorous multi-metric validation against real-world reference datasets (ACDC, WeatherBench, WeatherNet-05).</p>
+        </div>
+
+        <div class="metrics-grid">
+          <!-- FID/KID -->
+          <div class="metric-card reveal reveal-delay-1">
+            <div class="metric-ring">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle class="metric-ring-bg" cx="60" cy="60" r="52"/>
+                <circle class="metric-ring-fill" cx="60" cy="60" r="52" stroke="var(--accent-blue)"
+                  stroke-dasharray="326.73" stroke-dashoffset="110" data-target="110"/>
+              </svg>
+              <div class="metric-ring-value" style="color: var(--accent-blue);">&minus;34%</div>
+            </div>
+            <h3>FID / KID</h3>
+            <p>Distribution distance to real-world weather datasets. Night augmentation achieves strongest improvement.</p>
+            <div class="metric-detail">
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">Night</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 100%; background: var(--accent-blue);"></div></div>
+                <span class="metric-bar-value">&minus;34%</span>
+              </div>
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">Snow</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 26%; background: var(--accent-blue);"></div></div>
+                <span class="metric-bar-value">&minus;9%</span>
+              </div>
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">Fog</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 29%; background: var(--accent-blue);"></div></div>
+                <span class="metric-bar-value">&minus;10%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weather Classifier -->
+          <div class="metric-card reveal reveal-delay-2">
+            <div class="metric-ring">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle class="metric-ring-bg" cx="60" cy="60" r="52"/>
+                <circle class="metric-ring-fill" cx="60" cy="60" r="52" stroke="var(--accent-amber)"
+                  stroke-dasharray="326.73" stroke-dashoffset="36" data-target="36"/>
+              </svg>
+              <div class="metric-ring-value" style="color: var(--accent-amber);">89%</div>
+            </div>
+            <h3>Weather Classifier</h3>
+            <p>SigLIP2-based classifier accuracy on generated weather variants. Style transfer rain achieves up to 89.3%.</p>
+            <div class="metric-detail">
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">ST Snow 2</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 94.8%; background: var(--accent-amber);"></div></div>
+                <span class="metric-bar-value">94.8%</span>
+              </div>
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">ST Rain 1</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 89.3%; background: var(--accent-amber);"></div></div>
+                <span class="metric-bar-value">89.3%</span>
+              </div>
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">IP2P Rain</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 63.5%; background: var(--accent-amber);"></div></div>
+                <span class="metric-bar-value">63.5%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Texture Fidelity -->
+          <div class="metric-card reveal reveal-delay-3">
+            <div class="metric-ring">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle class="metric-ring-bg" cx="60" cy="60" r="52"/>
+                <circle class="metric-ring-fill" cx="60" cy="60" r="52" stroke="var(--accent-cyan)"
+                  stroke-dasharray="326.73" stroke-dashoffset="45" data-target="45"/>
+              </svg>
+              <div class="metric-ring-value" style="color: var(--accent-cyan);">5&times;</div>
+            </div>
+            <h3>Texture Fidelity</h3>
+            <p>GLCM + LBP + DCT texture analysis via Dempster-Shafer belief fusion. IP2P preserves texture 5&times; better than style transfer.</p>
+            <div class="metric-detail">
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">IP2P Snow</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 15%; background: var(--accent-cyan);"></div></div>
+                <span class="metric-bar-value">0.61</span>
+              </div>
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">IP2P Rain</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 16%; background: var(--accent-cyan);"></div></div>
+                <span class="metric-bar-value">0.63</span>
+              </div>
+              <div class="metric-bar-row">
+                <span class="metric-bar-label">Style Avg</span>
+                <div class="metric-bar-track"><div class="metric-bar-fill" style="width: 50%; background: var(--accent-cyan);"></div></div>
+                <span class="metric-bar-value">3.78</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Findings -->
+    <section id="findings">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">07 &mdash; Key Findings</div>
+          <h2 class="section-title">What the Data Reveals</h2>
+          <p class="section-desc">Empirical observations from our multi-metric validation across augmentation methods.</p>
+        </div>
+
+        <div class="findings-grid">
+          <div class="finding-card reveal reveal-delay-1" style="--card-accent: var(--accent-orange);">
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-orange);"></div>
+            <div class="finding-icon" style="background: rgba(255, 107, 53, 0.1);">
+              <svg width="20" height="20" fill="none" stroke="var(--accent-orange)" stroke-width="2" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 01-2 2H3m18 0h-3a2 2 0 01-2-2V3m0 18v-3a2 2 0 012-2h3M3 16h3a2 2 0 012 2v3"/></svg>
+            </div>
+            <h3>Two Methods Are Complementary</h3>
+            <p>Style transfer creates visually obvious weather (70-95% classifier accuracy) while IP2P diffusion preserves texture fidelity 5x better. Neither alone is sufficient.</p>
+            <div class="finding-highlight">
+              <strong>Style Transfer:</strong> High recognizability, more artifacts<br>
+              <strong>IP2P Diffusion:</strong> Natural texture, subtle effects
+            </div>
+          </div>
+
+          <div class="finding-card reveal reveal-delay-2">
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-blue);"></div>
+            <div class="finding-icon" style="background: rgba(74, 158, 255, 0.1);">
+              <svg width="20" height="20" fill="none" stroke="var(--accent-blue)" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            </div>
+            <h3>Night = Strongest Semantic Shift</h3>
+            <p>CycleGAN-Turbo night translation achieves -34% FID improvement and 38% Mahalanobis gap closure in CLIP feature space.</p>
+            <div class="finding-highlight">
+              <strong>FID:</strong> 178.9 vs 270.5 (baseline) &mdash; strongest of all conditions
+            </div>
+          </div>
+
+          <div class="finding-card reveal reveal-delay-3">
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-amber);"></div>
+            <div class="finding-icon" style="background: rgba(255, 184, 0, 0.1);">
+              <svg width="20" height="20" fill="none" stroke="var(--accent-amber)" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <h3>IP2P Snow Contradiction</h3>
+            <p>IP2P snow achieves highest texture fidelity (0.862 belief score) but only 25.7% weather classifier accuracy. Under active investigation.</p>
+            <div class="finding-highlight">
+              <strong>Hypothesis:</strong> Creates atmospheric effects (gray skies) without visible snow particles
+            </div>
+          </div>
+
+          <div class="finding-card reveal reveal-delay-4">
+            <div style="position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-purple);"></div>
+            <div class="finding-icon" style="background: rgba(167, 139, 250, 0.1);">
+              <svg width="20" height="20" fill="none" stroke="var(--accent-purple)" stroke-width="2" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <h3>VLM Weakness Confirmed</h3>
+            <p>Best VLM (InternVL2.5-26B) achieves only F1=0.124 on clean construction images, with 20-24% additional drops under extreme conditions.</p>
+            <div class="finding-highlight">
+              <strong>LLaVA-7B:</strong> 100% failure rate &mdash; validates need for Papers 2 & 3
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="download" class="download-section">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">08 &mdash; Access</div>
+          <h2 class="section-title">Download &amp; Licensing</h2>
+          <p class="section-desc">Open access with clear licensing for both code and data.</p>
+        </div>
+
+        <div class="download-grid">
+          <div class="download-card reveal reveal-delay-1">
+            <div class="license-tag">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+              Apache 2.0
+            </div>
+            <h3>Source Code</h3>
+            <p>Augmentation pipelines, validation scripts, benchmark configurations, and evaluation tools. Fully reproducible with documented environments.</p>
+            <a href="https://github.com/ruoxinx/ConSynth-X" class="btn btn-secondary" style="width: fit-content;" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              View on GitHub
+            </a>
+          </div>
+
+          <div class="download-card reveal reveal-delay-2">
+            <div class="license-tag">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+              CC BY-NC 4.0
+            </div>
+            <h3>Dataset</h3>
+            <p>30K+ original images with multi-label condition annotations, augmented variants, object bounding boxes, and train/val/test splits.</p>
+            <a href="#" class="btn btn-primary" style="width: fit-content;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download from HuggingFace
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Citation -->
+    <section id="citation">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-tag">09 &mdash; Citation</div>
+          <h2 class="section-title">Cite ConSynth-X</h2>
+          <p class="section-desc">If you use ConSynth-X in your research, please cite our paper.</p>
+        </div>
+
+        <div class="citation-block reveal">
+          <button class="copy-btn" id="copyBibtex" onclick="copyBibtex()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy
+          </button>
+          <pre id="bibtexContent"><span class="key">@article</span>{consynthx2026,
+  <span class="key">title</span>     = {<span class="value">ConSynth-X: A Multi-Condition Construction Dataset
+               with Synthetic Augmentation for Robustness Evaluation</span>},
+  <span class="key">author</span>    = {<span class="value">Duong, Viet Huy and Xiong, Ruoxin</span>},
+  <span class="key">journal</span>   = {<span class="value">Nature Scientific Data</span>},
+  <span class="key">year</span>      = {<span class="value">2026</span>},
+  <span class="key">note</span>      = {<span class="value">In preparation</span>}
+}</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="container">
+        <p class="footer-text">ConSynth-X &copy; 2026 &mdash; Construction Computer Vision Under Extreme Conditions</p>
+        <ul class="footer-links">
+          <li><a href="https://github.com/ruoxinx/ConSynth-X" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="#download">HuggingFace</a></li>
+          <li><a href="#citation">Citation</a></li>
+        </ul>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // ===== Rain/Snow Particle System =====
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animFrame;
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * -canvas.height;
+        this.speed = 1 + Math.random() * 2;
+        this.length = 8 + Math.random() * 15;
+        this.opacity = 0.1 + Math.random() * 0.25;
+        this.wind = -0.3 + Math.random() * 0.1;
+      }
+
+      update() {
+        this.y += this.speed;
+        this.x += this.wind;
+        if (this.y > canvas.height) this.reset();
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x + this.wind * 2, this.y + this.length);
+        ctx.strokeStyle = `rgba(180, 210, 240, ${this.opacity})`;
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // Create particles
+    const particleCount = Math.min(80, Math.floor(window.innerWidth / 15));
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      animFrame = requestAnimationFrame(animate);
+    }
+    animate();
+
+    // ===== Scroll Reveal =====
+    const revealElements = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    revealElements.forEach(el => observer.observe(el));
+
+    // ===== Smooth scroll for nav links =====
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ===== Nav scroll effect =====
+    const nav = document.querySelector('nav');
+    let lastScroll = 0;
+    window.addEventListener('scroll', () => {
+      const scroll = window.scrollY;
+      if (scroll > 100) {
+        nav.style.padding = '0.6rem 0';
+        nav.style.borderBottomColor = 'var(--border-accent)';
+      } else {
+        nav.style.padding = '1rem 0';
+        nav.style.borderBottomColor = 'var(--border)';
+      }
+      lastScroll = scroll;
+    });
+
+    // ===== Animated Counters =====
+    function animateCounter(el, target, suffix = '') {
+      const duration = 1500;
+      const start = performance.now();
+      const isDecimal = target % 1 !== 0;
+
+      function update(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(eased * target);
+
+        if (isDecimal) {
+          el.textContent = (eased * target).toFixed(1) + suffix;
+        } else {
+          el.textContent = current.toLocaleString() + suffix;
+        }
+
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    // Animate hero stats on load
+    const heroStatValues = document.querySelectorAll('.hero-stat-value');
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+          entry.target.dataset.animated = 'true';
+          const text = entry.target.textContent;
+          const num = parseFloat(text.replace(/[^0-9.]/g, ''));
+          const suffix = text.replace(/[0-9.,]/g, '');
+          if (!isNaN(num)) animateCounter(entry.target, num, suffix);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    // ===== Copy BibTeX =====
+    function copyBibtex() {
+      const bibtex = `@article{consynthx2026,
+  title     = {ConSynth-X: A Multi-Condition Construction Dataset
+               with Synthetic Augmentation for Robustness Evaluation},
+  author    = {Duong, Viet Huy and Xiong, Ruoxin},
+  journal   = {Nature Scientific Data},
+  year      = {2026},
+  note      = {In preparation}
+}`;
+      navigator.clipboard.writeText(bibtex).then(() => {
+        const btn = document.getElementById('copyBibtex');
+        btn.classList.add('copied');
+        btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';
+        }, 2000);
+      });
+    }
+
+    // ===== Comparison Sliders =====
+    document.querySelectorAll('[data-slider]').forEach(slider => {
+      const beforeImg = slider.querySelector('.compare-before');
+      const handle = slider.querySelector('.compare-handle');
+      let isDragging = false;
+
+      function updateSlider(x) {
+        const rect = slider.getBoundingClientRect();
+        let pct = ((x - rect.left) / rect.width) * 100;
+        pct = Math.max(2, Math.min(98, pct));
+        beforeImg.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+        handle.style.left = pct + '%';
+      }
+
+      slider.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        updateSlider(e.clientX);
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging) updateSlider(e.clientX);
+      });
+
+      document.addEventListener('mouseup', () => { isDragging = false; });
+
+      // Touch support
+      slider.addEventListener('touchstart', (e) => {
+        isDragging = true;
+        updateSlider(e.touches[0].clientX);
+        e.preventDefault();
+      }, { passive: false });
+
+      slider.addEventListener('touchmove', (e) => {
+        if (isDragging) updateSlider(e.touches[0].clientX);
+      }, { passive: true });
+
+      slider.addEventListener('touchend', () => { isDragging = false; });
+    });
+
+    // ===== Active nav highlight on scroll =====
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          navLinks.forEach(link => {
+            link.style.color = '';
+            if (link.getAttribute('href') === `#${id}`) {
+              link.style.color = 'var(--accent-orange)';
+            }
+          });
+        }
+      });
+    }, { threshold: 0.3, rootMargin: '-80px 0px -50% 0px' });
+
+    sections.forEach(s => navObserver.observe(s));
+  </script>
+</body>
+</html>
