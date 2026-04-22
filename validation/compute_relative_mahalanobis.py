@@ -3,7 +3,7 @@
 Relative Mahalanobis Distance for augmentation realism evaluation.
 
 Measures proximity of augmented images to real adverse-condition distributions
-in CLIP and DINOv2 embedding spaces, using relative Mahalanobis distance to
+in CLIP and DINOv3 embedding spaces, using relative Mahalanobis distance to
 cancel shared background features.
 
 Implements the embedding-based distributional analysis from:
@@ -30,95 +30,147 @@ import json
 import time
 from collections import defaultdict
 from pathlib import Path
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 import numpy as np
 import torch
 from PIL import Image
 
 # ── Paths ─────────────────────────────────────────────────────────
-DATA_ROOT = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
-ARROW_DATA = DATA_ROOT / "augmentation_data_arrow"
-FOG_DATA = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/augmentation_data/construction_site/fog/diffusion/test")
-ACDC_DIR = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/reference_data/acdc/rgb_anon")
-OUT_DIR = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/results/relative_mahalanobis")
+DATA_ROOT = _DATA_ROOT
+ORIG_ARROW = DATA_ROOT / "augmentation_data_arrow" / "construction_site_test.arrow"
+AUG_ROOT = _REPO_ROOT / "augmentation_data" / "construction_site"
+STYLE_DIR = (_REPO_ROOT / "experiments" / "ablation_style_transfer" /
+             "construction_site" / "rain_snow" / "style_transfer" / "test")
+IP2P_DIR = AUG_ROOT / "rain_snow" / "diffusion" / "test"
+FOG_DATA = AUG_ROOT / "fog" / "diffusion" / "test"
+NIGHT_ARROW = AUG_ROOT / "night" / "test" / "night_constructionsite_test.arrow"
+ACDC_DIR = (_REPO_ROOT / "validation/reference_data/acdc/rgb_anon")
+OUT_DIR = (_REPO_ROOT / "validation/results/relative_mahalanobis")
+DINO_CSV_DIR = (_REPO_ROOT / "validation/results/dino_ssim")
 
 # ── Condition mapping ─────────────────────────────────────────────
 # Maps augmentation → target ACDC condition for d_k
+# dino_csv: filename in DINO_CSV_DIR used for quality filtering (image_id, dino_sim)
 CONDITION_PAIRS = {
     "original": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "construction_site_test.arrow"},
+        "source": {"type": "arrow", "path": ORIG_ARROW},
         "target_condition": None,  # compute vs ALL conditions as baseline
+        "dino_csv": None,  # originals have no DINO score
         "description": "Original clear-day construction images",
     },
     "weather_style_rain_0": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "weather_test_style_rain_0.arrow"},
+        "source": {"type": "arrow", "path": STYLE_DIR / "weather_test_style_rain_0.arrow"},
         "target_condition": "rain",
+        "dino_csv": "st_rain_a",
         "description": "Style transfer rain (light)",
     },
     "weather_style_rain_1": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "weather_test_style_rain_1.arrow"},
+        "source": {"type": "arrow", "path": STYLE_DIR / "weather_test_style_rain_1.arrow"},
         "target_condition": "rain",
+        "dino_csv": "st_rain_b",
         "description": "Style transfer rain (moderate)",
     },
     "weather_style_rain_2": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "weather_test_style_rain_2.arrow"},
+        "source": {"type": "arrow", "path": STYLE_DIR / "weather_test_style_rain_2.arrow"},
         "target_condition": "rain",
+        "dino_csv": "st_rain_c",
         "description": "Style transfer rain (heavy)",
     },
     "weather_style_snow_0": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "weather_test_style_snow_0.arrow"},
+        "source": {"type": "arrow", "path": STYLE_DIR / "weather_test_style_snow_0.arrow"},
         "target_condition": "snow",
+        "dino_csv": "st_snow_a",
         "description": "Style transfer snow (light)",
     },
     "weather_style_snow_1": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "weather_test_style_snow_1.arrow"},
+        "source": {"type": "arrow", "path": STYLE_DIR / "weather_test_style_snow_1.arrow"},
         "target_condition": "snow",
+        "dino_csv": "st_snow_b",
         "description": "Style transfer snow (moderate)",
     },
     "weather_style_snow_2": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "weather_test_style_snow_2.arrow"},
+        "source": {"type": "arrow", "path": STYLE_DIR / "weather_test_style_snow_2.arrow"},
         "target_condition": "snow",
+        "dino_csv": "st_snow_c",
         "description": "Style transfer snow (heavy)",
     },
     "diffusion_rain": {
-        "source": {
-            "type": "arrow_dir",
-            "path": DATA_ROOT / "output" / "construction_site_test" / "diffusion_rain_heavy",
-        },
+        "source": {"type": "arrow_dir", "path": IP2P_DIR / "rain"},
         "target_condition": "rain",
-        "description": "IP2P diffusion rain",
+        "dino_csv": "ip2p_rain",
+        "description": "IP2P diffusion rain (v4: LPIPS+physics)",
     },
-    "diffusion_snow": {
-        "source": {
-            "type": "arrow_dir",
-            "path": DATA_ROOT / "output" / "construction_site_test" / "diffusion_snow_heavy",
-        },
+    "diffusion_rain_heavy": {
+        "source": {"type": "arrow_dir", "path": IP2P_DIR / "rain_heavy"},
+        "target_condition": "rain",
+        "dino_csv": "ip2p_rain_heavy",
+        "description": "IP2P diffusion rain + heavy physics overlay (deterministic heavy_fog, 2026-04-21)",
+    },
+    "diffusion_snow_light": {
+        "source": {"type": "arrow_dir", "path": IP2P_DIR / "snow_light"},
         "target_condition": "snow",
-        "description": "IP2P diffusion snow",
+        "dino_csv": "ip2p_snow_light",
+        "description": "IP2P diffusion snow (light, gs=8)",
+    },
+    "diffusion_snow_heavy": {
+        "source": {"type": "arrow_dir", "path": IP2P_DIR / "snow_heavy"},
+        "target_condition": "snow",
+        "dino_csv": "ip2p_snow_heavy",
+        "description": "IP2P diffusion snow (heavy, gs=12)",
     },
     "diffusion_fog_heavy": {
         "source": {"type": "arrow_dir", "path": FOG_DATA / "heavy"},
         "target_condition": "fog",
+        "dino_csv": "fog_heavy",
         "description": "Diffusion fog (heavy)",
     },
     "diffusion_fog_medium": {
         "source": {"type": "arrow_dir", "path": FOG_DATA / "medium"},
         "target_condition": "fog",
+        "dino_csv": "fog_medium",
         "description": "Diffusion fog (medium)",
     },
     "diffusion_fog_light": {
         "source": {"type": "arrow_dir", "path": FOG_DATA / "light"},
         "target_condition": "fog",
+        "dino_csv": "fog_light",
         "description": "Diffusion fog (light)",
     },
     "night": {
-        "source": {"type": "arrow", "path": ARROW_DATA / "night.arrow"},
+        "source": {"type": "arrow", "path": NIGHT_ARROW},
         "target_condition": "night",
+        "dino_csv": "night",
         "description": "CycleGAN-Turbo night",
     },
 }
 
 ACDC_CONDITIONS = ["fog", "rain", "snow", "night"]
+
+
+def load_passing_ids(csv_name: str, threshold: float, csv_dir: Path) -> set:
+    """Return set of image_ids with dino_sim >= threshold from DINO/SSIM CSV."""
+    import csv as _csv
+    path = csv_dir / f"{csv_name}.csv"
+    if not path.exists():
+        print(f"    WARNING: DINO CSV not found: {path}")
+        return None
+    passing = set()
+    total = 0
+    with open(path) as f:
+        for row in _csv.DictReader(f):
+            total += 1
+            try:
+                if float(row["dino_sim"]) >= threshold:
+                    passing.add(str(row["image_id"]))
+            except (KeyError, ValueError):
+                continue
+    print(f"    DINO filter ({csv_name}, ≥{threshold}): {len(passing)}/{total} pass")
+    return passing
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -156,21 +208,20 @@ class CLIPEmbedder:
         return np.concatenate(all_feats, axis=0)
 
 
-class DINOv2Embedder:
-    """DINOv2 ViT-L/14 embeddings (1024-dim).
+class DINOv3Embedder:
+    """DINOv3 ViT-L/16 embeddings (1024-dim).
 
-    Paper uses facebook/dinov2-vitl16-pretrain-lvd1689m for self-supervised
-    visual features. Shows greater sensitivity to low-level texture
-    differences than CLIP (Ruck et al. 2026, Section 3.4.1).
+    Matches Ruck et al. (2026) which uses facebook/dinov3-vitl16-pretrain-lvd1689m
+    for self-supervised visual features. DINOv3 shows greater sensitivity to
+    low-level texture differences than CLIP (Ruck et al. 2026, Section 3.4.1).
 
-    Uses transformers AutoModel instead of torch.hub to avoid xformers
-    CUDA build dependency issues.
+    Requires transformers >= 5.x for DINOv3ViTModel support.
     """
 
     def __init__(self, device="cuda"):
         from transformers import AutoModel, AutoImageProcessor
 
-        model_name = "facebook/dinov2-large"
+        model_name = "facebook/dinov3-vitl16-pretrain-lvd1689m"
         self.processor = AutoImageProcessor.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name)
         self.model.eval().to(device)
@@ -187,7 +238,7 @@ class DINOv2Embedder:
             feats = outputs.last_hidden_state[:, 0]  # CLS token
             feats = feats / feats.norm(dim=-1, keepdim=True)
             all_feats.append(feats.cpu().numpy())
-            print(f"      DINOv2: {min(i + batch_size, len(images))}/{len(images)}", end="\r")
+            print(f"      DINOv3: {min(i + batch_size, len(images))}/{len(images)}", end="\r")
         print()
         return np.concatenate(all_feats, axis=0)
 
@@ -254,7 +305,8 @@ def relative_mahalanobis(x: np.ndarray, target_mu: np.ndarray, target_prec: np.n
 # DATA LOADING (shared with compute_fid_kid.py)
 # ══════════════════════════════════════════════════════════════════
 
-def load_images_from_arrow(arrow_path: Path, max_samples: int = None) -> list:
+def load_images_from_arrow(arrow_path: Path, max_samples: int = None,
+                            filter_ids: set = None) -> list:
     import pyarrow as pa
     images = []
     try:
@@ -276,12 +328,19 @@ def load_images_from_arrow(arrow_path: Path, max_samples: int = None) -> list:
     if img_col is None:
         return []
 
+    id_col = "image_id" if "image_id" in table.column_names else None
+
     n = len(table)
-    if max_samples and max_samples < n:
-        rng = np.random.default_rng(42)
-        indices = sorted(rng.choice(n, size=max_samples, replace=False))
+    if filter_ids is not None and id_col is not None:
+        valid = [i for i in range(n) if str(table.column(id_col)[i].as_py()) in filter_ids]
     else:
-        indices = range(n)
+        valid = list(range(n))
+
+    if max_samples and max_samples < len(valid):
+        rng = np.random.default_rng(42)
+        indices = sorted(rng.choice(valid, size=max_samples, replace=False))
+    else:
+        indices = valid
 
     for i in indices:
         try:
@@ -295,11 +354,50 @@ def load_images_from_arrow(arrow_path: Path, max_samples: int = None) -> list:
     return images
 
 
-def load_images_from_arrow_dir(dir_path: Path, max_samples: int = None) -> list:
+def load_images_from_arrow_dir(dir_path: Path, max_samples: int = None,
+                                filter_ids: set = None) -> list:
     import pyarrow as pa
     arrow_files = sorted(dir_path.glob("*.arrow"))
     if not arrow_files:
         return []
+
+    # When filtering by image_id, skip the two-pass total-count bookkeeping and
+    # just filter row-by-row. Otherwise keep the original global-index sampling.
+    images = []
+
+    if filter_ids is not None:
+        for af in arrow_files:
+            try:
+                reader = pa.ipc.open_stream(str(af))
+                table = reader.read_all()
+            except Exception:
+                continue
+
+            img_col = None
+            for col in ["image", "img"]:
+                if col in table.column_names:
+                    img_col = col
+                    break
+            if img_col is None or "image_id" not in table.column_names:
+                continue
+
+            for i in range(len(table)):
+                if str(table.column("image_id")[i].as_py()) not in filter_ids:
+                    continue
+                try:
+                    data = table.column(img_col)[i].as_py()
+                    if isinstance(data, bytes):
+                        images.append(Image.open(io.BytesIO(data)).convert("RGB"))
+                    elif isinstance(data, dict) and "bytes" in data:
+                        images.append(Image.open(io.BytesIO(data["bytes"])).convert("RGB"))
+                except Exception:
+                    pass
+
+        if max_samples and len(images) > max_samples:
+            rng = np.random.default_rng(42)
+            idx = sorted(rng.choice(len(images), size=max_samples, replace=False))
+            images = [images[i] for i in idx]
+        return images
 
     file_infos = []
     total = 0
@@ -319,7 +417,6 @@ def load_images_from_arrow_dir(dir_path: Path, max_samples: int = None) -> list:
     else:
         sample_set = None
 
-    images = []
     global_idx = 0
     for af, n_rows in file_infos:
         if sample_set is not None:
@@ -381,16 +478,17 @@ def load_images_from_dir(dir_path: Path, max_samples: int = None) -> list:
     return images
 
 
-def load_condition_images(config: dict, max_samples: int = None) -> list:
+def load_condition_images(config: dict, max_samples: int = None,
+                           filter_ids: set = None) -> list:
     src = config["source"]
     path = src["path"]
     if not path.exists():
         print(f"    WARNING: {path} does not exist")
         return []
     if src["type"] == "arrow":
-        return load_images_from_arrow(path, max_samples)
+        return load_images_from_arrow(path, max_samples, filter_ids=filter_ids)
     elif src["type"] == "arrow_dir":
-        return load_images_from_arrow_dir(path, max_samples)
+        return load_images_from_arrow_dir(path, max_samples, filter_ids=filter_ids)
     return []
 
 
@@ -568,14 +666,24 @@ def main():
                         help="Max images per condition")
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--output-dir", type=str, default=str(OUT_DIR))
-    parser.add_argument("--embedding", choices=["clip", "dinov2", "both"], default="both",
+    parser.add_argument("--embedding", choices=["clip", "dinov3", "both"], default="both",
                         help="Which embedding model(s) to use")
     parser.add_argument("--holdout", type=int, default=100,
                         help="Held-out ACDC images per condition for baseline (paper: 100)")
+    parser.add_argument("--dino-threshold", type=float, default=None,
+                        help="Filter augmented images by DINO similarity ≥ threshold "
+                             "(reads validation/results/dino_ssim/<cond>.csv). "
+                             "If set, results are written to <output_dir>/dino_ge_<t>/.")
+    parser.add_argument("--dino-csv-dir", type=str, default=str(DINO_CSV_DIR),
+                        help="Directory containing per-condition DINO/SSIM CSVs")
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
+    if args.dino_threshold is not None:
+        tag = f"dino_ge_{args.dino_threshold:g}".replace(".", "p")
+        output_dir = output_dir / tag
     output_dir.mkdir(parents=True, exist_ok=True)
+    dino_csv_dir = Path(args.dino_csv_dir)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -584,6 +692,9 @@ def main():
     print(f"Method: Ruck et al. (2026), Eq. 1-2")
     print(f"Device: {device}")
     print(f"Embeddings: {args.embedding}")
+    if args.dino_threshold is not None:
+        print(f"DINO filter: sim ≥ {args.dino_threshold} (from {dino_csv_dir})")
+    print(f"Output: {output_dir}")
     print(f"{'=' * 65}")
 
     # ── Initialize embedding models ──────────────────────────
@@ -591,9 +702,9 @@ def main():
     if args.embedding in ("clip", "both"):
         print(f"\n  Loading CLIP ViT-L/14...")
         embedders["clip"] = CLIPEmbedder(device)
-    if args.embedding in ("dinov2", "both"):
-        print(f"  Loading DINOv2 ViT-L/14...")
-        embedders["dinov2"] = DINOv2Embedder(device)
+    if args.embedding in ("dinov3", "both"):
+        print(f"  Loading DINOv3 ViT-L/16...")
+        embedders["dinov3"] = DINOv3Embedder(device)
 
     # ── Load and embed ACDC reference images ─────────────────
     print(f"\n{'=' * 65}")
@@ -700,7 +811,15 @@ def main():
 
     for cond_name, config in CONDITION_PAIRS.items():
         print(f"\n  [{cond_name}] {config['description']}")
-        images = load_condition_images(config, args.max_samples)
+
+        filter_ids = None
+        if args.dino_threshold is not None and config.get("dino_csv"):
+            filter_ids = load_passing_ids(config["dino_csv"], args.dino_threshold, dino_csv_dir)
+            if filter_ids is not None and len(filter_ids) == 0:
+                print(f"    SKIP: 0 images pass DINO threshold")
+                continue
+
+        images = load_condition_images(config, args.max_samples, filter_ids=filter_ids)
         if not images:
             print(f"    SKIP: no images loaded")
             continue
@@ -709,6 +828,8 @@ def main():
         cond_results = {
             "description": config["description"],
             "n_images": len(images),
+            "dino_threshold": args.dino_threshold,
+            "n_passing_dino": len(filter_ids) if filter_ids is not None else None,
         }
 
         for emb_name, embedder in embedders.items():

@@ -31,6 +31,11 @@ import json
 import time
 from collections import defaultdict
 from pathlib import Path
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 import numpy as np
 import torch
@@ -39,11 +44,11 @@ from PIL import Image
 from torchvision import transforms
 
 # ── Paths ────────────────────────────────────────────────────────
-DATA_ROOT = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+DATA_ROOT = _DATA_ROOT
 ARROW_DATA = DATA_ROOT / "augmentation_data_arrow"
-FOG_DATA = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/augmentation_data/construction_site/fog/diffusion/test")
-REFERENCE_BASE = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/reference_data")
-OUT_DIR = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/results/fid_kid")
+FOG_DATA = (_REPO_ROOT / "augmentation_data/construction_site/fog/diffusion/test")
+REFERENCE_BASE = (_REPO_ROOT / "validation/reference_data")
+OUT_DIR = (_REPO_ROOT / "validation/results/fid_kid")
 
 # Available reference datasets (auto-detected at runtime)
 REFERENCE_DATASETS = {
@@ -93,6 +98,14 @@ CONDITION_PAIRS = {
         },
         "reference": "rain",
         "description": "IP2P diffusion rain vs ACDC real rain",
+    },
+    "diffusion_rain_heavy": {
+        "source": {
+            "type": "arrow_dir",
+            "path": _REPO_ROOT / "augmentation_data" / "construction_site" / "rain_snow" / "diffusion" / "test" / "rain_heavy",
+        },
+        "reference": "rain",
+        "description": "IP2P diffusion rain + heavy physics overlay vs ACDC real rain",
     },
     "diffusion_snow": {
         "source": {

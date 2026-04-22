@@ -80,7 +80,10 @@ echo "=========================================="
 
 nvidia-smi
 
-export PATH=/users/PGS0407/binben14/.conda/envs/VLM/bin:$PATH
+module load cuda/11.8.0 2>/dev/null || true
+module load miniconda3/24.1.2-py310 2>/dev/null || true
+eval "$(conda shell.bash hook)"
+conda activate "${CONSYNTH_CONDA_ENV:-VLM}"
 cd {workspace}
 
 python outpainting/flux_pipeline_worker_voc.py \\
@@ -112,13 +115,14 @@ def main():
     parser = argparse.ArgumentParser(description="Submit FLUX Outpainting for SODA (VOC)")
 
     # Paths
+    _data_root = Path(os.environ.get("CONSYNTH_DATA_ROOT", Path.home() / "consynth_data"))
     parser.add_argument("--voc-root",
-                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/SODA/data/SODA VOCdevkit/VOCdevkit/VOC2007",
-                        help="VOC2007 root directory")
+                        default=str(_data_root / "SODA" / "data" / "SODA VOCdevkit" / "VOCdevkit" / "VOC2007"),
+                        help="VOC2007 root directory (override via $CONSYNTH_DATA_ROOT)")
     parser.add_argument("--image-list", default=None,
                         help="Image list file (default: ImageSets/Main/trainval.txt)")
     parser.add_argument("--output-dir",
-                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/SODA/small",
+                        default=str(_data_root / "augmentation_data" / "SODA" / "small"),
                         help="Output directory")
 
     # Sample selection

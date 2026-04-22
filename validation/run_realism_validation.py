@@ -35,6 +35,11 @@ import sys
 import time
 from collections import defaultdict
 from pathlib import Path
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 import numpy as np
 import torch
@@ -42,7 +47,7 @@ from PIL import Image
 
 # ── Data Paths ──────────────────────────────────────────────────
 # Mirrors infrastructure.md data locations
-DATA_ROOT = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+DATA_ROOT = _DATA_ROOT
 LMUDATA = Path.home() / "LMUData"
 
 # All augmented data is in Arrow format at this location
@@ -113,7 +118,7 @@ CONDITION_DIRS = {
     },
 }
 
-OUT_DIR = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/results")
+OUT_DIR = (_REPO_ROOT / "validation/results")
 
 
 def load_images_from_arrow(arrow_path: Path, max_samples: int = None) -> list:

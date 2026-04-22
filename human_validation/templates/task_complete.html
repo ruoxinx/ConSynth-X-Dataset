@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Task Complete - ConSynth-X Validation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="complete-container">
+        <div class="complete-icon">&#10003;</div>
+        <h2>{{ task }} Complete!</h2>
+        <p>You have evaluated all available images for this task. Thank you!</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

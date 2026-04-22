@@ -1,0 +1,8 @@
+path: /users/PGS0407/binben14/VietHuy/ConSynth-X/generation/sensitivity/detection_results/yolo_data_moderate
+train: images/train
+val: images/val
+names:
+  0: excavator
+  1: rebar
+  2: worker_with_white_hard_hat
+nc: 3

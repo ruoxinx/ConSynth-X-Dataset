@@ -76,6 +76,31 @@ Tài liệu này tổng hợp các luận điểm (statements), tham số, và p
 - 21% improvement: baseline gì? dataset nào? metric nào (mAP@0.5 hay mAP@0.5:0.95)?
 - 73% more realistic: so với method nào? human study methodology?
 
+**Relevance to ConSynth-X rain_heavy decision (2026-04-21)**: Supports the design choice
+to use physics-based rain particle rendering (3-layer depth-dependent streaks + atmospheric
+fog) instead of a second diffusion pass for the heavy intensity variant. Our implementation
+`add_natural_rain(image, intensity='heavy_fog')` in
+[`generation/weather/rain_snow/diffusion/physics.py`](../generation/weather/rain_snow/diffusion/physics.py)
+follows Tremblay et al.'s principle of multi-layer depth-aware rendering. Rationale
+documented in `DEVLOG.md` 2026-04-21 (pilots v1-v5 showed diffusion-based heavy variants
+hallucinated scene content at high guidance).
+
+**Related tool citation — Weather_Effect_Generator (hgupta01)**:
+- **Statement**: Open-source weather effect library used in both style-transfer and
+  diffusion pipelines for particle rendering. Provides `Rain_Effect_Generator`,
+  `Snow_Effect_Generator`, `Fog_Effect_Generator` classes with depth-aware density.
+- **Source**: Gupta, H. et al., *Robust Object Detection in Challenging Weather Conditions*.
+  GitHub: [hgupta01/Weather_Effect_Generator](https://github.com/hgupta01/Weather_Effect_Generator)
+  @ commit `7d62b67`.
+- **License**: Apache-2.0
+- **Usage in ConSynth-X**: Vendored at
+  [`generation/weather/libs/Weather_Effect_Generator/`](../generation/weather/libs/Weather_Effect_Generator/)
+  — base particle generators + MiDaS depth used by VGG style-transfer ablation pipeline.
+  Local additions (`rain_pipeline.py`, `snow_pipeline.py`, modified `Snow_Effect_Generator.py`)
+  documented in that folder's `NOTICE.md`. Our main-pipeline `physics.py`
+  (`add_natural_rain`) is first-party (not from Weather_Effect_Generator), but follows
+  similar 3-layer streak model.
+
 ---
 
 ## 2. Quality Metrics
@@ -110,11 +135,14 @@ Tài liệu này tổng hợp các luận điểm (statements), tham số, và p
 **Source**: Heusel, M. et al. (2017). "GANs Trained by a Two Time-Scale Update Rule Converge to a Local Nash Equilibrium." NeurIPS.
 **Verified**: Yes — standard metric.
 
-### 2.4 DINOv2 Structural Similarity
+### 2.4 DINOv2/DINOv3 Structural Similarity
 
-**Statement**: DINOv2 self-supervised features capture semantic structure tốt hơn pixel-level metrics.
-**Source**: Oquab, M. et al. (2023). "DINOv2: Learning Robust Visual Features without Supervision." ArXiv 2304.07193.
-**Verified**: Yes — dùng trong `examples/validation_metrics.ipynb`.
+**Statement**: DINOv2/DINOv3 self-supervised features capture semantic structure tốt hơn pixel-level metrics.
+**Source (DINOv2)**: Oquab, M. et al. (2023). "DINOv2: Learning Robust Visual Features without Supervision." ArXiv 2304.07193.
+**Source (DINOv3)**: Siméoni, O. et al. (2025). "DINOv3: Foundation Models Producing Excellent Dense Features, Outperforming SOTA Without Fine-Tuning." HuggingFace: facebook/dinov3-vitl16-pretrain-lvd1689m.
+**Verified**: Yes — DINOv3 used in Ruck et al. (2026). Updated implementation 2026-04-15.
+
+**UPDATE (2026-04-15)**: Chuyển từ DINOv2 → DINOv3 để match Ruck et al. paper gốc. DINOv3 gap closed hơi cao hơn DINOv2 nhưng pattern giống — cross-domain limitation vẫn đúng.
 
 **PHÁT HIỆN MỚI (2026-04-09)**: DINO patch similarity phù hợp hơn SSIM cho weather augmentation evaluation.
 - SSIM phạt cả thay đổi mong muốn (sky darkening, rain) và không mong muốn (hallucinate)
@@ -243,13 +271,15 @@ Tài liệu này tổng hợp các luận điểm (statements), tham số, và p
 
 **Cách dùng trong ConSynth-X**: Classify ảnh augmented → check xem classifier có nhận ra đúng weather condition không. Accuracy cao = augmentation realistic và recognizable.
 
-### 2.8 ACDC (KHÔNG DÙNG — wrong HuggingFace dataset)
+### 2.8 ACDC (Adverse Conditions Dataset — primary FID/KID reference)
 
-**Status**: **ABANDONED** — `mathpluscode/ACDC` trên HuggingFace là medical imaging (cardiac MRI), không phải driving weather dataset. Official ACDC driving weather cần download từ acdc.vision.ee.ethz.ch với registration. Đã chuyển sang WeatherNet-05 thay thế.
+**Status**: **[V] VERIFIED, primary reference** dùng trong Approach 2 (FID/KID), Approach 5 (Relative Mahalanobis), và Approach 6 (VLM Jury baseline). Chi tiết usage xem `docs/data_sources.md` §7.3.
 
 **Source**: Sakaridis, C., Dai, D., & Van Gool, L. (2021). "ACDC: The Adverse Conditions Dataset with Correspondences for Semantic Driving Scene Understanding." ICCV.
 **ArXiv**: 2104.13395
-**Note**: Giữ làm backup option nếu WeatherNet không đủ — cần manual download + registration.
+**License**: CC BY-NC-SA 4.0
+**Download**: Manual từ https://acdc.vision.ee.ethz.ch (requires registration). KHÔNG dùng HuggingFace `mathpluscode/ACDC` — đó là medical cardiac MRI, không phải driving weather.
+**Local subset**: 3,578 images: fog (1,000), night (1,006), rain (1,000), snow (572) tại `validation/reference_data/acdc/rgb_anon/`
 
 [19] Zhai, X., Mustafa, B., Kolesnikov, A., & Beyer, L. (2023). "SigLIP: Sigmoid Loss for Language Image Pre-Training." ArXiv: 2303.15343 — **[V] Verified**
 
@@ -276,9 +306,15 @@ Tài liệu này tổng hợp các luận điểm (statements), tham số, và p
 **Source**: Ruck, D., Vautravers, P., Chalkley, O., & Thomas, J. (2026). "Scalable Evaluation of the Realism of Synthetic Environmental Augmentations in Images." ArXiv: 2603.04325.
 **Verified**: **[V] Verified — đọc full paper. Key insight: trade-off realism vs semantic preservation confirmed by our texture fidelity results (style transfer = weather mạnh + texture artifacts vs diffusion = subtle + ít artifacts).**
 
-**Cách dùng trong ConSynth-X**: (1) Relative Mahalanobis Distance approach có thể áp dụng cho construction domain. (2) VLM Jury approach khả thi cho future work. (3) Trade-off finding corroborates our texture fidelity vs weather classifier results.
+**Cách dùng trong ConSynth-X**: (1) Relative Mahalanobis Distance approach — **IMPLEMENTED** (2026-04-15, `validation/compute_relative_mahalanobis.py`) with DINOv3 + CLIP embeddings. (2) VLM Jury approach — **IMPLEMENTED** (2026-04-17, `validation/vlm_jury/`) using local Qwen2.5-VL + InternVL2.5 + Phi-4-multimodal (replacing GPT-4o/Claude/Gemini API to avoid cost and enable reproducibility). (3) Trade-off finding corroborates our texture fidelity vs weather classifier results.
 
-[24] Ruck, D., Vautravers, P., Chalkley, O., & Thomas, J. (2026). "Scalable Evaluation of the Realism of Synthetic Environmental Augmentations in Images." ArXiv: 2603.04325. — **[V] Verified, Eq. 1-2 implemented in `validation/compute_relative_mahalanobis.py`**
+**Implementation notes (2026-04-17)**:
+- VLM Jury pattern reproduced: 3 judges, binary JSON output, side-by-side pair input
+- **Qwen (local) plays Gemini role** — strict with snow (2-4% acceptance), similar to Gemini in paper
+- Inter-judge κ 0.16-0.36 matches paper's observation (moderate agreement, method rankings preserved)
+- Confirmed: majority vote robust to single-judge bias, consistent with paper's jury-composition robustness
+
+[24] Ruck, D., Vautravers, P., Chalkley, O., & Thomas, J. (2026). "Scalable Evaluation of the Realism of Synthetic Environmental Augmentations in Images." ArXiv: 2603.04325. — **[V] Verified, Eq. 1-2 + Section 3.3 implemented in `validation/compute_relative_mahalanobis.py` and `validation/vlm_jury/`**
 
 ---
 

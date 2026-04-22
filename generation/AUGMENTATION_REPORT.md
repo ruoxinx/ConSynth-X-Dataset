@@ -2,18 +2,25 @@
 
 This document describes the synthetic data augmentation pipelines used in ConSynth-X to generate extreme-condition variants of construction site images for robustness benchmarking.
 
+> **Scope note (2026-04-21):** Main rain/snow pipeline in this dataset is **IP2P diffusion** (documented under §2 of `docs/methods.md`). The VGG Neural Style Transfer pipeline described in §2 below is retained as an **ablation baseline only** (see [`experiments/ablation_style_transfer/README.md`](../experiments/ablation_style_transfer/README.md)). §2 of this report documents the NST pipeline for historical / reproducibility reasons; the current main-pipeline description for rain/snow lives in [`docs/methods.md`](../docs/methods.md) §1.2 Method 2, and primary output statistics are summarized in [`dataset_card.md`](../dataset_card.md).
+
 ## 1. Overview
 
-ConSynth-X applies three augmentation pipelines to two base datasets, producing four dataset conditions for benchmarking:
+ConSynth-X applies synthetic augmentation pipelines to base datasets, producing the following conditions for benchmarking:
 
 | Condition | Method | Annotation Strategy |
 |---|---|---|
 | `original` | No augmentation (baseline) | Unchanged |
-| `weather` | Neural Style Transfer (MiDaS + VGG19) | Copied directly (pixel-level transform) |
-| `night` | img2img-turbo (CycleGAN-Turbo) | Copied directly (pixel-level transform) |
+| `rain` (light) | IP2P diffusion (g=10) + physics overlay (default intensity) | Copied directly (pixel-level transform) |
+| `rain_heavy` | `rain` (light) + `add_natural_rain(intensity='heavy_fog')` **physics-only overlay** — no additional diffusion pass | Copied verbatim from light stage (same `image_id`, `bboxes`, `ssim`, `lpips`, `status`) |
+| `snow_light` | IP2P diffusion (g=8) + physics overlay | Copied directly (pixel-level transform) |
+| `snow_heavy` | IP2P diffusion (g=12, strong prompt) + physics overlay | Copied directly (pixel-level transform) |
+| `fog` (light/medium/heavy) | Koschmieder atmospheric scattering + Depth Anything V2 depth (3 visibility zones) | Copied directly (pixel-level transform) |
+| `night` | img2img-turbo (CycleGAN-Turbo `day_to_night` checkpoint) | Copied directly (pixel-level transform) |
 | `night_rain` | Night → IP2P (rain) → Physics rain streaks | Copied directly (pixel-level transform) |
 | `night_snow` | Night → IP2P (snow) → Physics snowflakes | Copied directly (pixel-level transform) |
 | `small` | FLUX.1-Fill-dev outpainting | Bounding boxes re-mapped with offset compensation |
+| `weather_style_*` (ablation) | Legacy VGG Neural Style Transfer (MiDaS + VGG19), moved to [`experiments/ablation_style_transfer/`](../experiments/ablation_style_transfer/) on 2026-04-21 | Copied directly (pixel-level transform) |
 
 ### Base Datasets
 
@@ -24,11 +31,13 @@ ConSynth-X applies three augmentation pipelines to two base datasets, producing 
 
 ---
 
-## 2. Weather Augmentation (Neural Style Transfer)
+## 2. Weather Augmentation — Ablation Baseline (Legacy Neural Style Transfer)
 
-### 2.1 Motivation
+> **STATUS:** Ablation-only since 2026-04-21. Main rain/snow = IP2P (see [`docs/methods.md`](../docs/methods.md) §1.2 Method 2). Data files archived at [`experiments/ablation_style_transfer/`](../experiments/ablation_style_transfer/). Output-statistics tables in §2.6 and §8 below describe this **ablation archive**, not the main dataset.
 
-Real construction sites experience rain and snow that degrade object detection. Training data rarely contains these conditions, so we synthetically generate them using neural style transfer to produce visually realistic weather effects while preserving scene geometry.
+### 2.1 Motivation (ablation)
+
+Early iterations of ConSynth-X used VGG neural style transfer to synthesize rain and snow. The approach was evaluated against IP2P diffusion under 7 validation approaches (§Technical Validation). IP2P was chosen as main pipeline due to higher texture fidelity (belief H=0.85-0.86 vs 0.00 for ST) and fewer scene hallucinations; NST is retained as ablation because it yields stronger weather recognizability on the SigLIP2 classifier (62-95% vs IP2P 26-64%), making it useful for reporting the realism-vs-recognizability trade-off [cite: Ruck et al. 2026].
 
 ### 2.2 Pipeline
 
@@ -238,11 +247,11 @@ Night weather is a pixel-level transform chain (CycleGAN → IP2P → physics ov
 
 ## 5. Outpainting — Scale/Distance Augmentation (FLUX.1-Fill-dev)
 
-### 4.1 Motivation
+### 5.1 Motivation
 
 Construction objects at distance appear small and are harder to detect. To simulate this without losing image quality, we use outpainting: expanding the image canvas around the original, making objects appear smaller and more distant. This is more realistic than simple downscaling because the surrounding context is AI-generated.
 
-### 4.2 Pipeline
+### 5.2 Pipeline
 
 ```
 Input Image (W x H)
@@ -276,7 +285,7 @@ Transfer Bounding Boxes
 Output: Outpainted Image + Transferred Annotations + Metadata
 ```
 
-### 4.3 Scale Factor Distribution
+### 5.3 Scale Factor Distribution
 
 Scale factors are sampled from a **truncated Gaussian**:
 - Mean: 0.25 (25% expansion on each side)
@@ -285,7 +294,7 @@ Scale factors are sampled from a **truncated Gaussian**:
 
 This means the original image occupies between ~40% and ~70% of the final canvas area, making objects appear proportionally smaller.
 
-### 4.4 Bounding Box Transfer
+### 5.4 Bounding Box Transfer
 
 Unlike weather/night augmentation, outpainting changes the coordinate system. Bounding boxes are transferred using:
 
@@ -302,14 +311,14 @@ This accounts for:
 
 All annotation types are transferred: object bounding boxes (excavator, rebar, worker), rule violation bounding boxes (rules 1-4), and metadata fields.
 
-### 4.5 Model Configuration
+### 5.5 Model Configuration
 
 - **Model**: `black-forest-labs/FLUX.1-Fill-dev` (bfloat16)
 - **Memory optimizations**: CPU offload, VAE slicing, VAE tiling
 - **Prompt**: `"an outdoor construction site with buildings, roads, and open sky in the background"`
 - **GPU requirement**: 1x A100 (80GB)
 
-### 4.6 Output Statistics
+### 5.6 Output Statistics
 
 | Dataset | Original | Outpainted (small) |
 |---|---|---|
@@ -352,32 +361,53 @@ All augmentation jobs run on the OSC SLURM cluster:
 
 ## 8. Summary of Generated Data
 
-### Construction Site Dataset
+> **Scope:** Tables below separate **main pipeline** (IP2P + CycleGAN + FLUX + Koschmieder fog) from the **ablation archive** (legacy NST). Canonical per-variant row counts are maintained in [`dataset_card.md`](../dataset_card.md) version history; ground truth is the Arrow file directory under `$CONSYNTH_DATA_ROOT/augmentation_data/`.
+
+### Construction Site Dataset — Main Pipeline
 
 | Condition | Method | Images | Annotations |
 |---|---|---|---|
 | `original` | Baseline | 3,004 | Unchanged |
-| `weather` (6 styles) | Neural Style Transfer + SSIM filter | 10,266 | Copied |
+| `rain` (light) | IP2P g=10 + physics overlay | 1,652 (paired test) | Copied |
+| `rain_heavy` | Light + heavy_fog physics overlay (no 2nd diffusion) | 1,652 (paired test) | Copied |
+| `snow_light` | IP2P g=8 + physics | 3,004 | Copied |
+| `snow_heavy` | IP2P g=12 + physics | 3,004 | Copied |
+| `fog` (3 zones) | Koschmieder + Depth Anything V2 | 3,004 × 3 | Copied |
 | `night` | CycleGAN-Turbo | 3,004 | Copied |
 | `night_rain` | Night → IP2P rain → Physics | Pending | Copied |
 | `night_snow` | Night → IP2P snow → Physics | Pending | Copied |
 | `small` | FLUX outpainting | 1,323 | Bbox transferred |
-| **Total** | | **17,597+** | |
 
-### SODA Dataset
+### Construction Site Dataset — Ablation Archive (legacy NST)
 
 | Condition | Method | Images | Annotations |
 |---|---|---|---|
-| `original` | Baseline | 19,846 | Unchanged |
-| `weather` (6 styles) | Neural Style Transfer + SSIM filter | 47,169 | Copied (XML) |
+| `weather_style_rain_{0,1,2}` | VGG style transfer + physics + SSIM filter | 2,211 + 1,243 + 1,208 = 4,662 | Copied |
+| `weather_style_snow_{0,1,2}` | VGG style transfer + physics + SSIM filter | 2,159 + 1,649 + 1,796 = 5,604 | Copied |
+| **Ablation total** | | **10,266** | Archived at `experiments/ablation_style_transfer/construction_site/` |
+
+### SODA Dataset — Main Pipeline
+
+| Condition | Method | Images | Annotations |
+|---|---|---|---|
+| `original` (VOC) | Baseline | 19,846 | Unchanged |
+| IP2P rain / rain_heavy | IP2P + physics (VOC) | See `dataset_card.md` | Copied (XML) |
+| IP2P snow | IP2P + physics (VOC) | See `dataset_card.md` | Copied (XML) |
 | `small` | FLUX outpainting | 1,001 | Bbox transferred (XML) |
-| **Total** | | **68,016** | |
+
+### SODA Dataset — Ablation Archive (legacy NST)
+
+| Condition | Method | Images | Annotations |
+|---|---|---|---|
+| `weather_style_rain_{0,1,2}` | VGG style transfer + SSIM filter (VOC) | 8,392 + 8,059 + 9,541 = 25,992 | Copied (XML) |
+| `weather_style_snow_{0,1,2}` | VGG style transfer + SSIM filter (VOC) | 9,818 + 7,485 + 3,874 = 21,177 | Copied (XML) |
+| **Ablation total** | | **47,169** | Archived at `experiments/ablation_style_transfer/soda_voc/` |
 
 ---
 
 ## 9. Key Design Decisions
 
-1. **Style transfer over GAN**: Neural style transfer with VGG19 was chosen over CycleGAN for weather because it provides finer control over intensity via style reference images and preserves more structural detail.
+1. **IP2P diffusion over style transfer for main weather (2026-04-21)**: After comparing VGG neural style transfer and IP2P across 7 validation approaches, IP2P was chosen as the main rain/snow method because (a) texture fidelity is substantially higher (Dempster-Shafer belief H=0.85-0.86 vs 0.00), (b) classifier-driven weather recognizability gap is smaller than the texture-artifact gap, and (c) IP2P yields fewer scene-level hallucinations once the "wet muddy ground" prompt issue was fixed (see `docs/methods.md` §1.2). NST is retained as an ablation baseline (`experiments/ablation_style_transfer/`) for reporting the realism-vs-recognizability trade-off.
 
 2. **SSIM filtering**: Removes both failed augmentations (SSIM > 0.95, image barely changed) and over-corrupted samples (SSIM < 0.5, unrecognizable), ensuring augmented data is meaningfully different but usable.
 
@@ -405,4 +435,3 @@ All augmentation jobs run on the OSC SLURM cluster:
 | Outpainting workers | `generation/outpainting/flux_pipeline_worker.py`, `flux_pipeline_worker_voc.py` |
 | Outpainting SLURM | `generation/outpainting/submit_outpainting_pipeline.py`, `submit_outpainting_soda.py` |
 | Arrow export utility | `generation/utils/export_arrow_to_train.py` |
-| Parameter ranges | `generation/parameter_ranges.json` |

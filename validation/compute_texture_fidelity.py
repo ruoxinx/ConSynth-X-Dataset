@@ -35,6 +35,11 @@ import time
 import warnings
 from collections import defaultdict
 from pathlib import Path
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 import numpy as np
 from PIL import Image
@@ -42,11 +47,11 @@ from PIL import Image
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # ── Paths (same as compute_fid_kid.py) ────────────────────────────
-DATA_ROOT = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+DATA_ROOT = _DATA_ROOT
 ARROW_DATA = DATA_ROOT / "augmentation_data_arrow"
-FOG_DATA = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/augmentation_data/construction_site/fog/diffusion/test")
-REFERENCE_BASE = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/reference_data")
-OUT_DIR = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/results/texture_fidelity")
+FOG_DATA = (_REPO_ROOT / "augmentation_data/construction_site/fog/diffusion/test")
+REFERENCE_BASE = (_REPO_ROOT / "validation/reference_data")
+OUT_DIR = (_REPO_ROOT / "validation/results/texture_fidelity")
 
 # ── Condition mapping ─────────────────────────────────────────────
 CONDITION_PAIRS = {
@@ -84,6 +89,13 @@ CONDITION_PAIRS = {
             "path": DATA_ROOT / "output" / "construction_site_test" / "diffusion_rain_heavy",
         },
         "description": "IP2P diffusion rain",
+    },
+    "diffusion_rain_heavy": {
+        "source": {
+            "type": "arrow_dir",
+            "path": _REPO_ROOT / "augmentation_data" / "construction_site" / "rain_snow" / "diffusion" / "test" / "rain_heavy",
+        },
+        "description": "IP2P diffusion rain + heavy physics overlay (2026-04-21)",
     },
     "diffusion_snow": {
         "source": {

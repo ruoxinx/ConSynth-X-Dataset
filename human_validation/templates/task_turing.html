@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Turing Test - ConSynth-X Validation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="progress-bar-container">
+        <span class="progress-text">{{ done }} / {{ total }}</span>
+        <div class="progress-bar">
+            <div class="progress-bar-fill" style="width: {{ (done / total * 100) if total > 0 else 0 }}%"></div>
+        </div>
+    </div>
+
+    <div class="card" style="padding: 1rem 1.5rem;">
+        <p style="text-align:center; font-weight: 500;">Is this image a <strong>real photograph</strong> or <strong>synthetically generated</strong>?</p>
+    </div>
+
+    <div class="task-image-container">
+        <img id="task-image" src="{{ url_for('static', filename=image['filename']) }}" alt="Evaluation image">
+    </div>
+
+    <div class="response-buttons">
+        <button class="response-btn" data-answer="real" onclick="submitAnswer('real')">
+            Real Photograph
+            <span class="key-hint">Press R</span>
+        </button>
+        <button class="response-btn" data-answer="synthetic" onclick="submitAnswer('synthetic')">
+            Synthetic / AI-Generated
+            <span class="key-hint">Press S</span>
+        </button>
+    </div>
+
+    <p class="shortcut-hint">Keyboard: <kbd>R</kbd> Real &nbsp; <kbd>S</kbd> Synthetic</p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IMAGE_ID = {{ image['id'] }};
+let startTime = Date.now();
+let submitted = false;
+
+function submitAnswer(answer) {
+    if (submitted) return;
+    submitted = true;
+
+    const elapsed = Date.now() - startTime;
+    document.querySelector(`[data-answer="${answer}"]`).classList.add('selected');
+
+    fetch('/api/turing', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({image_id: IMAGE_ID, answer: answer, response_ms: elapsed})
+    }).then(() => {
+        setTimeout(() => window.location.reload(), 200);
+    });
+}
+
+document.addEventListener('keydown', (e) => {
+    if (submitted) return;
+    if (e.key === 'r' || e.key === 'R') submitAnswer('real');
+    if (e.key === 's' || e.key === 'S') submitAnswer('synthetic');
+});
+</script>
+{% endblock %}

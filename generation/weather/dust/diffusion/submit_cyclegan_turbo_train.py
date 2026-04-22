@@ -17,7 +17,7 @@ DATA_DIR = PROJECT_ROOT / 'data' / 'clear2dust'
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'cyclegan_turbo_clear2dust'
 LOGS_DIR = PROJECT_ROOT / 'logs'
 JOBS_DIR = PROJECT_ROOT / 'jobs'
-CONDA_ENV = '/users/PGS0407/binben14/.conda/envs/VLM'
+CONDA_ENV = os.environ.get('CONSYNTH_CONDA_ENV', 'VLM')
 
 # Training hyperparameters
 MAX_TRAIN_STEPS = 25000
@@ -51,7 +51,7 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 echo "Start: $(date)"
 echo ""
 
-eval "$(/users/PGS0407/binben14/miniconda3/bin/conda shell.bash hook)"
+eval "$(conda shell.bash hook)"
 conda activate {CONDA_ENV}
 
 # Install missing dependencies

@@ -24,8 +24,13 @@ import argparse
 import json
 from pathlib import Path
 from PIL import Image
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
-BASE_OUTPUT = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/reference_data")
+BASE_OUTPUT = (_REPO_ROOT / "validation/reference_data")
 
 
 def download_weathernet(output_dir: Path, resize: int = 640, max_per_condition: int = None):

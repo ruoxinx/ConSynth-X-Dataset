@@ -268,9 +268,11 @@ if __name__ == "__main__":
     transform = get_transform(train=False)
     
     # Test Arrow loading
+    import os
+    _data = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
     print("Testing Arrow loading...")
     ds_arrow = ConstructionSiteDataset(
-        "/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site/construction_site-test.arrow",
+        str(_data / 'LouisChen15___construction_site' / 'construction_site-test.arrow'),
         transform=transform,
         max_samples=5
     )
@@ -283,7 +285,7 @@ if __name__ == "__main__":
     # Test folder loading
     print("\nTesting Folder loading...")
     ds_folder = ConstructionSiteDataset(
-        "/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/construction_site-test",
+        str(_data / 'augmentation_data' / 'construction_site-test'),
         transform=transform,
         max_samples=5
     )

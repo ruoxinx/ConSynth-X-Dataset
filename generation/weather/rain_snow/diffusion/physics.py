@@ -14,7 +14,9 @@ from PIL import Image
 import io, cv2, torch
 
 SCRIPT_DIR = Path(__file__).parent
-BASE_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite')
+_GEN_ROOT = next(p for p in SCRIPT_DIR.resolve().parents if (p / '_paths.py').exists())
+sys.path.insert(0, str(_GEN_ROOT))
+from _paths import DATA_ROOT as BASE_DIR
 OUT_DIR = SCRIPT_DIR / 'output_samples' / 'v4_stronger_rain_20'
 
 
@@ -39,26 +41,54 @@ def add_rain_fog(image: np.ndarray, strength=0.25) -> np.ndarray:
     return np.clip(result, 0, 255).astype(np.uint8)
 
 
-def add_natural_rain(image: np.ndarray) -> np.ndarray:
-    """Rain streaks at 3 depth layers + atmospheric fog."""
+def add_natural_rain(image: np.ndarray, intensity: str = 'heavy') -> np.ndarray:
+    """Rain streaks at 3 depth layers + atmospheric fog.
+
+    intensity:
+      'heavy' (default, unchanged) — current production behavior
+      'light' — ~1/3 the streak density, thinner fog haze
+      'heavy_fog' — heavy streaks + stronger fog haze + mild blur (reduced visibility)
+    """
     h, w = image.shape[:2]
 
-    # First add rain fog/haze
-    result = add_rain_fog(image, strength=random.uniform(0.15, 0.30))
+    blur_after = False
+    if intensity == 'light':
+        fog_strength = random.uniform(0.05, 0.12)
+        layers = [
+            {'n': random.randint(500, 900),  'len': (8, 18),  'thick': 1,
+             'alpha': 0.15, 'y_range': (0, h)},
+            {'n': random.randint(300, 600),  'len': (14, 25), 'thick': 1,
+             'alpha': 0.20, 'y_range': (0, h)},
+            {'n': random.randint(80, 200),   'len': (20, 35), 'thick': 1,
+             'alpha': 0.25, 'y_range': (0, h)},
+        ]
+    elif intensity == 'heavy_fog':
+        fog_strength = random.uniform(0.30, 0.45)
+        layers = [
+            {'n': random.randint(3000, 4500), 'len': (12, 26), 'thick': 1,
+             'alpha': 0.35, 'y_range': (0, h)},
+            {'n': random.randint(2200, 3600), 'len': (22, 42), 'thick': random.choice([1, 2]),
+             'alpha': 0.48, 'y_range': (0, h)},
+            {'n': random.randint(900, 1600),  'len': (30, 60), 'thick': random.choice([2, 2, 3]),
+             'alpha': 0.55, 'y_range': (0, h)},
+        ]
+        blur_after = True
+    else:
+        fog_strength = random.uniform(0.15, 0.30)
+        layers = [
+            {'n': random.randint(1500, 2500), 'len': (10, 22), 'thick': 1,
+             'alpha': 0.25, 'y_range': (0, h)},
+            {'n': random.randint(1000, 2000), 'len': (18, 35), 'thick': 1,
+             'alpha': 0.35, 'y_range': (0, h)},
+            {'n': random.randint(300, 700),   'len': (25, 50), 'thick': random.choice([1, 2]),
+             'alpha': 0.40, 'y_range': (0, h)},
+        ]
+
+    result = add_rain_fog(image, strength=fog_strength)
     result = result.astype(np.float64)
 
     base_angle = random.choice([-1, 1]) * random.randint(75, 87)
     wind_var = random.uniform(-5, 5)
-
-    # 3 layers: far (many small), mid, near (fewer big)
-    layers = [
-        {'n': random.randint(1500, 2500), 'len': (10, 22), 'thick': 1,
-         'alpha': 0.25, 'y_range': (0, h)},
-        {'n': random.randint(1000, 2000), 'len': (18, 35), 'thick': 1,
-         'alpha': 0.35, 'y_range': (0, h)},
-        {'n': random.randint(300, 700), 'len': (25, 50), 'thick': random.choice([1, 2]),
-         'alpha': 0.40, 'y_range': (0, h)},
-    ]
 
     for layer in layers:
         canvas = np.zeros((h, w), dtype=np.float64)
@@ -81,7 +111,10 @@ def add_natural_rain(image: np.ndarray) -> np.ndarray:
                           220 + random.randint(0,15)], dtype=np.float64)
         result = result * (1 - a) + color * a
 
-    return np.clip(result, 0, 255).astype(np.uint8)
+    result = np.clip(result, 0, 255).astype(np.uint8)
+    if blur_after:
+        result = cv2.GaussianBlur(result, (5, 5), sigmaX=1.3)
+    return result
 
 
 def add_natural_snow(image: np.ndarray) -> np.ndarray:

@@ -51,7 +51,7 @@ echo "============================================"
 module load cuda/11.8.0
 module load miniconda3/24.1.2-py310
 eval "$(/apps/spack/0.21/pitzer/linux-rhel9-skylake/miniconda3/gcc/11.4.1/24.1.2-py310-ghbxrie/bin/conda shell.bash hook)"
-conda activate /users/PGS0407/binben14/.conda/envs/VLM
+conda activate "${CONSYNTH_CONDA_ENV:-VLM}"
 
 cd {work_dir}
 

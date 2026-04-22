@@ -5,6 +5,7 @@ Output format: ./output/{dataset_name}/{style_name}/batch_{start}-{end}.arrow
 """
 
 import argparse
+import os
 import subprocess
 import math
 from pathlib import Path
@@ -155,7 +156,7 @@ def main():
     # Handle input file path based on dataset name
     dataset_dir = work_dir / 'LouisChen15___construction_site'
     if args.dataset == 'construction_site_night':
-        input_file = "/users/PGS0407/binben14/VietHuy/ConstructionSite/output/construction_site_test/style_snow_0/batch_0-100.arrow"
+        input_file = Path(os.environ.get("CONSYNTH_DATA_ROOT", Path.home() / "consynth_data")) / "output" / "construction_site_test" / "style_snow_0" / "batch_0-100.arrow"
     elif args.dataset == 'construction_site_test':
         input_file = dataset_dir / 'construction_site-test.arrow'
     elif args.dataset == 'construction_site_train':

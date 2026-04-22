@@ -1,6 +1,6 @@
 # Extreme Conditions Taxonomy
 
-This file defines the taxonomy used in ConstructionCV-ExtremeConditions. Each condition is defined explicitly and notes how labels should be created and validated.
+This file defines the taxonomy used in ConSynth-X. Each condition is defined explicitly and notes how labels should be created and validated.
 
 1. Weather
 - rain: visible falling rain streaks or wet surfaces caused by rain. Labeling: manual (visual) or sensor metadata if available.

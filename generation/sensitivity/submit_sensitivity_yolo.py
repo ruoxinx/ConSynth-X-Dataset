@@ -15,11 +15,13 @@ Each job:
 
 import argparse
 import os
+import os
 import sys
 from pathlib import Path
 import json
 
-BASE = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X')
+BASE = Path(os.environ.get('CONSYNTH_REPO_ROOT', Path(__file__).resolve().parents[2]))
+DATA_ROOT = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
 AUG  = BASE / 'augmentation_data' / 'construction_site' / 'rain_snow'
 SENS = BASE / 'generation' / 'sensitivity'
 DETECT_SCRIPT = BASE / 'benchmarks' / 'detection' / 'train_yolo.py'
@@ -214,8 +216,8 @@ def main():
     log_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    orig_data = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/construction_site-test')
-    val_dir = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/validation_data/downstream_detection/val_from_train')
+    orig_data = DATA_ROOT / 'augmentation_data' / 'construction_site-test'
+    val_dir = DATA_ROOT / 'validation_data' / 'downstream_detection' / 'val_from_train'
 
     submitted = []
     for config in args.configs:

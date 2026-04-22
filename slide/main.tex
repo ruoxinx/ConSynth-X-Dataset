@@ -85,7 +85,7 @@
 \subtitle{Project Progress Report}
 \author{Viet Huy Duong \\ \texttt{vduong1@kent.edu}}
 \institute{Kent State University}
-\date{March 29, 2026}
+\date{April 8, 2026}
 
 \begin{document}
 
@@ -176,12 +176,14 @@
 \midrule
 Original        & Baseline              & 3,004  & 19,846 \\
 Weather (style) & Neural Style Transfer & 10,266 & 47,169 \\
-Weather (diff.) & InstructPix2Pix       & \textit{TBD}   & --     \\
+Weather (diff.) & InstructPix2Pix       & 10,382 & --     \\
 Night           & img2img-turbo         & 3,004  & 19,846 \\
+\rowcolor{lightblue}
+Night Weather   & Night $\to$ IP2P + Physics & Pending & --  \\
 Fog             & Koschmieder + DA V2   & 3,003  & --     \\
 Small           & FLUX Outpainting      & 1,323  & 1,001  \\
 \midrule
-\textbf{Total} &                        & \textbf{20,600+} & \textbf{87,862} \\
+\textbf{Total} &                        & \textbf{30,982+} & \textbf{87,862} \\
 \bottomrule
 \end{tabular}
 }
@@ -222,6 +224,12 @@ Small           & FLUX Outpainting      & 1,323  & 1,001  \\
     {\scriptsize Koschmieder + DA V2}
 };
 
+% Night Weather (compound)
+\node[pipebox=brown, minimum width=3.6cm, minimum height=1.0cm] (nightweather) at (11.5,0) {
+    \textbf{Night Weather}\\
+    {\scriptsize IP2P + Physics on Night}
+};
+
 % Small
 \node[pipebox=boxgreen, minimum width=3.6cm, minimum height=1.0cm] (small) at (5.5,-2.6) {
     \textbf{Outpainting}\\
@@ -235,12 +243,15 @@ Small           & FLUX Outpainting      & 1,323  & 1,001  \\
 \draw[garrow] (orig.east) -- (fog.west);
 \draw[garrow] (orig.east) -- (small.west);
 
+% Night → Night Weather
+\draw[garrow, brown!70] (night.east) -- (nightweather.west);
+
 % Annotations
 \node[pipelbl, right=0.1cm of weather.east] {Annot. copied};
 \node[pipelbl, right=0.1cm of diffweather.east] {\textcolor{teal}{\textbf{NEW}}};
-\node[pipelbl, right=0.1cm of night.east]   {Annot. copied};
 \node[pipelbl, right=0.1cm of fog.east]     {\textcolor{boxpurple}{\textbf{NEW}}};
 \node[pipelbl, right=0.1cm of small.east]   {Bbox re-mapped};
+\node[pipelbl, above=0.05cm of nightweather.north] {\textcolor{brown}{\textbf{NEW}}};
 
 \end{tikzpicture}}%
 \end{frame}
@@ -363,6 +374,122 @@ snow\_0 / snow\_1 / snow\_2 & 9,818 / 7,485 / 3,874 \\
 \end{frame}
 
 % ────────────────────────────────────────
+\begin{frame}{Weather Augmentation: Visual Comparison}
+\centering
+\includegraphics[width=\textwidth]{fig1_comparison_grid.png}
+
+\vspace{0.3em}
+{\scriptsize Original $\to$ Style Transfer (VGG19+MiDaS) $\to$ IP2P Diffusion (+ physics overlay).\\
+Style transfer produces color/texture shifts; IP2P generates more physically consistent atmospheric effects.}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Night Weather Augmentation (IP2P + Physics)}
+\begin{columns}[T]
+\begin{column}{0.38\textwidth}
+{\small \textbf{Pipeline:} Night $\rightarrow$ IP2P $\rightarrow$ Physics Particles}
+
+\vspace{0.2em}
+{\scriptsize Compound conditions (rain+night, snow+night) are common on real sites but absent from training data.}
+
+\vspace{0.2em}
+{\scriptsize
+\begin{enumerate}\setlength{\itemsep}{0pt}
+    \item Start from \textbf{CycleGAN night} image
+    \item IP2P edits atmosphere (night prompts)
+    \item Physics overlay: rain streaks / snowflakes
+    \item SSIM/LPIPS filter (vs.\ \textit{original})
+\end{enumerate}}
+
+\vspace{0.1em}
+{\tiny
+\begin{tabular}{lcc}
+\toprule
+\textbf{Param} & \textbf{Rain} & \textbf{Snow} \\
+\midrule
+guidance\_scale & 10.0 & 8.0 \\
+img\_guidance   & 1.5  & 1.5  \\
+steps           & 30   & 30   \\
+SSIM range      & {[}0.6, 0.95{]} & {[}0.5, 0.95{]} \\
+LPIPS           & $<$0.35 & -- \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.1em}
+\centering
+\scalebox{0.7}{%
+\begin{tikzpicture}[node distance=0.3cm]
+\node[dnode, minimum width=2.2cm, minimum height=0.5cm, font=\scriptsize] (n)  {\textbf{Night Image}};
+\node[dwnode, minimum width=2.2cm, minimum height=0.5cm, font=\scriptsize, below=of n] (ip2p) {\textbf{IP2P} (rain/snow)};
+\node[dwnode, minimum width=2.2cm, minimum height=0.5cm, font=\scriptsize, below=of ip2p] (phys) {Physics Particles};
+\node[wssim, minimum width=2.2cm, minimum height=0.5cm, font=\scriptsize, below=of phys] (filt) {SSIM/LPIPS Filter};
+\node[dwnode, minimum width=2.2cm, minimum height=0.5cm, font=\scriptsize, below=of filt] (out) {\textbf{Night Weather}};
+\draw[darrow] (n) -- (ip2p);
+\draw[dwarrow] (ip2p) -- (phys);
+\draw[dwarrow] (phys) -- (filt);
+\draw[dwarrow] (filt) -- (out);
+\node[font=\tiny, text=gray, right=0.1cm of ip2p] {cfg=10/8};
+\end{tikzpicture}}
+\end{column}
+\begin{column}{0.60\textwidth}
+\centering
+\includegraphics[width=\textwidth, height=0.82\textheight, keepaspectratio]{night_weather_grid.jpg}
+
+\vspace{0.1em}
+{\tiny Original $\mid$ Night $\mid$ \textcolor{boxorange}{IP2P Rain+Night} $\mid$ \textcolor{boxblue}{IP2P Snow+Night}}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Why Not SSIM? DINO vs SSIM for Weather Augmentation}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\textbf{Problem:} SSIM measures \textbf{pixel-level} similarity --- it penalizes \textit{desired} changes (darker sky, rain streaks, color shift) equally with \textit{unwanted} changes (hallucinated objects, structural damage).
+
+\vspace{0.5em}
+\textbf{DINOv2 Patch Similarity} measures \textbf{semantic structure} --- objects, layout, spatial composition --- without penalizing atmospheric changes.
+
+\vspace{0.5em}
+{\footnotesize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{DINO$\uparrow$} & \textbf{SSIM$\uparrow$} \\
+\midrule
+Canny CN+img2img & \textbf{0.744} & 0.590 \\
+Vanilla IP2P     & 0.674 & \textbf{0.692} \\
+FLUX Kontext      & 0.639 & 0.281 \\
+SDXL IP2P        & 0.435 & 0.443 \\
+ControlNet IP2P  & 0.196 & 0.214 \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.3em}
+{\scriptsize DINO ranks Canny CN+img2img \#1 (strong weather + preserved objects), while SSIM ranks Vanilla IP2P \#1 (subtle edit $\approx$ less change).}
+\end{column}
+\begin{column}{0.43\textwidth}
+\centering
+\includegraphics[width=\textwidth]{dino_vs_ssim.png}
+
+\vspace{0.3em}
+{\scriptsize DINO--SSIM scatter across all methods. Higher DINO = better semantic preservation. FLUX has low SSIM but decent DINO (global=0.92).}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{DINO vs SSIM Disagreement: When SSIM Fails}
+\centering
+\includegraphics[height=0.75\textheight]{disagreement_5plus5.jpg}
+
+\vspace{0.2em}
+{\scriptsize \textbf{Left (red):} SSIM says OK but DINO says bad --- ground texture changes hidden by similar brightness.\\
+\textbf{Right (green):} SSIM says bad but DINO says good --- strong weather edit preserves all objects.}
+\end{frame}
+
+% ────────────────────────────────────────
 \begin{frame}{NEW: Fog Augmentation (Koschmieder Model)}
 \begin{columns}[T]
 \begin{column}{0.50\textwidth}
@@ -468,6 +595,8 @@ light  & 750--1000 & Subtle morning haze \\
 \end{column}
 \end{columns}
 \end{frame}
+
+% (Night Weather slide moved above filter section)
 
 % ────────────────────────────────────────
 \begin{frame}{Outpainting -- Scale/Distance Augmentation}
@@ -902,6 +1031,143 @@ small            & \textcolor{warnred}{0.729} & 0.113 \\
 \end{frame}
 
 % ════════════════════════════════════════
+\section{Downstream Detection -- Sensitivity Analysis}
+% ════════════════════════════════════════
+
+\begin{frame}{SSIM/LPIPS Threshold Sensitivity -- Experimental Design}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{Goal:} Determine optimal SSIM/LPIPS thresholds for quality filtering of synthetic augmentation data.
+
+\vspace{0.3em}
+\textbf{Pipeline:}
+\begin{enumerate}
+    \item Generate rain/snow via IP2P + physics overlay
+    \item Filter by SSIM $\in [\tau, 0.95]$ and LPIPS $< \lambda$
+    \item Combine filtered augmented + original data
+    \item Train YOLOv8n (20 epochs, seed=42)
+    \item Evaluate mAP@0.5 on held-out test set
+\end{enumerate}
+
+\vspace{0.3em}
+\textbf{Training setup:}
+\begin{itemize}
+    \item Model: YOLOv8n, imgsz=640, batch=16
+    \item 3 classes: excavator, rebar, worker
+    \item Val: 1,000 images from test split
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{7 threshold configurations:}
+
+\vspace{0.3em}
+{\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Config} & \textbf{SSIM$_r$} & \textbf{SSIM$_s$} & \textbf{LPIPS} \\
+\midrule
+baseline  & --    & --    & --   \\
+loose     & 0.40  & 0.40  & 0.50 \\
+moderate  & 0.50  & 0.50  & 0.40 \\
+current   & 0.60  & 0.50  & 0.35 \\
+strict    & 0.65  & 0.60  & 0.30 \\
+tight     & 0.70  & 0.65  & 0.25 \\
+no\_lpips & 0.60  & 0.50  & --   \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.3em}
+{\scriptsize $r$ = rain, $s$ = snow. Baseline uses original data only (no augmentation).}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Sensitivity Results -- YOLOv8n Detection Performance}
+\centering
+{\small
+\begin{tabular}{l c c c c c c}
+\toprule
+\textbf{Config} & \textbf{Train} & \textbf{mAP@0.5} & \textbf{mAP@.5:.95} & \textbf{Prec.} & \textbf{Recall} & \textbf{Excavator} \\
+\midrule
+baseline          & 7,009  & \textbf{0.562} & 0.338 & \textbf{0.674} & 0.558 & 0.906 \\
+\rowcolor{lightred}
+loose$^\dagger$   & 17,391 & 0.535 & 0.344 & 0.589 & 0.579 & 0.920 \\
+\rowcolor{lightred}
+moderate$^\dagger$ & 17,391 & 0.535 & 0.344 & 0.589 & 0.579 & 0.920 \\
+current           & 17,390 & 0.547 & 0.339 & 0.617 & 0.558 & 0.916 \\
+strict            & 16,379 & 0.538 & \textbf{0.349} & 0.583 & \textbf{0.580} & 0.915 \\
+tight             & 14,948 & 0.542 & 0.344 & 0.613 & 0.576 & 0.909 \\
+\rowcolor{lightred}
+no\_lpips$^\dagger$ & 17,391 & 0.535 & 0.344 & 0.589 & 0.579 & 0.920 \\
+\bottomrule
+\end{tabular}
+}
+
+\vspace{0.4em}
+{\scriptsize $^\dagger$ \textcolor{warnred}{\textbf{Identical results}} -- see next slide for explanation.}
+
+\vspace{0.3em}
+\textbf{Per-class AP@0.5:}
+{\scriptsize Excavator consistently high (0.91+). Rebar struggles (0.19--0.26). Worker stable (0.45--0.52).}
+\end{frame}
+
+% ────────────────────────────────────────
+\begin{frame}{Sensitivity Analysis -- Limitations Found}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{warnred}{Problem: Pre-filtered Arrow data}}
+
+The Arrow batch files used for training contain \textbf{only images that already passed} the \texttt{current} threshold (SSIM$\geq$0.60 rain, $\geq$0.50 snow).
+
+\vspace{0.3em}
+\textbf{Consequence:}
+\begin{itemize}
+    \item Looser thresholds (loose, moderate) cannot recover dropped images
+    \item \texttt{no\_lpips} produces identical data to \texttt{loose} (LPIPS filter was already applied)
+    \item Only \texttt{strict} and \texttt{tight} actually filter differently
+\end{itemize}
+
+\vspace{0.3em}
+\textbf{Evidence:}
+{\scriptsize
+\begin{tabular}{lcc}
+\toprule
+\textbf{Config} & \textbf{Rain} & \textbf{Snow} \\
+\midrule
+loose/mod/no\_lpips & 3,627 & 6,755 \\
+current & 3,626 & 6,755 \\
+strict & 3,048 & 6,322 \\
+tight & 2,259 & 5,680 \\
+\bottomrule
+\end{tabular}
+}
+\end{column}
+\begin{column}{0.48\textwidth}
+\textbf{\textcolor{warnred}{Additional issues:}}
+
+\begin{enumerate}
+    \item \textbf{Snow has no LPIPS scores} -- LPIPS was never computed for snow diffusion, making \texttt{no\_lpips} config meaningless (65\% of augmented data)
+
+    \item \textbf{Val set is clean images only} -- baseline outperforms all augmented configs because the test set has no weather conditions
+
+    \item \textbf{Only 20 epochs} -- may not be sufficient for convergence with larger datasets (17k vs 7k)
+\end{enumerate}
+
+\vspace{0.3em}
+\textbf{\textcolor{okgreen}{Fix plan:}}
+\begin{itemize}
+    \item Re-run filtering from raw meta CSVs + \textbf{unfiltered} Arrow batches
+    \item Compute LPIPS for snow
+    \item Add weather-augmented val set
+    \item Increase to 50 epochs
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% ════════════════════════════════════════
 \section{Current Status \& Next Steps}
 % ════════════════════════════════════════
 
@@ -914,23 +1180,26 @@ small            & \textcolor{warnred}{0.729} & 0.113 \\
     \item[\textcolor{okgreen}{$\checkmark$}] VLM benchmark framework (11 models)
     \item[\textcolor{okgreen}{$\checkmark$}] VQA Safety: 6 models $\times$ 4 conditions
     \item[\textcolor{okgreen}{$\checkmark$}] Description: 5 models $\times$ 4 conditions
-    \item[\textcolor{okgreen}{$\checkmark$}] Augmentation quality metrics (FID, DINO)
+    \item[\textcolor{okgreen}{$\checkmark$}] Augmentation quality (FID, DINO)
     \item[\textcolor{okgreen}{$\checkmark$}] Gemma-3-27B, Phi-4 integrated
-    \item[\textcolor{okgreen}{$\checkmark$}] Repo consolidated into ConSynth-X
-    \item[\textcolor{okgreen}{$\checkmark$}] \textbf{NEW:} Fog pipeline (Koschmieder + DA V2)
-    \item[\textcolor{okgreen}{$\checkmark$}] \textbf{NEW:} Diffusion rain/snow (IP2P + physics)
+    \item[\textcolor{okgreen}{$\checkmark$}] Fog pipeline (Koschmieder + DA V2)
+    \item[\textcolor{okgreen}{$\checkmark$}] Diffusion rain/snow (IP2P, 10,382 images)
+    \item[\textcolor{okgreen}{$\checkmark$}] SODA day-to-night (19,846 images)
+    \item[\textcolor{okgreen}{$\checkmark$}] Sensitivity analysis v1 (7 configs, YOLOv8n)
 \end{itemize}
 \end{column}
 \begin{column}{0.48\textwidth}
 \textbf{\textcolor{infobl}{In Progress / Next:}}
 \begin{itemize}
-    \item[\textcolor{infobl}{$\circ$}] Run remaining VLMs (Qwen2.5 7B/32B/72B, Llama-3.2, GPT-4o)
-    \item[\textcolor{infobl}{$\circ$}] Full batch run: IP2P rain/snow (3,004 images)
+    \item[\textcolor{warnred}{$\circ$}] \textbf{Fix sensitivity:} re-run from unfiltered Arrow data (current results invalid for loose/moderate)
+    \item[\textcolor{warnred}{$\circ$}] Compute LPIPS for snow diffusion
+    \item[\textcolor{warnred}{$\circ$}] Add weather-augmented val set
+    \item[\textcolor{infobl}{$\circ$}] Re-train with 50 epochs
+    \item[\textcolor{infobl}{$\circ$}] Run remaining VLMs (Qwen2.5, Llama-3.2, GPT-4o)
     \item[\textcolor{infobl}{$\circ$}] FID \& DINO eval on fog + diffusion weather
-    \item[\textcolor{okgreen}{$\checkmark$}] SODA day-to-night augmentation (19,846 images)
 \end{itemize}
 
-\vspace{0.5em}
+\vspace{0.3em}
 \textbf{\textcolor{gray}{Planned:}}
 \begin{itemize}
     \item[\textcolor{gray}{$\circ$}] Per-condition robustness metrics (AP)

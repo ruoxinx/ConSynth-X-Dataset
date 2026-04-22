@@ -14,10 +14,10 @@ from pathlib import Path
 from datetime import datetime
 import argparse
 
-WORKSPACE = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+WORKSPACE = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
 SCRIPT = Path(__file__).resolve().parent / "train_yolo_soda.py"
 OUTPUT_DIR = WORKSPACE / "validation_data/downstream_detection/SODA"
-VLM_BIN = "/users/PGS0407/binben14/.conda/envs/VLM/bin"
+CONDA_ENV = os.environ.get('CONSYNTH_CONDA_ENV', 'VLM')
 
 CONFIGS = [
     "original",
@@ -52,7 +52,10 @@ echo "=========================================="
 
 nvidia-smi
 
-export PATH={VLM_BIN}:$PATH
+module load cuda/11.8.0 2>/dev/null || true
+module load miniconda3/24.1.2-py310 2>/dev/null || true
+eval "$(conda shell.bash hook)"
+conda activate {CONDA_ENV}
 cd {WORKSPACE}
 
 python {SCRIPT} \\

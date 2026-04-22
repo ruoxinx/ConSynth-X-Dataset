@@ -6,6 +6,7 @@ Pipeline: Night images (CycleGAN-Turbo) + Weather Particles (rain/snow overlay)
 Creates a comparison grid: Original | Night | Rain+Night | Snow+Night
 """
 
+import os
 import sys
 import random
 import io
@@ -185,8 +186,8 @@ def create_comparison_grid(samples, cell_w=400, cell_h=300, padding=4, label_h=3
 # ============================================================
 
 def main():
-    BASE_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data_arrow')
-    OUTPUT_DIR = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X/generation/preview_grids')
+    BASE_DIR = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data')) / 'augmentation_data_arrow'
+    OUTPUT_DIR = Path(os.environ.get('CONSYNTH_REPO_ROOT', Path(__file__).resolve().parents[1])) / 'generation' / 'preview_grids'
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     print("Loading arrow files...")

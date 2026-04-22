@@ -2,11 +2,15 @@
 # All dataset-specific configs inherit from this
 
 # === Paths ===
+# Override at runtime via environment variables (see ConSynth-X/.env.example):
+#   CONSYNTH_DATA_ROOT   → augmentation_root + annotation_root (sibling-relative)
+#   CONSYNTH_REPO_ROOT   → output_root
+# Or edit these values directly.
 paths:
-  lmu_data_root: /users/PGS0407/binben14/LMUData
-  augmentation_root: /users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data
-  annotation_root: /users/PGS0407/binben14/VietHuy/ConstructionSite-10k-Implementation/Annotations
-  output_root: /users/PGS0407/binben14/VietHuy/ConSynth-X/benchmarks/vlm/output
+  lmu_data_root: ${HOME}/LMUData
+  augmentation_root: ${CONSYNTH_DATA_ROOT}/augmentation_data
+  annotation_root: ${CONSYNTH_ANNOTATION_ROOT}
+  output_root: ${CONSYNTH_REPO_ROOT}/benchmarks/vlm/output
 
 # === Inference defaults ===
 inference:

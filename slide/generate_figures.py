@@ -15,7 +15,7 @@ from pathlib import Path
 OUT_DIR = Path(__file__).parent / 'figures'
 OUT_DIR.mkdir(exist_ok=True)
 
-BR = Path('/users/PGS0407/binben14/VietHuy/Benchmark_runner')
+BR = _BR_ROOT
 
 # ── Color scheme ──
 COND_COLORS = {

@@ -11,13 +11,14 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 import pyarrow as pa
 import pandas as pd
 import json
 
-BASE = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X')
+BASE = Path(os.environ.get('CONSYNTH_REPO_ROOT', Path(__file__).resolve().parents[2]))
 AUG  = BASE / 'augmentation_data' / 'construction_site' / 'rain_snow'
 
 # Pre-defined threshold combos (same as ssim_lpips_sweep.py)

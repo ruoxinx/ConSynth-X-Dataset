@@ -1,0 +1,72 @@
+[
+  {
+    "group": "ABOVE",
+    "id": "0001072",
+    "dino": 0.9558,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of a snowy scene. The spatial layout and the presence of construction elements such as the worker, the crane, and the construct"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0000280",
+    "dino": 0.8878,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on the ground and the excavator, falling snow particles, and an overcast grey sky, which are realistic elements of snow augmentation. The scene content, including the excavator, the construction site, and the background"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0002363",
+    "dino": 0.8834,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of a snowy scene. The spatial layout and the presence of the construction machinery and the excavator are preserved, indicating"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0002133",
+    "dino": 0.7835,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on the ground and falling snow particles, which adds a layer of realism to the scene. The overcast grey sky and reduced color saturation also contribute to a more believable snowy environment. However, the snow effect d"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0001949",
+    "dino": 0.824,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces and falling snow particles, which adds a layer of realism to the scene. However, the overcast grey sky and reduced color saturation are not present in the original image, which may affect the perception of r"
+  },
+  {
+    "group": "BELOW",
+    "id": "0000972",
+    "dino": 0.5353,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of a snowy scene. The spatial layout and structures of the construction site are preserved despite the weather change.\", \"decis"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004654",
+    "dino": 0.5612,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of a snowy scene. The spatial layout and the presence of construction workers, equipment, and buildings are preserved, maintain"
+  },
+  {
+    "group": "BELOW",
+    "id": "0000762",
+    "dino": 0.3593,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of snow augmentation. The scene content, including the construction workers, the scaffolding, and the building structure, remai"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004249",
+    "dino": 0.7122,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of snow augmentation. The scene content, including the construction site, vehicles, and structures, is preserved with the addit"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004672",
+    "dino": 0.7127,
+    "decision": true,
+    "raw": "{\"explanation\": \"The snow effect in the right image includes white snow coverage on surfaces, falling snow particles, and an overcast grey sky, which are realistic elements of a snowy scene. The spatial layout and objects such as the trucks, car, and construction materials are preserved despite the "
+  }
+]

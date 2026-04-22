@@ -27,12 +27,17 @@ Usage:
 import argparse
 import json
 from pathlib import Path
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 import numpy as np
 
 # ── Paths ─────────────────────────────────────────────────────────
-TEXTURE_RESULTS = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/results/texture_fidelity/texture_fidelity_results.json")
-OUT_DIR = Path("/users/PGS0407/binben14/VietHuy/ConSynth-X/validation/results/texture_fidelity")
+TEXTURE_RESULTS = (_REPO_ROOT / "validation/results/texture_fidelity/texture_fidelity_results.json")
+OUT_DIR = (_REPO_ROOT / "validation/results/texture_fidelity")
 
 # 4 criteria (observations) matching paper's 4 processing channels
 CRITERIA = ["glcm", "lbp", "dct", "haralick"]

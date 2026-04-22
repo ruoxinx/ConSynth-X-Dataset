@@ -1,0 +1,996 @@
+{
+  "original": {
+    "description": "Original clear-day construction images",
+    "n_images": 3004,
+    "dino_threshold": 0.8,
+    "n_passing_dino": null,
+    "d_rel_fog_clip": {
+      "neg_d_rel_mean": -28.14984990322765,
+      "neg_d_rel_std": 3.794413374846033,
+      "neg_d_rel_median": -28.182576563054845,
+      "d_rel_mean": 28.14984990322765,
+      "n_images": 3004
+    },
+    "d_rel_rain_clip": {
+      "neg_d_rel_mean": -21.95462809231239,
+      "neg_d_rel_std": 3.126964167717327,
+      "neg_d_rel_median": -21.86851039318954,
+      "d_rel_mean": 21.95462809231239,
+      "n_images": 3004
+    },
+    "d_rel_snow_clip": {
+      "neg_d_rel_mean": -53.82042012383693,
+      "neg_d_rel_std": 5.811791164768216,
+      "neg_d_rel_median": -54.08282386146343,
+      "d_rel_mean": 53.82042012383693,
+      "n_images": 3004
+    },
+    "d_rel_night_clip": {
+      "neg_d_rel_mean": -39.42444398213469,
+      "neg_d_rel_std": 4.550717539841131,
+      "neg_d_rel_median": -39.664944462933704,
+      "d_rel_mean": 39.42444398213469,
+      "n_images": 3004
+    },
+    "d_rel_fog_dinov3": {
+      "neg_d_rel_mean": -63.02537423648515,
+      "neg_d_rel_std": 7.473509694219695,
+      "neg_d_rel_median": -63.77277524426063,
+      "d_rel_mean": 63.02537423648515,
+      "n_images": 3004
+    },
+    "d_rel_rain_dinov3": {
+      "neg_d_rel_mean": -61.63815351425496,
+      "neg_d_rel_std": 5.362702696850329,
+      "neg_d_rel_median": -61.59015374847006,
+      "d_rel_mean": 61.63815351425496,
+      "n_images": 3004
+    },
+    "d_rel_snow_dinov3": {
+      "neg_d_rel_mean": -121.47890461275769,
+      "neg_d_rel_std": 8.681062667686431,
+      "neg_d_rel_median": -122.70903009801765,
+      "d_rel_mean": 121.47890461275769,
+      "n_images": 3004
+    },
+    "d_rel_night_dinov3": {
+      "neg_d_rel_mean": -77.14158685053911,
+      "neg_d_rel_std": 4.607743621947285,
+      "neg_d_rel_median": -77.31803555438474,
+      "d_rel_mean": 77.14158685053911,
+      "n_images": 3004
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "weather_style_rain_0": {
+    "description": "Style transfer rain (light)",
+    "n_images": 2110,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 2110,
+    "d_rel_rain_clip": {
+      "neg_d_rel_mean": -18.547414708773267,
+      "neg_d_rel_std": 2.633812590958845,
+      "neg_d_rel_median": -18.510107982240555,
+      "d_rel_mean": 18.547414708773267,
+      "n_images": 2110
+    },
+    "d_rel_rain_dinov3": {
+      "neg_d_rel_mean": -61.04951240269829,
+      "neg_d_rel_std": 5.037885771184797,
+      "neg_d_rel_median": -61.12244982772401,
+      "d_rel_mean": 61.04951240269829,
+      "n_images": 2110
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "weather_style_rain_1": {
+    "description": "Style transfer rain (moderate)",
+    "n_images": 1124,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 1124,
+    "d_rel_rain_clip": {
+      "neg_d_rel_mean": -17.691744669506313,
+      "neg_d_rel_std": 2.682412981597735,
+      "neg_d_rel_median": -17.576261119810084,
+      "d_rel_mean": 17.691744669506313,
+      "n_images": 1124
+    },
+    "d_rel_rain_dinov3": {
+      "neg_d_rel_mean": -61.04165659412665,
+      "neg_d_rel_std": 5.06958817411465,
+      "neg_d_rel_median": -61.047743231144295,
+      "d_rel_mean": 61.04165659412665,
+      "n_images": 1124
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "weather_style_rain_2": {
+    "description": "Style transfer rain (heavy)",
+    "n_images": 1107,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 1107,
+    "d_rel_rain_clip": {
+      "neg_d_rel_mean": -18.13518709649306,
+      "neg_d_rel_std": 2.7637038771492834,
+      "neg_d_rel_median": -17.929976079346417,
+      "d_rel_mean": 18.13518709649306,
+      "n_images": 1107
+    },
+    "d_rel_rain_dinov3": {
+      "neg_d_rel_mean": -60.8925765237921,
+      "neg_d_rel_std": 4.7270545499807435,
+      "neg_d_rel_median": -61.054787986577196,
+      "d_rel_mean": 60.8925765237921,
+      "n_images": 1107
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "weather_style_snow_0": {
+    "description": "Style transfer snow (light)",
+    "n_images": 2012,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 2012,
+    "d_rel_snow_clip": {
+      "neg_d_rel_mean": -43.28566371355569,
+      "neg_d_rel_std": 5.556420461502909,
+      "neg_d_rel_median": -43.42679736900267,
+      "d_rel_mean": 43.28566371355569,
+      "n_images": 2012
+    },
+    "d_rel_snow_dinov3": {
+      "neg_d_rel_mean": -120.2322231082662,
+      "neg_d_rel_std": 8.847631806309977,
+      "neg_d_rel_median": -121.47495864225203,
+      "d_rel_mean": 120.2322231082662,
+      "n_images": 2012
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "weather_style_snow_1": {
+    "description": "Style transfer snow (moderate)",
+    "n_images": 1442,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 1442,
+    "d_rel_snow_clip": {
+      "neg_d_rel_mean": -44.12869595764642,
+      "neg_d_rel_std": 5.5997604735760715,
+      "neg_d_rel_median": -44.13134211913434,
+      "d_rel_mean": 44.12869595764642,
+      "n_images": 1442
+    },
+    "d_rel_snow_dinov3": {
+      "neg_d_rel_mean": -121.16399822611125,
+      "neg_d_rel_std": 7.574827172599819,
+      "neg_d_rel_median": -122.00993820682528,
+      "d_rel_mean": 121.16399822611125,
+      "n_images": 1442
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "weather_style_snow_2": {
+    "description": "Style transfer snow (heavy)",
+    "n_images": 1563,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 1563,
+    "d_rel_snow_clip": {
+      "neg_d_rel_mean": -42.36959775465182,
+      "neg_d_rel_std": 5.280459706752508,
+      "neg_d_rel_median": -42.55619465423126,
+      "d_rel_mean": 42.36959775465182,
+      "n_images": 1563
+    },
+    "d_rel_snow_dinov3": {
+      "neg_d_rel_mean": -119.26133828075528,
+      "neg_d_rel_std": 9.65946693844962,
+      "neg_d_rel_median": -120.77585392948646,
+      "d_rel_mean": 119.26133828075528,
+      "n_images": 1563
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "diffusion_rain": {
+    "description": "IP2P diffusion rain (v4: LPIPS+physics)",
+    "n_images": 1411,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 1411,
+    "d_rel_rain_clip": {
+      "neg_d_rel_mean": -16.878199183809308,
+      "neg_d_rel_std": 2.4918097101574115,
+      "neg_d_rel_median": -16.70912343824412,
+      "d_rel_mean": 16.878199183809308,
+      "n_images": 1411
+    },
+    "d_rel_rain_dinov3": {
+      "neg_d_rel_mean": -60.962277852936026,
+      "neg_d_rel_std": 5.5828519805031345,
+      "neg_d_rel_median": -61.65093062069646,
+      "d_rel_mean": 60.962277852936026,
+      "n_images": 1411
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "diffusion_snow_light": {
+    "description": "IP2P diffusion snow (light, gs=8)",
+    "n_images": 2884,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 2884,
+    "d_rel_snow_clip": {
+      "neg_d_rel_mean": -42.11105346760252,
+      "neg_d_rel_std": 6.143296859365733,
+      "neg_d_rel_median": -42.34825630618939,
+      "d_rel_mean": 42.11105346760252,
+      "n_images": 2884
+    },
+    "d_rel_snow_dinov3": {
+      "neg_d_rel_mean": -120.12932818480644,
+      "neg_d_rel_std": 8.76506457967846,
+      "neg_d_rel_median": -121.48353954742663,
+      "d_rel_mean": 120.12932818480644,
+      "n_images": 2884
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "diffusion_snow_heavy": {
+    "description": "IP2P diffusion snow (heavy, gs=12)",
+    "n_images": 1786,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 1786,
+    "d_rel_snow_clip": {
+      "neg_d_rel_mean": -36.268747102409485,
+      "neg_d_rel_std": 6.404311173447633,
+      "neg_d_rel_median": -36.540342105290286,
+      "d_rel_mean": 36.268747102409485,
+      "n_images": 1786
+    },
+    "d_rel_snow_dinov3": {
+      "neg_d_rel_mean": -118.13914508307637,
+      "neg_d_rel_std": 9.334027975969667,
+      "neg_d_rel_median": -119.62919226184552,
+      "d_rel_mean": 118.13914508307637,
+      "n_images": 1786
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "diffusion_fog_heavy": {
+    "description": "Diffusion fog (heavy)",
+    "n_images": 852,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 852,
+    "d_rel_fog_clip": {
+      "neg_d_rel_mean": -23.65332337650311,
+      "neg_d_rel_std": 3.087328699392193,
+      "neg_d_rel_median": -23.3405667939184,
+      "d_rel_mean": 23.65332337650311,
+      "n_images": 852
+    },
+    "d_rel_fog_dinov3": {
+      "neg_d_rel_mean": -62.49028391870058,
+      "neg_d_rel_std": 7.495416089947338,
+      "neg_d_rel_median": -62.516869334622264,
+      "d_rel_mean": 62.49028391870058,
+      "n_images": 852
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "diffusion_fog_medium": {
+    "description": "Diffusion fog (medium)",
+    "n_images": 968,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 968,
+    "d_rel_fog_clip": {
+      "neg_d_rel_mean": -24.39787435200214,
+      "neg_d_rel_std": 3.3549416220928867,
+      "neg_d_rel_median": -24.139761306724903,
+      "d_rel_mean": 24.39787435200214,
+      "n_images": 968
+    },
+    "d_rel_fog_dinov3": {
+      "neg_d_rel_mean": -61.98818198442751,
+      "neg_d_rel_std": 7.59280256627438,
+      "neg_d_rel_median": -62.32813513557062,
+      "d_rel_mean": 61.98818198442751,
+      "n_images": 968
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "diffusion_fog_light": {
+    "description": "Diffusion fog (light)",
+    "n_images": 983,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 983,
+    "d_rel_fog_clip": {
+      "neg_d_rel_mean": -24.889221433145124,
+      "neg_d_rel_std": 3.2837681149097504,
+      "neg_d_rel_median": -24.57697459622773,
+      "d_rel_mean": 24.889221433145124,
+      "n_images": 983
+    },
+    "d_rel_fog_dinov3": {
+      "neg_d_rel_mean": -61.55498263655477,
+      "neg_d_rel_std": 7.615417682601151,
+      "neg_d_rel_median": -61.813513143154324,
+      "d_rel_mean": 61.55498263655477,
+      "n_images": 983
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  },
+  "night": {
+    "description": "CycleGAN-Turbo night",
+    "n_images": 2305,
+    "dino_threshold": 0.8,
+    "n_passing_dino": 2305,
+    "d_rel_night_clip": {
+      "neg_d_rel_mean": -26.098217429739204,
+      "neg_d_rel_std": 4.142028908193383,
+      "neg_d_rel_median": -26.346044061962452,
+      "d_rel_mean": 26.098217429739204,
+      "n_images": 2305
+    },
+    "d_rel_night_dinov3": {
+      "neg_d_rel_mean": -72.77824346136823,
+      "neg_d_rel_std": 4.85996920737844,
+      "neg_d_rel_median": -73.12281868043557,
+      "d_rel_mean": 72.77824346136823,
+      "n_images": 2305
+    },
+    "baseline_fog_clip": {
+      "neg_d_rel_mean": -3.646787620277992,
+      "neg_d_rel_std": 2.3299890712059788,
+      "neg_d_rel_median": -2.9717930829076735,
+      "n_images": 100
+    },
+    "baseline_rain_clip": {
+      "neg_d_rel_mean": -3.6346263255460407,
+      "neg_d_rel_std": 1.676862808802849,
+      "neg_d_rel_median": -3.365446128466605,
+      "n_images": 100
+    },
+    "baseline_snow_clip": {
+      "neg_d_rel_mean": -8.892487800525892,
+      "neg_d_rel_std": 3.286261315516455,
+      "neg_d_rel_median": -8.102457751230741,
+      "n_images": 100
+    },
+    "baseline_night_clip": {
+      "neg_d_rel_mean": -2.974412893633003,
+      "neg_d_rel_std": 1.3893645136728834,
+      "neg_d_rel_median": -2.683490235889966,
+      "n_images": 100
+    },
+    "baseline_fog_dinov3": {
+      "neg_d_rel_mean": -15.71921180001052,
+      "neg_d_rel_std": 7.526423269235872,
+      "neg_d_rel_median": -14.289903428458262,
+      "n_images": 100
+    },
+    "baseline_rain_dinov3": {
+      "neg_d_rel_mean": -17.418109724710238,
+      "neg_d_rel_std": 5.712862675811672,
+      "neg_d_rel_median": -16.293699963343922,
+      "n_images": 100
+    },
+    "baseline_snow_dinov3": {
+      "neg_d_rel_mean": -45.5280483688148,
+      "neg_d_rel_std": 10.86993812796458,
+      "neg_d_rel_median": -44.63062221320874,
+      "n_images": 100
+    },
+    "baseline_night_dinov3": {
+      "neg_d_rel_mean": -16.4754985917972,
+      "neg_d_rel_std": 7.044709463161846,
+      "neg_d_rel_median": -14.846049543704053,
+      "n_images": 100
+    }
+  }
+}

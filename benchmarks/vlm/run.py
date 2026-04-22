@@ -18,6 +18,11 @@ import argparse
 import json
 import os
 import sys
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 # Add project root to path
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -25,8 +30,9 @@ sys.path.insert(0, PROJECT_ROOT)
 
 # Data paths
 LMUDATA = os.path.expanduser('~/LMUData')
-AUG_ROOT = '/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data'
-ANNOTATION_ROOT = '/users/PGS0407/binben14/VietHuy/ConstructionSite-10k-Implementation/Annotations'
+AUG_ROOT = str(_DATA_ROOT / "augmentation_data")
+ANNOTATION_ROOT = os.environ.get('CONSYNTH_ANNOTATION_ROOT',
+                                  str(_DATA_ROOT.parent / 'ConstructionSite-10k-Implementation' / 'Annotations'))
 
 # TSV mapping: (task, condition) → tsv path
 TSV_MAP = {

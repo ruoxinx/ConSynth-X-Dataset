@@ -1,0 +1,12 @@
+{
+  "source": "prithivMLmods/WeatherNet-05-18039",
+  "license": "Apache-2.0",
+  "conditions": {
+    "cloudy": 6702,
+    "fog": 1261,
+    "rain": 1927,
+    "snow": 1875,
+    "clear": 6274
+  },
+  "resize": 640
+}

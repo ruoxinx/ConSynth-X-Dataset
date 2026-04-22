@@ -31,8 +31,8 @@ from ultralytics import YOLO
 CLASS_NAMES = ['excavator', 'rebar', 'worker_with_white_hard_hat']
 NUM_CLASSES = len(CLASS_NAMES)
 
-# Model checkpoints
-BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+# Model checkpoints (override via $CONSYNTH_DATA_ROOT)
+BASE_DIR = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
 CHECKPOINTS_DIR = BASE_DIR / "validation_data" / "downstream_detection" / "checkpoints" / "runs"
 
 MODEL_PATHS = {

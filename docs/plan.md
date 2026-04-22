@@ -2,22 +2,20 @@
 
 > Target: Paper 1 — Nature Scientific Data
 > Created: 2026-04-06
-> Last updated: 2026-04-06 (Phase 1A sweep done, YOLOv8 jobs submitted)
+> Last updated: 2026-04-22 (Style transfer demoted to ablation; Phase 0 NST items deferred)
+
+> **Scope decision 2026-04-21:** Rain/snow main pipeline = **IP2P diffusion**. VGG Neural Style Transfer = **ablation-only** (xem [`experiments/ablation_style_transfer/README.md`](../experiments/ablation_style_transfer/README.md) và [`DEVLOG.md`](../DEVLOG.md) entry `Decision: Move VGG neural style transfer rain/snow to ablation archive`). Tất cả Phase 0/1/5 items tham chiếu ST chỉ block ablation section của paper, **không block main submission**.
 
 ---
 
 ## Phase 0: Resolve Code Conflicts (ước tính: 1 ngày)
 
-Mâu thuẫn trong code sẽ ảnh hưởng mọi bước sau — phải fix trước.
+Chỉ còn items áp dụng cho main pipeline (IP2P). NST items đã downgrade.
 
-- [ ] **0.1** Resolve style_weight: chọn 10,000 hoặc 100,000 làm canonical. Xoá giá trị còn lại.
-  - Files: `arrow_augmentation_worker.py`, `snow_pipeline.py`, `rain_pipeline.py`
-- [ ] **0.2** Resolve steps: chọn 10 hoặc 50. Xoá giá trị còn lại.
-  - Files: tương tự
-- [ ] **0.3** Verify MiDaS params (baseline=0.54, focal=721.09)
-  - Kiểm tra KITTI dataset paper — nếu đúng là KITTI params → cite. Nếu không → document nguồn gốc thật.
-  - Files: `snow_pipeline.py:67-68`, `rain_pipeline.py:67-68`
-- [ ] **0.4** Document tại sao LPIPS chỉ áp dụng rain (không snow)
+- [~] **0.1** ~~Resolve style_weight (10,000 vs 100,000)~~ — **DEFERRED (ablation-only)**. NST di chuyển sang ablation archive 2026-04-21 → không cần canonical value cho production. Giữ nguyên code ablation; ghi chú mâu thuẫn trong supplementary nếu report.
+- [~] **0.2** ~~Resolve steps (10 vs 50)~~ — **DEFERRED (ablation-only)**, cùng lý do 0.1.
+- [~] **0.3** ~~Verify MiDaS params~~ — **DEFERRED (ablation-only)**. MiDaS chỉ dùng trong NST pipeline. Main IP2P không dùng MiDaS depth.
+- [ ] **0.4** Document tại sao LPIPS chỉ áp dụng rain (không snow) — vẫn áp dụng cho IP2P main pipeline
   - Viết lý do vào `docs/methods.md` section 1.4
 
 ---
@@ -101,7 +99,7 @@ Mâu thuẫn trong code sẽ ảnh hưởng mọi bước sau — phải fix tr�
 - [ ] **4.1** Đọc full text Tremblay et al. (2021) — verify "21% improvement" và "73% more realistic"
   - Ghi baseline, dataset, metric cụ thể
 - [ ] **4.2** Đọc full text Gurbindo et al. (2025) — verify IP2P weather augmentation claims
-- [ ] **4.3** Verify Gatys et al. (2016) — paper recommend style_weight/steps bao nhiêu?
+- [~] **4.3** ~~Verify Gatys et al. (2016) — paper recommend style_weight/steps bao nhiêu?~~ — **DEFERRED (ablation-only)**, NST không còn main pipeline từ 2026-04-21.
 - [ ] **4.4** Verify Brooks et al. (2023) IP2P paper — recommend guidance scale range nào?
 - [ ] **4.5** Tìm + cite paper gốc cho:
   - [ ] Construction Site dataset
@@ -175,7 +173,27 @@ Mâu thuẫn trong code sẽ ảnh hưởng mọi bước sau — phải fix tr�
 2. **SODA validation** — 0/19,846 images validated (chỉ có Construction Site)
 3. **Visual inspection diffusion snow** — classifier vs texture contradiction cần visual evidence
 
-### 4B.5 Files Created
+### 4B.6 VLM Jury + Retention Analysis (2026-04-17 → 2026-04-19) — DONE
+
+**Approach 6: VLM Jury Evaluation** (`validation/vlm_jury/`)
+- 3 local judges: Qwen2.5-VL-7B, InternVL2.5-8B, Phi-4-multimodal
+- Binary accept/reject cho 400 synthetic + 160 ACDC baseline = 560 × 3 judges = 1,680 inferences
+- **Findings**: Fog heavy 98% (> real ACDC), Rain 70-72%, Night 58%, **Snow (light) 8-10% → led to heavy variant**
+- Inter-judge κ 0.16-0.36 (moderate); Qwen strict on snow (2-4%) — known VLM bias
+
+**Snow Heavy Variant** (2026-04-18)
+- Introduced: `guidance_scale=12.0`, `image_guidance_scale=1.2`, heavier prompt
+- No pre-filter (keeps all 3004 images)
+- VLM Jury: InternVL 89%, Phi-4 92%, Qwen 9% → restored acceptance
+
+**Approach 7: Retention Analysis** (`validation/extract_dino_ssim_all.py`)
+- DINOv3 + SSIM per-image for all 13 augmentation variants
+- **Key insight**: DINO threshold ≠ VLM Jury (agreement ~50% = random) — complementary metrics
+- **Paper Figures 1+2** generated (retention curves + joint heatmap)
+
+**Research integrity note**: No empirical support found for DINO ≥ 0.75 filter being optimal. Release per-image scores + let users choose threshold per application.
+
+### 4B.7 Files Created
 
 ```
 validation/
@@ -206,13 +224,31 @@ validation/
 
 ## Phase 5: IP2P Downstream Evaluation (ước tính: 2-3 ngày compute)
 
-Hiện chỉ có detection results cho Style Transfer. Cần cho IP2P để so sánh.
+Main pipeline detection results cho IP2P. Style Transfer kết quả chỉ dùng cho ablation comparison section.
 
-- [ ] **5.1** Chạy YOLOv8 training với IP2P rain+snow augmented data (Construction Site)
-- [ ] **5.2** Chạy YOLOv8 training với IP2P data (SODA)
-- [ ] **5.3** So sánh mAP: Style Transfer vs IP2P vs Combined
-- [ ] **5.4** Cập nhật `examples/compare_weather_augmentation.ipynb` với kết quả mới
-- [ ] **5.5** Kết luận method nào phù hợp hơn (dựa trên data, không assume trước)
+- [ ] **5.1** Chạy YOLOv8 training với IP2P rain+snow augmented data (Construction Site) — **main**
+- [ ] **5.2** Chạy YOLOv8 training với IP2P data (SODA) — **main**
+- [ ] **5.3** **Ablation comparison** (supplementary): report IP2P (main) vs ST (ablation) mAP side-by-side để minh hoạ trade-off realism/recognizability — KHÔNG dùng kết quả này để chọn method, quyết định đã chốt IP2P.
+- [ ] **5.4** Cập nhật `examples/compare_weather_augmentation.ipynb` — mark ST panel là ablation
+- [ ] **5.5** ~~Kết luận method nào phù hợp hơn~~ → **DONE 2026-04-21**: chọn IP2P làm main. Chi tiết lý do trong DEVLOG entry cùng ngày (texture fidelity 0.86 vs 0, lower hallucination rate, downstream numbers sẽ confirm).
+
+## Phase 5B: Rain_heavy Re-validation (ước tính: 1 ngày compute)
+
+Sau quyết định 2026-04-21 (rain có 2 intensity: light = IP2P, heavy = physics-only overlay), cần re-validate rain_heavy trên toàn bộ 6 metric để update paper tables. Chi tiết runbook: [`docs/rain_heavy_revalidation_runbook.md`](rain_heavy_revalidation_runbook.md).
+
+- [x] **5B.1** Generate rain_heavy production data (CS test/train, SODA VOC, SODA KTSH) — DONE 2026-04-21
+- [x] **5B.2** Patch 7 validation script registries (add `ip2p_rain_heavy` / `diffusion_rain_heavy`) — DONE 2026-04-21
+- [x] **5B.3** DINO/SSIM extraction cho rain_heavy — DONE 2026-04-22 (job 5025824, 5 min)
+  - Results: DINO mean 0.754, SSIM mean 0.522, 1,219/1,652 pass DINO≥0.70 (73.8%)
+- [x] **5B.4** Kaggle sample v6 DINO-filtered upload — DONE 2026-04-22
+  - 300 samples/variant: light DINO≥0.75, heavy DINO≥0.70
+- [ ] **5B.5** Weather classifier accuracy rain_heavy — submit `jobs/rerun_weather_cls_rain_heavy.sh`
+- [ ] **5B.6** FID/KID vs ACDC rain — submit `jobs/rerun_fid_kid_rain_heavy.sh`
+- [ ] **5B.7** Relative Mahalanobis CLIP + DINOv3 — submit `jobs/rerun_mahalanobis_rain_heavy.sh`
+- [ ] **5B.8** Texture fidelity + belief fusion — submit `jobs/rerun_texture_fidelity_rain_heavy.sh`
+- [ ] **5B.9** VLM Jury 3 judges — `bash jobs/rerun_vlm_jury_rain_heavy.sh` (~2-4h/judge)
+- [ ] **5B.10** Regenerate retention chart — `python validation/make_retention_charts_all.py`
+- [ ] **5B.11** Update paper Tables 1, 4-9 với row/column rain_heavy
 
 ---
 

@@ -1,0 +1,72 @@
+[
+  {
+    "group": "ABOVE",
+    "id": "0001072",
+    "dino": 0.9558,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and structures, and there are visible falling snow particles. However, the sky appears too bright and lacks the expected overcast appearance, which slightly detracts from realism.\""
+  },
+  {
+    "group": "ABOVE",
+    "id": "0000280",
+    "dino": 0.8878,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect appears somewhat artificial and lacks realistic falling snow particles or a fully overcast sky. The color saturation is reduced but not enough to convincingly simulate snowfall. The objects and spatial layout remain largely unchanged.\",\n  \"decision\": false\n}"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0002363",
+    "dino": 0.8834,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and falling snow particles visible. However, the sky remains overcast but not entirely grey, and there's a slight reduction in color saturation. The objects and spatial layout appe"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0002133",
+    "dino": 0.7835,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the saturation reduction is not very pronounced. The objects and spatial layout appear largely preserved, though the contrast between the snow and the construction site"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0001949",
+    "dino": 0.824,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and falling snow particles visible. However, the overcast sky and reduced color saturation are not fully achieved, as the sky remains relatively bright and the colors are still som"
+  },
+  {
+    "group": "BELOW",
+    "id": "0000972",
+    "dino": 0.5353,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering surfaces and falling snow particles visible. However, the sky remains too bright and the overall color saturation is not reduced enough to fully match a snowy day. The scene content, includin"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004654",
+    "dino": 0.5612,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the saturation reduction is not evident. The scene content, including objects, structures, and spatial layout, appears largely preserved.\",\n  \"decision\": false\n}"
+  },
+  {
+    "group": "BELOW",
+    "id": "0000762",
+    "dino": 0.3593,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the surfaces and falling snow particles visible. However, the sky appears too bright and lacks the expected overcast appearance, which slightly detracts from realism. The semantic preservatio"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004249",
+    "dino": 0.7122,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and parts of the vehicles, but the falling snow particles appear artificial and lack natural movement. The sky appears overcast, which is a good addition. However, the overall colo"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004672",
+    "dino": 0.7127,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and falling snow particles visible. However, the sky remains too bright and lacks the expected overcast appearance, which slightly detracts from realism.\",\n  \"decision\": false\n}"
+  }
+]

@@ -4,13 +4,16 @@ Extract 5 sample comparisons: Original | Rain | Snow
 Saves JPG files to output_samples/comparison/
 """
 
+import sys
 import pyarrow as pa
 from PIL import Image
 import io
 import random
 from pathlib import Path
 
-BASE_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite')
+_GEN_ROOT = next(p for p in Path(__file__).resolve().parents if (p / '_paths.py').exists())
+sys.path.insert(0, str(_GEN_ROOT))
+from _paths import DATA_ROOT as BASE_DIR
 RAIN_DIR = BASE_DIR / 'output' / 'construction_site_test' / 'diffusion_rain_heavy'
 SNOW_DIR = BASE_DIR / 'output' / 'construction_site_test' / 'diffusion_snow_heavy'
 OUT_DIR = BASE_DIR / 'weather_aug' / 'new_method' / 'output_samples' / 'comparison'

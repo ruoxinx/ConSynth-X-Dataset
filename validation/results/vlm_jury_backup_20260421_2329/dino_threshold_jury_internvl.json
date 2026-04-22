@@ -1,0 +1,72 @@
+[
+  {
+    "group": "ABOVE",
+    "id": "0001072",
+    "dino": 0.9558,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0000280",
+    "dino": 0.8878,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the excavator and construction site, is preserved without changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0002363",
+    "dino": 0.8834,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the construction equipment and layout, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0002133",
+    "dino": 0.7835,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the construction site and objects, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "ABOVE",
+    "id": "0001949",
+    "dino": 0.824,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage and falling snow particles, but the overcast grey sky is not evident. The scene content, including objects and structures, is preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "BELOW",
+    "id": "0000972",
+    "dino": 0.5353,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004654",
+    "dino": 0.5612,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "BELOW",
+    "id": "0000762",
+    "dino": 0.3593,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004249",
+    "dino": 0.7122,
+    "decision": false,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage and falling snow particles, but the overcast grey sky is not fully achieved. The semantic content is preserved as the scene's objects and layout remain unchanged.\",\n  \"decision\": false\n}\n```"
+  },
+  {
+    "group": "BELOW",
+    "id": "0004672",
+    "dino": 0.7127,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and spatial layout, remains preserved.\",\n  \"decision\": true\n}\n```"
+  }
+]

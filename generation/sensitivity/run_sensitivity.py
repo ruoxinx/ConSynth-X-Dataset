@@ -10,6 +10,7 @@ Usage:
 
 import argparse
 import json
+import os
 import shutil
 import gc
 import sys
@@ -23,15 +24,19 @@ from PIL import Image
 from tqdm import tqdm
 import torch
 
-ORIG_ARROW_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site')
+_GEN_ROOT = next(p for p in Path(__file__).resolve().parents if (p / '_paths.py').exists())
+sys.path.insert(0, str(_GEN_ROOT))
+from _paths import REPO_ROOT, ARROW_CS_DIR
+
+ORIG_ARROW_DIR = ARROW_CS_DIR
 TRAIN_ARROWS = [
     ORIG_ARROW_DIR / 'construction_site-train-00000-of-00002.arrow',
     ORIG_ARROW_DIR / 'construction_site-train-00001-of-00002.arrow',
 ]
 TEST_ARROW = ORIG_ARROW_DIR / 'construction_site-test.arrow'
 
-AUG = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X/augmentation_data/construction_site/rain_snow')
-OUT_BASE = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X/generation/sensitivity/detection_results')
+AUG = REPO_ROOT / 'augmentation_data' / 'construction_site' / 'rain_snow'
+OUT_BASE = REPO_ROOT / 'generation' / 'sensitivity' / 'detection_results'
 
 CLASS_NAMES = ['excavator', 'rebar', 'worker_with_white_hard_hat']
 

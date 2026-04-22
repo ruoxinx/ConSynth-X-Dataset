@@ -11,6 +11,7 @@ Pipeline:
 Produces a 5-row grid:  Original | Night | IP2P Rain+Night | IP2P Snow+Night
 """
 
+import os
 import sys
 import gc
 import random
@@ -93,7 +94,7 @@ def create_grid(samples, cell_w=450, cell_h=320, padding=4, label_h=30):
 
 
 def main():
-    BASE_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data_arrow')
+    BASE_DIR = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data')) / 'augmentation_data_arrow'
     OUTPUT_DIR = SCRIPT_DIR / 'preview_grids'
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

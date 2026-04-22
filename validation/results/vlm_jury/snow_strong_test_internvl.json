@@ -1,0 +1,102 @@
+[
+  {
+    "idx": 0,
+    "decision": false,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image is not realistic; the snow particles appear too large and the overall snow coverage is uneven. The semantic preservation is maintained as the construction site and objects remain unchanged.\",\n  \"decision\": false\n}\n```"
+  },
+  {
+    "idx": 1,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and spatial layout, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 2,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and spatial layout, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 3,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the construction site and equipment, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 4,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 5,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the construction site and workers, is preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 6,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 7,
+    "decision": false,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears unrealistic due to the excessive brightness and lack of natural snow particle distribution. The scene content is preserved, but the weather change is not convincingly realistic.\",\n  \"decision\": false\n}\n```"
+  },
+  {
+    "idx": 8,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the excavator and construction site, is preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 9,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 10,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image shows realistic white snow coverage and falling snow particles, with an overcast grey sky and reduced color saturation. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 11,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the excavator and construction site, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 12,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including the construction site and equipment, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 13,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, is preserved without significant changes.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 14,
+    "decision": false,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image shows realistic white snow coverage and falling snow particles, but the overcast grey sky and reduced color saturation are not evident. The semantic content, including objects and structures, remains preserved.\",\n  \"decision\": false\n}\n``"
+  },
+  {
+    "idx": 15,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image shows realistic white snow coverage and falling snow particles, with an overcast grey sky and reduced color saturation. The scene content, including the construction equipment and spatial layout, remains preserved.\",\n  \"decision\": true\n}"
+  },
+  {
+    "idx": 16,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, is preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 17,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image shows realistic white snow coverage and falling snow particles, with an overcast grey sky and reduced color saturation. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  },
+  {
+    "idx": 18,
+    "decision": false,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image shows white snow coverage on surfaces and falling snow particles, but the overcast grey sky and reduced color saturation are not evident. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": false\n}\n```"
+  },
+  {
+    "idx": 19,
+    "decision": true,
+    "raw": "```json\n{\n  \"explanation\": \"The snow effect in the right image appears realistic with white snow coverage, falling snow particles, and an overcast grey sky. The scene content, including objects and structures, remains preserved.\",\n  \"decision\": true\n}\n```"
+  }
+]

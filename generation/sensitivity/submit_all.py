@@ -7,7 +7,7 @@ Each job runs run_sensitivity.py with one threshold config.
 import os
 from pathlib import Path
 
-BASE = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X')
+BASE = Path(os.environ.get('CONSYNTH_REPO_ROOT', Path(__file__).resolve().parents[2]))
 SENS = BASE / 'generation' / 'sensitivity'
 JOBS = SENS / 'jobs'
 LOGS = SENS / 'logs'

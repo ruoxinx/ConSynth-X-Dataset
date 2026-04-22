@@ -1,0 +1,9 @@
+*.pth
+*.pkl
+*.pt
+*.safetensors
+*.ckpt
+!.gitignore
+!README.md
+!download.sh
+!checksums.sha256

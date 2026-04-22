@@ -11,7 +11,7 @@ Approach:
 Output: 20 images × 3 intensities (light/medium/heavy) + comparisons
 """
 
-import sys, gc, random
+import os, sys, gc, random
 from pathlib import Path
 import numpy as np
 from PIL import Image
@@ -20,7 +20,7 @@ import pyarrow as pa
 from scipy.ndimage import gaussian_filter
 
 SCRIPT_DIR = Path(__file__).parent
-BASE_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite')
+BASE_DIR = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
 OUT_DIR = SCRIPT_DIR / 'output_samples' / 'dust_v2_20'
 
 # Add fog directory to path for Perlin noise + depth utilities

@@ -8,28 +8,30 @@
 ## CRITICAL — Phải fix trước khi submit
 
 - [ ] **Rule 2: Parameter justification** — 20+ parameters hardcode không có justification
-  - [ ] Resolve mâu thuẫn style_weight (10,000 vs 100,000) và steps (10 vs 50)
+  - [x] ~~Resolve mâu thuẫn style_weight (10,000 vs 100,000) và steps (10 vs 50)~~ — **RESOLVED 2026-04-21**: NST demoted to ablation archive, không còn canonical value cần thiết cho production. Mâu thuẫn được ghi nhận trong ablation note nếu supplementary yêu cầu.
   - [x] Chạy sensitivity analysis: SSIM/LPIPS sweep — data quantity done (`generation/sensitivity/results/`)
   - [ ] Chạy sensitivity analysis: downstream mAP per threshold — **ĐANG CHẠY** (6 SLURM jobs submitted)
-  - [ ] Document tại sao LPIPS chỉ áp dụng cho rain, không snow
-  - [ ] Verify nguồn gốc MiDaS params (baseline=0.54, focal=721.09) — có thể KITTI?
-  - [ ] Document IP2P guidance parameters (image_guidance=1.5, guidance=10.0/8.0, steps=30)
-  - [ ] Document physics overlay params hoặc cite literature
-- [ ] **Reproducibility: Model versioning** — pin tất cả models
-  - [ ] `timbrooks/instruct-pix2pix` → thêm `revision=` hash
-  - [ ] MiDaS → pin version
-  - [ ] FLUX.1-Fill-dev → thêm `revision=` hash
-  - [x] img2img-turbo → commit `86f5414`, MIT license, ArXiv 2403.12036
-  - [ ] VGG19 checkpoints → document origin + checksum
-  - [ ] Pin `ultralytics` version trong `environment.yml`
+  - [ ] Document tại sao LPIPS chỉ áp dụng cho rain, không snow (main pipeline IP2P)
+  - [~] ~~Verify nguồn gốc MiDaS params (baseline=0.54, focal=721.09)~~ — **DEFERRED**: MiDaS chỉ dùng trong NST ablation, main IP2P pipeline không dùng depth estimation.
+  - [ ] Document IP2P guidance parameters (image_guidance=1.5, guidance=10.0/8.0/12.0, steps=30) — **main**
+  - [ ] Document physics overlay params hoặc cite literature — **main**
+- [x] **Reproducibility: Self-contained repository + upstream model provenance** (2026-04-20)
+  - [x] `Weather_Effect_Generator` vendored at `generation/weather/libs/Weather_Effect_Generator/` (upstream `hgupta01/Weather_Effect_Generator@7d62b67`, Apache-2.0, see `libs/.../NOTICE.md`)
+  - [x] `img2img-turbo` pinned git submodule at `generation/day2night/img2img-turbo/` (`GaParmar/img2img-turbo@86f5414`, MIT)
+  - [x] Pretrained weights: `weights/` with `checksums.sha256` + `download.sh` pulling from original upstream (CMU for `day2night.pkl`; Weather_Effect_Generator Google Drive for VGG `.pth`)
+  - [x] VGG19 checkpoints: origin documented (`docs/data_sources.md` §6.1), SHA256 pinned
+  - [x] day2night checkpoint: origin documented (`GaParmar/img2img-turbo@86f5414`, CMU URL), SHA256 pinned
+  - [x] Hardcoded `/users/PGS0407/...` paths removed from all Python code (89 occurrences in 36 files) — replaced with `CONSYNTH_DATA_ROOT` / `CONSYNTH_REPO_ROOT` env vars via `generation/_paths.py` and `.env.example`
+  - [x] HF models (`timbrooks/instruct-pix2pix`, FLUX, MiDaS, Depth-Anything, Weather-Image-Classification): URLs + licenses documented in `docs/data_sources.md` §6.2. Intentionally **not** hard-pinning `revision=` in code (third-party upstreams, decided trade-off — see §6.2 note).
+  - [ ] Pin `ultralytics` version in `environment.yml` (MEDIUM, defer)
 - [ ] **Data provenance** — hoàn thiện `docs/data_sources.md`
   - [x] Construction Site dataset: URL, license (CC-BY-NC-4.0), citation (Chen & Zou, 2025, ArXiv 2508.11011) — checksum còn thiếu
   - [x] SODA dataset: URL (SharePoint), citation (Duan et al., 2022, DOI 10.1016/j.autcon.2022.104499) — license + checksum còn thiếu
   - [ ] Style reference images: source, license
-  - [ ] day2night checkpoint: origin, checksum
 - [ ] **Documentation** — hoàn thiện docs/
   - [ ] `docs/literature.md`: verify tất cả TODO items (đã thêm [10]-[12]: ConstructionSite 10k, SODA, SODA-ktsh)
   - [ ] `docs/methods.md`: justify hoặc sensitivity-analyze tất cả parameters
+  - [x] Reviewer-facing install doc: `INSTALL.md` (2026-04-20)
 
 ## MEDIUM — Nên fix trước submission
 
@@ -103,23 +105,69 @@
   - Files: `validation/belief_fusion.py`
   - Results: `validation/results/texture_fidelity/belief_fusion_results.json` + 3 plots
 
-### Approach 5: Relative Mahalanobis Distance (CLIP + DINOv2) — SUCCESS
+### Approach 5: Relative Mahalanobis Distance (CLIP + DINOv3) — SUCCESS
 - [x] **Per-image distributional proximity to real weather** — **SUCCESS, complementary to FID/KID**
   - Method: Ruck et al. (2026), Eq. 1-2 — relative formulation cancels background
-  - Embeddings: CLIP ViT-L/14 (768-dim) + DINOv2 ViT-L (1024-dim)
+  - Embeddings: CLIP ViT-L/14 (768-dim) + **DINOv3 ViT-L/16 (1024-dim)** — upgraded from DINOv2 (2026-04-15)
   - Reference: ACDC real weather (900 ref + 100 holdout per condition)
   - **All augmentations closer to ACDC than original** — validated across all 4 conditions
   - **Night = largest improvement** (38% gap closed in CLIP)
-  - **CLIP vs DINOv2 divergence**: CLIP sensitive to style transfer, DINOv2 nearly unchanged
-  - **Snow trade-off**: style transfer > diffusion (CLIP), diffusion > style transfer (DINOv2)
+  - **CLIP vs DINOv3 divergence**: CLIP sensitive to style transfer, DINOv3 near zero shift
+  - **Cross-domain limitation acknowledged**: ACDC driving ≠ construction → DINOv3 near-zero shift reflects domain mismatch, not augmentation failure
+  - **Snow trade-off**: style transfer > diffusion (CLIP), diffusion > style transfer (DINOv3)
   - Files: `validation/compute_relative_mahalanobis.py`, `jobs/relative_mahalanobis.sh`
   - Results: `validation/results/relative_mahalanobis/` (JSON + 3 plots + LaTeX)
+
+### Approach 6: VLM Jury Evaluation — SUCCESS (2026-04-17)
+- [x] **3 local VLM judges: Qwen2.5-VL-7B, InternVL2.5-8B, Phi-4-multimodal** — **zero-shot, domain-agnostic (no reference needed)**
+  - Method: Ruck et al. (2026) Section 3.3 — 2 criteria (Condition Realism + Semantic Preservation), binary accept/reject
+  - Input: side-by-side pair (original | augmented), single image per inference
+  - Sample: 50 synthetic/condition + 40 ACDC baseline/condition = 560 total × 3 judges = 1,680 inferences
+  - **Key findings (majority vote 2/3)**:
+    - Fog heavy: 98% (vượt real ACDC fog 97.5%)
+    - IP2P Rain: 72% | ST Rain: 70% | Night: 58%
+    - IP2P Snow light: 8% | ST Snow B: 10% — led to heavy variant introduction
+  - **Inter-judge κ**: 0.16-0.36 (moderate). Qwen strict (57%), InternVL lenient (78%), Phi-4 middle (57%)
+  - **Pattern**: Qwen strict specifically on snow (2-4% across all snow variants), similar to Gemini bias in Ruck et al.
+  - Files: `validation/vlm_jury/{run_vlm_jury.py, data_loader.py, prompts.py, result_parser.py, analyze_results.py}`
+  - Results: `validation/results/vlm_jury/` (per-judge JSON + summary)
+
+### Approach 7: Retention Analysis (DINO + SSIM) — COMPLETE (2026-04-19)
+- [x] **Per-image DINO similarity + SSIM for all 13 augmentation variants** — **informs filter design**
+  - Computed across 13 conditions: 6 ST + 3 IP2P + 3 fog + 1 night
+  - **3-panel retention chart** cho snow_heavy + **comparison chart** cho all conditions
+  - Key findings:
+    - Style transfer + light fog preserve DINO structure (>90% retention at DINO ≥ 0.80)
+    - IP2P diffusion + night aggressive edits (retention ≤77% at DINO ≥ 0.80)
+    - SSIM degrades faster than DINO for IP2P/night (pixel > structural changes)
+    - **DINO threshold ≠ VLM Jury agreement** (~50% = random) — complementary metrics
+  - Files: `validation/extract_dino_ssim_all.py`, `validation/make_retention_chart.py`, `validation/make_retention_charts_all.py`
+  - Results: `validation/results/dino_ssim/*.csv` (13 files), `validation/results/{snow_heavy_retention_chart, dino_ssim_retention_all, dino_ssim_retention_table}.{pdf,png}`
+  - Paper: `paper/figures/fig4_snow_heavy_retention.pdf` (Figure 1), `fig5_retention_curves_all.pdf` (Figure 2)
+
+### Approach 8 (Platform Ready): Human Perceptual Validation
+- [x] **Human validation web platform** — Flask app tại `human_validation/`
+  - 3 tasks: Turing Test (fooling rate), Realism Rating (MOS 1-5, ITU-R BT.500), Condition Recognition (confusion matrix)
+  - Admin dashboard: per-user progress, per-condition stats, CSV export
+  - Keyboard shortcuts cho fast annotation, response time tracking
+  - Image sampling script: `human_validation/sample_images.py` (50 imgs/condition default)
+  - **Chạy:** `cd human_validation && python app.py` → `http://localhost:5000`
+  - [ ] Sample ảnh từ augmentation_data (chạy `sample_images.py`)
+  - [ ] Recruit 3+ annotators
+  - [ ] Thu thập data → export CSV → tính fooling rate, MOS, recognition accuracy, Krippendorff's alpha
+
+### Public Sample Release — DONE (2026-04-20)
+- [x] **Kaggle sample dataset v2** uploaded — https://www.kaggle.com/datasets/viethuyduong/consynth-x-augmentation-sample
+  - v1 (2026-04-16): 22 Arrow files, ~100 samples/condition (original, ST, IP2P rain/snow light, fog, night, small, SODA)
+  - v2 (2026-04-20): Added `cs_diff_snow_heavy_test.arrow` (gs=12 variant); renamed old `cs_diff_snow_test.arrow` → `cs_diff_snow_light_test.arrow`
+  - License: CC0-1.0 (sample) — matches sample-level license; full dataset CC BY-NC 4.0
+  - Script: `scripts/update_kaggle_sample.py` + `kaggle datasets version -m "<msg>"`
 
 ### TODO tiếp theo
 - [ ] Investigate tại sao IP2P diffusion_snow fail classifier (25.7% vs style transfer 92%)
 - [ ] Document cross-domain bias cho construction images trong paper
 - [ ] Tìm/train night-specific classifier (weather classifier không có night class)
-- [ ] Viết Technical Validation section với kết quả Approach 3+4+5
+- [ ] Viết Technical Validation section với kết quả Approach 3+4+5+6
 - [ ] Kiểm tra style image snow_1 — texture artifacts cao bất thường
 - [ ] Investigate night CycleGAN over-smoothing (DCT_W=29.81) — cần post-process?
 

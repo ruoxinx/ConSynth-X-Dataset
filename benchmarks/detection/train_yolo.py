@@ -345,8 +345,8 @@ def main():
     parser.add_argument('--model-size', type=str, default='n',
                         choices=['n', 's', 'm', 'l', 'x'],
                         help='YOLOv8 model size (n=nano, s=small, m=medium, l=large, x=xlarge)')
-    parser.add_argument('--output-dir', type=str, 
-                        default='/users/PGS0407/binben14/VietHuy/ConstructionSite/validation_data/downstream_detection/checkpoints',
+    parser.add_argument('--output-dir', type=str,
+                        default=str(Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data')) / 'validation_data' / 'downstream_detection' / 'checkpoints'),
                         help='Output directory')
     parser.add_argument('--max-train-samples', type=int, default=None,
                         help='Maximum training samples')
@@ -354,8 +354,8 @@ def main():
                         help='Number of evaluation samples')
     args = parser.parse_args()
     
-    # Paths
-    BASE_DIR = Path("/users/PGS0407/binben14/VietHuy/ConstructionSite")
+    # Paths (override via $CONSYNTH_DATA_ROOT)
+    BASE_DIR = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
     AUG_DATA_DIR = BASE_DIR / "augmentation_data"
     
     # Check CUDA

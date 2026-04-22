@@ -16,8 +16,8 @@ import io
 import tempfile
 import torch
 
-# Add Weather_Effect_Generator to path
-sys.path.insert(0, str(Path(__file__).parent / 'Weather_Effect_Generator'))
+# Add Weather_Effect_Generator to path (submodule at generation/weather/libs/Weather_Effect_Generator)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'libs' / 'Weather_Effect_Generator'))
 
 from snow_pipeline import (
     process_image, 

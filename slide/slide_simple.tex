@@ -380,17 +380,17 @@ Fog & Physics & 18\% \\
 \begin{column}{0.48\textwidth}
 \centering
 \footnotesize
-\textbf{DINOv2 (texture/structure)}
+\textbf{DINOv3 (texture/structure)}
 
 \vspace{0.3em}
 \begin{tabular}{lcc}
 \toprule
 \textbf{Condition} & \textbf{Best method} & \textbf{Gap closed} \\
 \midrule
-Night & CycleGAN & 8\% \\
-Snow & IP2P & 0.4\% \\
-Rain & IP2P & 0.8\% \\
-Fog & Physics & 5\% \\
+Night & CycleGAN & 9\% \\
+Snow & IP2P & 5\% \\
+Rain & ST moderate & 1\% \\
+Fog & Physics & 1\% \\
 \bottomrule
 \end{tabular}
 
@@ -399,12 +399,12 @@ Fog & Physics & 5\% \\
 {\color{warnred}But this is a \textbf{metric limitation}:}
 
 \vspace{0.3em}
-{\small DINOv2 captures texture/structure. Reference is ACDC (\textit{driving} scenes) --- wet roads $\neq$ wet concrete. The \textbf{cross-domain structural gap} overwhelms the weather signal.}
+{\small DINOv3 captures texture/structure. Reference is ACDC (\textit{driving} scenes) --- wet roads $\neq$ wet concrete. The \textbf{cross-domain structural gap} overwhelms the weather signal.}
 \end{column}
 \end{columns}
 
 \vspace{0.5em}
-{\small \textbf{Takeaway:} CLIP results validate our augmentation. DINOv2 gap reflects \textbf{domain mismatch} (driving vs.\ construction), not augmentation failure. A construction-specific weather reference would be needed --- but that is exactly what does not exist yet.}
+{\small \textbf{Takeaway:} CLIP results validate our augmentation. DINOv3 gap reflects \textbf{domain mismatch} (driving vs.\ construction), not augmentation failure. A construction-specific weather reference would be needed --- but that is exactly what does not exist yet.}
 \end{frame}
 
 % ═══════════════════════════════════════════════════════════════

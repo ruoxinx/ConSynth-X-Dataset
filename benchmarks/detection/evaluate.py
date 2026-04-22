@@ -263,18 +263,19 @@ def compare_models(results_dict: dict, output_dir: Path):
 
 def main():
     parser = argparse.ArgumentParser(description='Evaluate and compare object detection models')
+    _data = Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data'))
     parser.add_argument('--checkpoint-dir', type=str,
-                        default='/users/PGS0407/binben14/VietHuy/ConstructionSite/validation_data/downstream_detection/checkpoints',
+                        default=str(_data / 'validation_data' / 'downstream_detection' / 'checkpoints'),
                         help='Directory containing model checkpoints')
     parser.add_argument('--eval-data', type=str,
-                        default='/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site/construction_site-train-00000-of-00002.arrow',
+                        default=str(_data / 'LouisChen15___construction_site' / 'construction_site-train-00000-of-00002.arrow'),
                         help='Evaluation data path')
     parser.add_argument('--eval-samples', type=int, default=1000,
                         help='Number of evaluation samples')
     parser.add_argument('--batch-size', type=int, default=4,
                         help='Batch size')
     parser.add_argument('--output-dir', type=str,
-                        default='/users/PGS0407/binben14/VietHuy/ConstructionSite/validation_data/downstream_detection/results',
+                        default=str(_data / 'validation_data' / 'downstream_detection' / 'results'),
                         help='Output directory for results')
     parser.add_argument('--score-threshold', type=float, default=0.5,
                         help='Score threshold for predictions')

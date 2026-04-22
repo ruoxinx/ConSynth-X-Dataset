@@ -17,7 +17,7 @@ OUTPUT_DIR = PROJECT_ROOT / 'generated_pipeline' / 'instruct_pix2pix'
 # Pick a few test images
 TEST_IMAGES = ['Ktsh0000.jpg', 'Ktsh0001.jpg', 'Ktsh0002.jpg']
 
-CONDA_ENV = '/users/PGS0407/binben14/.conda/envs/VLM'
+CONDA_ENV = os.environ.get('CONSYNTH_CONDA_ENV', 'VLM')
 SCRIPT_PATH = PROJECT_ROOT / 'instruct_pix2pix_dust.py'
 
 PRESETS = ['light', 'medium', 'heavy', 'sandstorm']
@@ -56,7 +56,7 @@ echo "Node: $(hostname)"
 echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || echo 'N/A')"
 echo ""
 
-eval "$(/users/PGS0407/binben14/miniconda3/bin/conda shell.bash hook)"
+eval "$(conda shell.bash hook)"
 conda activate {CONDA_ENV}
 
 mkdir -p {OUTPUT_DIR}

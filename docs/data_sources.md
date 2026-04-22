@@ -61,7 +61,7 @@ Chen, X. & Zou, Z. (2025). "Are Large Pre-trained Vision Language Models Effecti
 **Classes**: 15 classes (person, helmet, vest, hook, fence, board, slogan, rebar, handcart, ebox, hopper, wood, scaffold, brick, cutter)
 **Categories**: workers, materials, machines, layout
 **Images**: ~20,000+ images từ multiple construction sites
-**Vị trí local**: `/users/PGS0407/binben14/VietHuy/ConstructionSite/SODA/`
+**Vị trí local (OSC, ví dụ)**: `$CONSYNTH_DATA_ROOT/SODA/` — tương ứng với `/users/PGS0407/binben14/VietHuy/ConstructionSite/SODA/` trên cluster phát triển. Reviewer trên máy khác chỉ cần trỏ `$CONSYNTH_DATA_ROOT` vào bản copy của mình.
 
 **Paper gốc**:
 Duan, R., Deng, H., Tian, M., Deng, Y., & Lin, J. (2022). "SODA: A large-scale open site object detection dataset for deep learning in construction." *Automation in Construction*, 142, 104499.
@@ -99,12 +99,13 @@ Deng, H., Fu, K., Yu, B., Li, H., Duan, R., Deng, Y., & Lin, J.R. (2025). "Enabl
 
 ## 3. Augmented Data
 
-### 3.1 Weather Augmented (Style Transfer)
+### 3.1 Weather Augmented — Style Transfer (Ablation archive, legacy)
 
-**Vị trí**: `/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/weather/`
+**Status**: Relocated from main dataset to `experiments/ablation_style_transfer/` on 2026-04-21 when IP2P was promoted to sole main weather method (DEVLOG 2026-04-21). Retained for baseline comparison and paper ablation.
+**Vị trí**: `experiments/ablation_style_transfer/{construction_site,soda_voc}/rain_snow/style_transfer/`
 **Format**: Arrow + filtered images
 **Phương pháp sinh**: Neural style transfer (rain_0-2, snow_0-2)
-**Statistics**:
+**Statistics** (snapshot at relocation):
 - Construction Site: 3,004 original → 10,266 after SSIM filtering
 - SODA: 19,846 original → 47,169 after filtering
 
@@ -113,7 +114,19 @@ Deng, H., Fu, K., Yu, B., Li, H., Duan, R., Deng, Y., & Lin, J.R. (2025). "Enabl
 **Vị trí**: `augmentation_data/construction_site/rain_snow/diffusion/`
 **Format**: Arrow + meta CSV
 **Phương pháp sinh**: InstructPix2Pix + physics overlay
-**Statistics**: TODO — tổng hợp từ meta CSV files
+
+**Statistics (Construction Site test, 3,004 originals)**:
+
+| Variant | Location | Count | Filter | Notes |
+|---|---|---|---|---|
+| IP2P Rain (heavy, gs=10) | `ConstructionSite/output/.../diffusion_rain_heavy/` | 3,004 → 3,627 kept (+ 3,382 dropped from 7K train) | SSIM 0.6-0.95 + LPIPS<0.35 | Train+test combined |
+| IP2P Snow LIGHT (gs=8) | `ConstructionSite/output/.../diffusion_snow_light/` | 3,004 | SSIM 0.5-0.95 | Default variant |
+| **IP2P Snow HEAVY (gs=12)** | `ConstructionSite/output/.../diffusion_snow_heavy/` | 3,004 | **No filter** (per-image DINO+SSIM released) | **Added 2026-04-19** — stronger snow effect, VLM Jury 89-92% acceptance vs 8-30% for light |
+
+**CLI params for snow_heavy** (via `batch_worker.py --guidance-scale 12.0 --image-guidance-scale 1.2 --prompt "..." --no-filter`):
+- prompt: "a cold winter day with heavy snow, thick snow covering the ground and surfaces, grey overcast sky, snowfall"
+
+**Per-image metrics**: `validation/results/dino_ssim/ip2p_snow_{light,heavy}.csv` — DINO + SSIM scores enable user-defined filtering.
 
 ### 3.3 Day-to-Night
 
@@ -149,7 +162,7 @@ Deng, H., Fu, K., Yu, B., Li, H., Duan, R., Deng, Y., & Lin, J.R. (2025). "Enabl
 
 ## 4. Annotations
 
-**Vị trí**: `/users/PGS0407/binben14/VietHuy/ConstructionSite-10k-Implementation/Annotations/`
+**Vị trí**: `$CONSYNTH_ANNOTATION_ROOT` (default: sibling của `$CONSYNTH_DATA_ROOT/../ConstructionSite-10k-Implementation/Annotations`). Override qua env var, xem `docs/infrastructure.md`.
 
 **TODO — THIẾU**:
 - [ ] Format mô tả (YOLO? VOC? COCO?)
@@ -173,15 +186,45 @@ Deng, H., Fu, K., Yu, B., Li, H., Duan, R., Deng, Y., & Lin, J.R. (2025). "Enabl
 
 ## 6. Pre-trained Models / Checkpoints
 
-| Model | Source | License | Version/Revision | Checksum | Status |
-|---|---|---|---|---|---|
-| InstructPix2Pix | HuggingFace [`timbrooks/instruct-pix2pix`](https://huggingface.co/timbrooks/instruct-pix2pix) | **MIT** | TODO: pin revision hash | TODO | **CHƯA PIN** |
-| MiDaS DPT_Large | [`isl-org/MiDaS`](https://github.com/isl-org/MiDaS) | **MIT** | TODO: pin version | TODO | **CHƯA PIN** |
-| VGG19 (style transfer) | PyTorch torchvision | **BSD 3-Clause** | TODO: document origin of local `.pth` | TODO | **NGUỒN LOCAL CHƯA RÕ** |
-| day2night.pkl | [`GaParmar/img2img-turbo`](https://github.com/GaParmar/img2img-turbo) | **MIT** | commit `86f5414` | TODO | ✅ Pinned |
-| FLUX.1-Fill-dev | HuggingFace [`black-forest-labs/FLUX.1-Fill-dev`](https://huggingface.co/black-forest-labs/FLUX.1-Fill-dev) | **FLUX.1 [dev] Non-Commercial** | TODO: pin revision | TODO | **CHƯA PIN** |
-| YOLOv8 | [Ultralytics](https://github.com/ultralytics/ultralytics) | **AGPL-3.0** (hoặc Enterprise) | TODO: pin version | TODO | **CHƯA PIN** |
-| Depth Anything V2 | [`DepthAnything/Depth-Anything-V2`](https://github.com/DepthAnything/Depth-Anything-V2) | **Apache-2.0** (Small) / **CC-BY-NC-4.0** (Base/Large/Giant) | TODO: pin revision | TODO | **CHƯA PIN** |
+All pretrained weights are third-party and **redistributed from their original
+upstream hosts**. The ConSynth-X authors did not train them. `weights/download.sh`
+pulls them directly from the publishers below and verifies SHA256 against
+`weights/checksums.sha256`.
+
+### 6.1 Weights fetched by `weights/download.sh`
+
+| File | Upstream URL | Upstream ref | License | SHA256 (first 8) |
+|---|---|---|---|---|
+| `day2night.pkl` (1.6 GB) | https://www.cs.cmu.edu/~img2img-turbo/models/day2night.pkl | `GaParmar/img2img-turbo` @ `86f5414` | MIT | `7c13bdf3` |
+| `rain_vgg_512.pth` (535 MB) | [Google Drive folder](https://drive.google.com/drive/folders/1MEVMLVhrv4t7efwAfCSk13yie8G-XcIB?usp=sharing) | `hgupta01/Weather_Effect_Generator` @ `7d62b67` | Apache-2.0 | `7640881b` |
+| `snow_vgg_512.pth` (535 MB) | same Google Drive folder | same | Apache-2.0 | `cfba3604` |
+
+Notes:
+- `day2night.pkl` is pulled by upstream's own loader (`src/cyclegan_turbo.py`
+  in img2img-turbo) from the CMU URL above; our script mirrors the same URL.
+- VGG weights live in a Google Drive folder. `download.sh` uses `gdown` if
+  `RAIN_VGG_GDRIVE_ID` / `SNOW_VGG_GDRIVE_ID` are exported; otherwise it prints
+  manual download instructions. See `weights/README.md`.
+
+### 6.2 Models auto-loaded by HuggingFace / torch.hub at runtime
+
+These are pulled automatically by the pipeline code from their public repos;
+no action needed from the reviewer beyond network access and standard HF cache.
+
+| Model | Source | License | Notes |
+|---|---|---|---|
+| `timbrooks/instruct-pix2pix` | HuggingFace | MIT | Loaded in rain/snow IP2P workers. Version = whatever the HF API serves. |
+| MiDaS DPT_Large | [`intel-isl/MiDaS`](https://github.com/intel-isl/MiDaS) via `torch.hub.load` | MIT | Depth map for physics overlay. |
+| `black-forest-labs/FLUX.1-Fill-dev` | HuggingFace | FLUX.1 [dev] Non-Commercial | Outpainting. |
+| Depth Anything V2 | [`DepthAnything/Depth-Anything-V2`](https://github.com/DepthAnything/Depth-Anything-V2) | Small = Apache-2.0, Base/Large/Giant = CC-BY-NC-4.0 | Fog pipeline. Variant in use documented in `docs/methods.md`. |
+| `prithivMLmods/Weather-Image-Classification` | HuggingFace | Apache-2.0 | Validation (classifier accuracy metric). |
+| Ultralytics YOLOv8 | [`ultralytics`](https://github.com/ultralytics/ultralytics) pip package | AGPL-3.0 | Downstream detection benchmark. |
+
+We deliberately do **not** pin HuggingFace `revision=` hashes in code: these
+models are third-party, stable, and hard-pinning in code would force reviewers
+to edit the source to pick up upstream fixes. For reproducibility purposes
+the authoritative record of what we used is the generated dataset + the SHA256s
+in `weights/checksums.sha256`.
 
 ### License Details cho Models
 
@@ -189,8 +232,7 @@ Deng, H., Fu, K., Yu, B., Li, H., Duan, R., Deng, Y., & Lin, J.R. (2025). "Enabl
 
 **MiDaS** — MIT (Copyright © 2019 Intel ISL). Permissive, không hạn chế.
 
-**VGG19 (torchvision)** — BSD 3-Clause (Copyright © Soumith Chintala 2016). Pretrained weights trained on ImageNet.
-- ⚠️ **Lưu ý**: Local `.pth` files trong `generation/weather/VGG/` — cần verify đây có phải torchvision weights hay custom weights từ nguồn khác.
+**VGG19 (rain_vgg_512.pth / snow_vgg_512.pth)** — Apache-2.0, distributed by `hgupta01/Weather_Effect_Generator`. These are NOT torchvision ImageNet VGG19 — they are VGG19 classifiers fine-tuned by the Weather_Effect_Generator authors for rain-vs-clear and snow-vs-clear discrimination; the style-transfer pipeline uses them as perceptual feature extractors. See `weights/README.md`.
 
 **img2img-turbo (day2night)** — MIT. Permissive. Authors: CMU + Adobe.
 
@@ -345,17 +387,20 @@ Guan, Q. et al. (2025). "WeatherBench: A Real-World Benchmark for Weather Image 
 **Vị trí local**: `validation/weights/fc_weights.pth`
 **Reason abandoned**: Fooling rate 99.5-100% cho tất cả conditions → không phân biệt được quality (xem `docs/methods.md` section 1.6).
 
-### 7.4 ACDC (BACKUP OPTION, NOT USED)
+## 8. Public Sample Release (Kaggle)
 
-**Status**: **Không dùng**. HuggingFace dataset `mathpluscode/ACDC` là medical cardiac MRI, không phải driving weather. Official ACDC driving weather cần download từ acdc.vision.ee.ethz.ch với registration.
+**URL**: https://www.kaggle.com/datasets/viethuyduong/consynth-x-augmentation-sample
+**License**: CC0-1.0 (sample only; full dataset CC BY-NC 4.0)
+**Purpose**: Preview of ConSynth-X augmentations (~100 images per variant) for reviewers/users to inspect before committing to full download.
 
-**URL**: [acdc.vision.ee.ethz.ch](https://acdc.vision.ee.ethz.ch)
-**License**: CC BY-NC-SA 4.0
-**Images**: ~4,006 adverse condition images (fog, night, rain, snow ~1,000 each)
+**Local sample source**: `augmentation_data_sample/` (Arrow files)
 
-**Paper**: Sakaridis, C., Dai, D., & Van Gool, L. (2021). "ACDC: The Adverse Conditions Dataset with Correspondences for Semantic Driving Scene Understanding." ICCV. ArXiv: 2104.13395.
+**Version history**:
+- **v1** (2026-04-16): Initial release — 22 Arrow files covering original + ST + IP2P rain/snow + fog + night + small + SODA variants
+- **v2** (2026-04-20): Added `cs_diff_snow_heavy_test.arrow` (100 samples from gs=12 variant, no pre-filter). Renamed legacy `cs_diff_snow_test.arrow` → `cs_diff_snow_light_test.arrow` for clarity.
 
-**TODO**: Download manually nếu WeatherNet không đủ cho paper validation.
+**Upload script**: `scripts/update_kaggle_sample.py` (reuses schema from existing sample Arrow)
+**Command**: `kaggle datasets version -m "<msg>"` (run in `augmentation_data_sample/` directory — dataset-metadata.json pins the dataset id)
 
 ---
 

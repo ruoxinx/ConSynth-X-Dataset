@@ -96,11 +96,14 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(description='Extract validation data from Arrow file')
-    parser.add_argument('--arrow-file', type=str, 
-                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site/construction_site-train-00000-of-00002.arrow",
+    import os
+    from pathlib import Path as _Path
+    _data = _Path(os.environ.get('CONSYNTH_DATA_ROOT', _Path.home() / 'consynth_data'))
+    parser.add_argument('--arrow-file', type=str,
+                        default=str(_data / 'LouisChen15___construction_site' / 'construction_site-train-00000-of-00002.arrow'),
                         help='Path to Arrow file')
     parser.add_argument('--output-dir', type=str,
-                        default="/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data/val_from_train",
+                        default=str(_data / 'augmentation_data' / 'val_from_train'),
                         help='Output directory')
     parser.add_argument('--num-samples', type=int, default=2000,
                         help='Number of samples to extract')

@@ -1,0 +1,102 @@
+[
+  {
+    "idx": 0,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image is not realistic as it lacks falling snow particles and an overcast grey sky. The white snow appears unnatural and does not cover the ground uniformly, which affects the overall realism.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 1,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a greyish tone, but the overall scene remains too bright and lacks the expected frost or ice effects. The spatial layout and objects appear consistent between both images.\",\n  \"decisio"
+  },
+  {
+    "idx": 2,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation appears somewhat unrealistic as it covers the entire scene without natural snowfall dynamics and lacks realistic frost or ice effects. The workers and rocks retain their positions, but the overall scene looks overly artificial.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 3,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation appears somewhat realistic with white snow covering the ground and parts of the machinery, but the falling snow particles are not convincingly rendered. The sky remains clear, and there's no significant reduction in color saturation or frost/ice effects. The"
+  },
+  {
+    "idx": 4,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the overall scene appears slightly over-saturated, which detracts from the realism.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 5,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and parts of the concrete mixer, but the falling snow particles appear artificial and lack detail. The sky appears overcast, which is consistent with a snowy day. However, the over"
+  },
+  {
+    "idx": 6,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation appears somewhat realistic with white snow covering the ground and some falling snow particles visible. However, the sky remains clear, which detracts from the realism. The objects and spatial layout seem to be preserved.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 7,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image is not very realistic as it lacks the expected texture and depth of real snow. The sky appears too bright and the overall image has an unnatural glow, which does not match typical overcast snowy conditions.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 8,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation appears somewhat unrealistic as it lacks the expected texture and density of real snow, and the sky remains too bright. However, the objects and spatial layout are preserved.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 9,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and parts of the structure, but the falling snow particles are not convincingly detailed. The sky appears overcast, and there's a reduction in color saturation, which helps in crea"
+  },
+  {
+    "idx": 10,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the overall brightness and contrast appear slightly off, which detracts from the realism. The objects and spatial layout seem to be preserved.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 11,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation looks somewhat realistic with visible snowflakes and a grey sky, but the overall brightness and contrast are altered, affecting the realism. The scene content, including the excavator and the terrain, remains largely preserved.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 12,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation looks somewhat realistic with white snow covering the ground and machinery, but the falling snow particles appear artificial and lack detail. The sky is overcast, and there's a reduction in color saturation, which helps in creating a winter atmosphere. Howev"
+  },
+  {
+    "idx": 13,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering the ground and some falling snow particles visible. However, the overcast sky and reduced color saturation are not fully achieved, as the sky remains relatively bright and the colors are stil"
+  },
+  {
+    "idx": 14,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow augmentation appears somewhat realistic with visible snowflakes and a greyish tone, but the overall scene remains too bright and lacks the expected frost or ice effects. The spatial layout and objects appear consistent.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 15,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the overall scene appears too bright and lacks the expected frost or ice effects on surfaces.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 16,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with white snow covering surfaces and some falling snow particles visible. However, the sky remains clear, which detracts from the realism. The objects and spatial layout appear to be preserved.\",\n  \"decision\": false"
+  },
+  {
+    "idx": 17,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a slightly overcast sky, but the frost or ice effects on surfaces are not evident. The scene content, including objects and spatial layout, appears to be preserved.\",\n  \"decision\": fal"
+  },
+  {
+    "idx": 18,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the frost or ice effects on surfaces are not evident. The scene content, including objects and spatial layout, appears to be preserved.\",\n  \"decision\": false\n}"
+  },
+  {
+    "idx": 19,
+    "decision": false,
+    "raw": "{\n  \"explanation\": \"The snow effect in the augmented image looks somewhat realistic with visible snow particles and a grey sky, but the overall brightness and contrast are altered, affecting the realism. The workers and structures appear consistent, maintaining semantic preservation.\",\n  \"decision\":"
+  }
+]

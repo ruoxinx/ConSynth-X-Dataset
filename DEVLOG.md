@@ -4,6 +4,459 @@
 
 ---
 
+## 2026-04-22
+
+### Style-transfer ablation status — .md system consolidation
+
+User đã quyết định dứt khoát (confirmed today): **VGG Neural Style Transfer CHỈ dùng cho ablation study, KHÔNG còn là pipeline chính thức.** Quyết định gốc ghi trong entry 2026-04-21 ("Decision: Move VGG neural style transfer rain/snow to ablation archive") nhưng một số .md vẫn present NST song song với IP2P như peer methods → gây nhầm lẫn. Hôm nay consolidation:
+
+**Files updated**:
+- [`CLAUDE.md`](CLAUDE.md): Thêm section "Scope decision — Main pipeline vs Ablation" ngay sau mục tiêu nghiên cứu. Liệt kê hệ quả thực tế cho agents khi đọc repo.
+- [`docs/methods.md`](docs/methods.md) §1.2: Đổi tiêu đề "Weather Augmentation — 2 Methods" → "Main Pipeline (IP2P) + Ablation Archive (Legacy NST)". Method 1 NST được gắn nhãn `(ABLATION-ONLY)`, Method 2 IP2P gắn nhãn `(MAIN PIPELINE)`. TODO items sensitivity analysis cho style_weight → marked deferred/ablation-only.
+- [`docs/methods.md`](docs/methods.md) §1.4 SSIM/LPIPS filter table: làm rõ threshold áp dụng cho main IP2P, ST dùng cùng threshold nhưng là ablation.
+- [`docs/plan.md`](docs/plan.md): Phase 0.1, 0.2, 0.3 (style_weight, steps, MiDaS params) marked DEFERRED ablation-only. Phase 4.3 (Gatys verification) marked deferred. Phase 5.3/5.5 reframed: ST vs IP2P comparison là ablation/supplementary, không dùng để chọn method (đã chốt IP2P).
+- [`docs/paper_background_summary.md`](docs/paper_background_summary.md): Rewrite Background paragraph về synthetic augmentation (NST đứng sau diffusion+inpainting, gắn nhãn "retained as ablation baseline"). Summary bullet "Weather augmentation 57,435 images NST" → "Main pipeline IP2P + physics + fog; NST retained as ablation (~57K archived)". Đánh dấu tất cả row counts cũ (85,613 / 10,266 / 47,169) là OUTDATED, cần recompute từ `augmentation_data/` ground truth.
+- [`docs/checklist.md`](docs/checklist.md) CRITICAL section: style_weight/steps mismatch → marked resolved (ablation-only). MiDaS params verification → deferred. IP2P guidance params remain as main TODO.
+- [`generation/AUGMENTATION_REPORT.md`](generation/AUGMENTATION_REPORT.md): Preamble scope note. §2 title "Weather Augmentation (Neural Style Transfer)" → "Weather Augmentation — Ablation Baseline (Legacy Neural Style Transfer)", với status banner. §8 Summary split thành "Main Pipeline" tables (CS + SODA) vs "Ablation Archive" tables, tránh gộp nhầm row counts. §9 Design Decision #1 "Style transfer over GAN" → "IP2P diffusion over style transfer (2026-04-21)" với justification (texture fidelity 0.86 vs 0.00, ít hallucinate hơn).
+
+**Không update**: `README.md`, `dataset_card.md`, `data_card.md`, `docs/architecture.md`, `experiments/ablation_style_transfer/README.md` — đã phản ánh đúng trạng thái từ 2026-04-21.
+
+**Non-goal**: Không xoá code `generation/weather/rain_snow/style_transfer/` và không xoá data `experiments/ablation_style_transfer/` — cần giữ để regenerate được ablation results khi reviewer yêu cầu.
+
+### .md system audit + Batch A fixes (+ Batch A' follow-up gaps)
+
+Comprehensive audit of 28 .md files vs paper/main.tex + code + `augmentation_data/` ground truth. Full findings in [`docs/md_audit_2026-04-21.md`](docs/md_audit_2026-04-21.md) — 28 findings (5 CRITICAL, 8 MAJOR, 8 MEDIUM, 5 MINOR, 2 STYLE).
+
+**Batch A (11 findings fixed, safe, no narrative decision needed):**
+- Deleted obsolete simulator artifacts (`generation/simulation_engine.md`, `scenario_templates/`, `parameter_ranges.json`) — no code references found
+- Fixed §5 Outpainting sub-numbering `4.x → 5.x` in `AUGMENTATION_REPORT.md`
+- Renamed duplicate `Approach 6: Human Perceptual Validation` → `Approach 8` in `docs/checklist.md`
+- Renamed duplicate `§4B.5 Files Created` → `§4B.7` in `docs/plan.md`
+- Fixed `taxonomy/extreme_conditions_definition.md`: `ConstructionCV-ExtremeConditions` → `ConSynth-X`
+- Updated `CLAUDE.md` paper pipeline list to include `fog`
+- Added vendored-copy banner to `generation/weather/libs/Weather_Effect_Generator/README.md`
+- Resolved ACDC self-contradiction in `docs/data_sources.md` (§7.4 deleted) and `docs/literature.md` §2.8 (ABANDONED → VERIFIED primary reference)
+- Updated `docs/data_sources.md` §3.1 path for style transfer to `experiments/ablation_style_transfer/`
+- Removed `parameter_ranges.json` reference from `AUGMENTATION_REPORT.md:408`
+
+**C1 decision — Option B chosen by user**: Rewrite ST as ablation-only in main paper. DEVLOG 2026-04-21 warned this requires either regenerating IP2P at multiple intensity levels or justifying methodology asymmetry. User generated `rain_heavy` on 2026-04-21 — but as physics-only overlay (not diffusion-heavy). Asymmetry with snow (which has 2 diffusion-based levels) needs paper framing when Batch B narrative rewrite happens.
+
+**Batch A' (9 gaps) — triggered by rain_heavy + Kaggle update not propagated to docs:**
+- `dataset_card.md`: Rewrote Kaggle sample table with accurate row counts (300 not 100 for DINO-filtered rain files); added v3 + v6 version history entries
+- `README.md`: Replaced "Three pipelines" line with detailed per-condition list showing rain has 2 intensities (IP2P light + physics heavy)
+- `augmentation_data/README.md`: Updated layout tree with `rain_heavy/`, added row-count table entries, rewrote Provenance section with full rain_heavy physics spec
+- `generation/AUGMENTATION_REPORT.md` §1: Rewrote overview condition table — rain light/heavy, snow light/heavy, fog 3 zones, night, compound night_rain/night_snow, small, and style_transfer as ablation. Still needs §2 rewrite in Batch B.
+- `docs/architecture.md`: Updated Augmentation Conditions table with rain 2-level split
+- `docs/methods.md`: Added new subsection "IP2P Rain — 2 Intensity Variants (2026-04-21)" with full technical spec: pilot history v1-v5, physics config (fog 0.30-0.45, 3 streak layers with n/length/alpha per layer, Gaussian blur σ=1.3), production worker details (deterministic seed, CPU-only, metadata preservation), row counts, post-hoc DINO/SSIM metrics, asymmetry-with-snow justification
+- `docs/plan.md`: Added Phase 5B "Rain_heavy Re-validation" with 11 subtasks (4 done, 7 pending SLURM submission)
+- `docs/literature.md` §1.7: Linked Tremblay et al. (2021) to rain_heavy physics-overlay design decision; added Gupta et al. Weather_Effect_Generator citation
+
+### SLURM runbook + validation script patches for rain_heavy
+
+Patched 7 validation script registries to add `ip2p_rain_heavy` / `diffusion_rain_heavy` entries pointing to `augmentation_data/construction_site/rain_snow/diffusion/test/rain_heavy/`:
+- `validation/extract_dino_ssim_all.py`
+- `validation/compute_relative_mahalanobis.py`
+- `validation/weather_classifier.py`
+- `validation/compute_fid_kid.py`
+- `validation/compute_texture_fidelity.py`
+- `validation/vlm_jury/data_loader.py`
+- `validation/make_retention_charts_all.py` (also relabeled existing `ip2p_rain` → "IP2P Rain (light)")
+
+Created 6 SLURM scripts in `jobs/`:
+- `extract_dino_ssim_rain_heavy.sh` (~25 min, `vlm-new` env for DINOv3)
+- `rerun_weather_cls_rain_heavy.sh`, `rerun_fid_kid_rain_heavy.sh`, `rerun_mahalanobis_rain_heavy.sh`, `rerun_texture_fidelity_rain_heavy.sh`
+- `rerun_vlm_jury_rain_heavy.sh` (wrapper submitting 3 judge jobs)
+
+Plus master runbook [`docs/rain_heavy_revalidation_runbook.md`](docs/rain_heavy_revalidation_runbook.md) with submission order, expected metric outcomes, and stale-path flag for 4 scripts whose `diffusion_rain` entries still point to pre-2026-04-20 `$CONSYNTH_DATA_ROOT/output/construction_site_test/diffusion_rain_heavy/` (separate maintenance issue, not addressed).
+
+### Rain_heavy DINO extraction + Kaggle v6 upload
+
+**Chained SLURM job** `jobs/rain_heavy_dino_and_filter.sh` (job 5025824, completed in 5 min; first attempt 5023889 failed because `CONSYNTH_DATA_ROOT` env var not inherited in Bash-tool-spawned sbatch — script now exports it explicitly):
+
+- Step 1 — DINO/SSIM extraction:
+  - `validation/results/dino_ssim/ip2p_rain_heavy.csv` (1,652 rows, DINO mean **0.754**, SSIM mean **0.522**, min/max DINO 0.103/0.953)
+  - Extract skipped existing CSVs (logic in `extract_dino_ssim_all.py:147`) → only computed rain_heavy
+- Step 2 — Filter 300 samples per user thresholds:
+  - `cs_diff_rain_test.arrow`: 300 rows, 110 MB (from 1,515 eligible at DINO≥0.75, 91.7% of light)
+  - `cs_diff_rain_heavy_test.arrow`: 300 rows, 81 MB (from 1,219 eligible at DINO≥0.70, 73.8% of heavy)
+  - Script: [`scripts/update_kaggle_rain_dino_filtered.py`](scripts/update_kaggle_rain_dino_filtered.py) (deterministic seed 42)
+- Step 3 — Kaggle upload v6: `kaggle datasets version` uploaded all 23 Arrow files (CLI snapshots the whole directory; unchanged files re-uploaded). Status: `ready` as of 17:07 UTC 2026-04-22.
+
+**Observation**: Rain_heavy DINO mean 0.754 vs rain light 0.871 (drop ~13%). SSIM drops more sharply (0.522 vs 0.756, drop ~31%). Consistent with physics overlay + Gaussian blur affecting pixel-level structure more than DINO's semantic features. Empirical confirmation that DINO threshold should be looser for heavy (0.70) than light (0.75).
+
+**Backups**: All validation result dirs snapshot-copied before re-validation runs:
+`validation/results/{weather_cls,fid_kid,relative_mahalanobis,texture_fidelity,vlm_jury,dino_ssim}_backup_20260421_2329/`.
+
+---
+
+## 2026-04-21
+
+### Decision: Rain 2-level scheme — heavy = physics-only overlay on IP2P light (no diffusion)
+
+**Quyết định**: Rain có 2 intensity levels. **light = existing IP2P output (unchanged)**;
+**heavy = apply `add_natural_rain(intensity='heavy_fog')` on top of light** — pure
+CPU physics overlay, no additional diffusion pass.
+
+**Lý do**:
+- Pilot v1 (g=8 vs g=12 same prompt): SSIM giữa 2 level chỉ khác ~9% → không phân biệt được bằng mắt.
+- Pilot v2 (3-level prompt-driven theo test_snow_stronger.py: light/medium/heavy với prompt leo thang): "torrential downpour" prompt ở heavy bị hallucination cao, fail nhiều.
+- Pilot v3 (2-level g=8 light + g=10 heavy với physics overlay parametrized): span SSIM 0.17, nhưng heavy nhìn chưa đủ mạnh.
+- Pilot v4 (g=11 + fog 0.30-0.45 + Gaussian blur σ=1.3): span 0.30, tốt hơn nhưng grain chưa rõ.
+- Pilot v5 (thêm density 1.7× + alpha 0.35-0.55): span 0.42, quá nhiều thay đổi từ diffusion khi combine.
+- Chốt: **bỏ diffusion cho heavy**, chỉ dùng physics-only trên light → deterministic, không fail, không tốn GPU, dễ reproduce.
+
+**Physics config (`heavy_fog` intensity)**:
+- Fog haze strength: uniform(0.30, 0.45)
+- 3 streak layers: n∈[3000,4500]/[2200,3600]/[900,1600], length 12-60px, thick 1-3, alpha 0.35-0.55
+- Post-processing: Gaussian blur kernel 5×5, σ=1.3 (reduced-visibility effect)
+- Backward compatible: `add_natural_rain(image)` hoặc `intensity='heavy'` giữ nguyên behavior production v4.
+
+**Code**:
+- [generation/weather/rain_snow/diffusion/physics.py](generation/weather/rain_snow/diffusion/physics.py) — thêm `intensity: str = 'heavy'` param với 3 mode (`heavy` default, `light`, `heavy_fog`).
+- [generation/weather/rain_snow/diffusion/apply_heavy_physics_to_light.py](generation/weather/rain_snow/diffusion/apply_heavy_physics_to_light.py) — production worker CPU-only.
+- Pilot scripts: [test_rain_intensity.py](generation/weather/rain_snow/diffusion/test_rain_intensity.py) (v2-v5, 4-col grids dưới `validation/results/rain_intensity_test_v{2..5}/`); [test_rain_heavy_physics_only.py](generation/weather/rain_snow/diffusion/test_rain_heavy_physics_only.py) (pilot cuối).
+
+**Production outputs** (4 targets, CPU only, ~50 min elapsed):
+| Target | Rows | Size | Path |
+|---|---|---|---|
+| CS test | 1,652 (7 shards) | 424 MB | `augmentation_data/construction_site/rain_snow/diffusion/test/rain_heavy/` |
+| CS train | 3,627 | 937 MB | `augmentation_data/construction_site/rain_snow/diffusion/train/rain_heavy/train_rain_heavy.arrow` |
+| SODA VOC | 4,790 | 2.6 GB | `augmentation_data/soda_voc/rain_snow/diffusion/rain_heavy.arrow` |
+| SODA KTSH | 2,112 | 608 MB | `augmentation_data/soda_ktsh/rain_snow/diffusion/rain_heavy.arrow` |
+
+**Schema intensity hiện tại toàn dataset**:
+- Rain: light (IP2P g=10 mặc định) + heavy (light + heavy_fog physics) — 2 levels.
+- Snow: light (IP2P g=8) + heavy (IP2P g=12, Apr 18 via `generate_snow_strong.sh`) — 2 levels, giữ nguyên.
+- Fog: 3 zones heavy/medium/light via Koschmieder visibility — giữ nguyên.
+- Night: single level — giữ nguyên.
+
+**Kaggle update**: bổ sung 5 sample files (100 rows/file) vào [augmentation_data_sample/](augmentation_data_sample/),
+upload version mới lên `viethuyduong/consynth-x-augmentation-sample`:
+- `cs_diff_rain_heavy_{test,train}.arrow` (paired image_ids với existing light samples)
+- `soda_voc_diff_rain.arrow` (NEW light baseline, chọn ids ∈ `soda_voc_original.arrow` để không cần repack)
+- `soda_voc_diff_rain_heavy.arrow`
+- `soda_ktsh_diff_rain_heavy.arrow`
+
+Script: [scripts/update_kaggle_rain_heavy.py](scripts/update_kaggle_rain_heavy.py).
+
+---
+
+### Decision: Move VGG neural style transfer rain/snow to ablation archive
+
+**Quyết định**: Loại bỏ VGG neural style transfer khỏi main weather augmentation
+pipeline của ConSynth-X; IP2P diffusion trở thành phương pháp weather duy nhất
+cho rain/snow trong dataset chính. Style transfer output được **giữ lại** như
+ablation archive để so sánh baseline và đảm bảo reproducibility.
+
+**Lý do**: IP2P đạt texture fidelity và realism cao hơn (xem `paper/main.tex` §4:
+unanimous belief fusion $H{=}0.86$, FID/KID thấp hơn). Tinh giản dataset thành
+một pipeline weather nhất quán, giảm dung lượng main release ~43 GB.
+
+**Thao tác filesystem** (mv trên cùng NFS mount — rename atomic, non-destructive):
+- `augmentation_data/soda_voc/rain_snow/style_transfer/` (37 GB)
+  → `experiments/ablation_style_transfer/soda_voc/rain_snow/style_transfer/`
+- `augmentation_data/construction_site/rain_snow/style_transfer/` (5.9 GB)
+  → `experiments/ablation_style_transfer/construction_site/rain_snow/style_transfer/`
+- `soda_ktsh` không có style_transfer → không đổi.
+- Generation code tại `generation/weather/rain_snow/style_transfer/` **không**
+  di chuyển (giữ để regenerate khi cần).
+
+**Code/doc đã cập nhật**:
+- `experiments/ablation_style_transfer/README.md` — mới, giải thích lý do và
+  layout archive.
+- `slide/gen_all_conditions_grid.py` — path `CS_AUG/rain_snow/style_transfer/...`
+  → biến mới `CS_ST_ABLATION` trỏ vào archive.
+- `generation/utils/pack_soda_voc_to_arrow.py` — docstring usage example trỏ
+  vào archive path.
+- `README.md` — "Four synthetic pipelines" → "Three" + thêm dòng về ablation
+  archive; bảng repository layout thêm `experiments/`.
+- `data_card.md` — thêm dòng giải thích main dataset dùng IP2P cho rain/snow,
+  style transfer nằm ở ablation archive.
+
+**Chưa cập nhật (flag tới maintainer)**:
+- `paper/main.tex` — vẫn trình bày Neural Style Transfer là **Method 1**
+  (§3.1.1), kèm bảng "Weather (style): 47,169 images", và framing
+  "complementary pipelines" ở §5. Thay đổi paper narrative vượt quá scope
+  của operation này; cần quyết định research-integrity:
+  1. Giữ paper như cũ, trình bày cả hai pipeline, chỉ main release dùng IP2P.
+  2. Viết lại §3.1 + §4 để định vị style transfer là ablation từ đầu
+     → nếu chọn hướng này phải báo cáo lại DINO/SSIM/FID có-và-không-style-transfer
+     để tránh "justify ngược" (vi phạm research integrity rule #2 trong CLAUDE.md).
+
+**Cảnh báo methodology**: IP2P hiện chỉ có **1 mức cường độ** (`rain.arrow`,
+`snow.arrow`), trong khi style transfer có 3 mức (`rain_{0,1,2}.arrow`). Nếu
+paper báo cáo intensity-based exposure cho rain/snow, cần regenerate IP2P ở
+nhiều mức guidance_scale trước khi coi vấn đề này là closed (consistent
+methodology across hazards — per memory `feedback_research_integrity.md`).
+
+---
+
+## 2026-04-20
+
+### Fix: DINO/SSIM for IP2P conditions was pointed at pre-v4 data
+
+**Phát hiện**: CSV `validation/results/dino_ssim/ip2p_{rain,snow_light,snow_heavy}.csv`
+và chart `dino_ssim_retention_all.{png,pdf}` + grid `rain_heavy_dino075_grid.jpg`
+được tính trên output IP2P cũ (30/3/2026, pre-v4, IP2P-only không physics overlay,
+không LPIPS filter) tại `ConstructionSite/output/construction_site_test/diffusion_{rain,snow}_*/`.
+
+Kết quả: rain grid không thấy rain streaks, mean DINO rain = 0.82 (quá cao,
+do IP2P-only chỉ edit "wet ambient" rất nhẹ) → nhầm tưởng data load sai.
+
+**Thật ra** v4 best config (IP2P + physics fog + rain streaks + LPIPS<0.35 filter,
+config trong `ConstructionSite/weather_aug/rain_snow/test_ip2p_v3.py` +
+`batch_worker_v4.py`) đã chạy xong 31/3/2026 và output ở
+`augmentation_data/construction_site/rain_snow/diffusion/test/{rain,snow_heavy,snow_light}/`
+(7 batch files, naming `batch_0-500.arrow` etc. khớp SLURM job v4_rain_*_0331_1107).
+
+**Fix**:
+- `validation/extract_dino_ssim_all.py`: đổi `IP2P_DATA` sang
+  `CONSYNTHX/augmentation_data/construction_site/rain_snow/diffusion/test/`;
+  `ip2p_rain` → `rain/`, `ip2p_snow_*` → `snow_{heavy,light}/`.
+- `validation/make_dino_threshold_grid_rain.py`: cập nhật `AUG_DIR` cùng path.
+- Xóa 3 CSV cũ + rain grid cũ + ip2p_rain_20samples.jpg.
+- Submit SLURM `validation/jobs/rerun_ip2p_v4_dino_ssim.sh` (job 5009442,
+  FAILED — env `VLM` có transformers 4.49.0 không nhận DINOv3) → re-submit
+  job 5009583 với env `vlm-new` (transformers 5.3.0). Cập nhật
+  `docs/infrastructure.md` ghi chú yêu cầu env.
+- Job 5009583: step 1 (extract) thành công. Step 2 (charts) fail vì
+  `vlm-new` thiếu matplotlib → chạy lại step 2+3 bằng env `VLM` trên node
+  login. 3 CSV + 2 chart + 1 grid đã cập nhật với v4 data.
+
+**Kết quả v4 (IP2P + physics + LPIPS filter):**
+
+| Condition | N pairs | DINO mean | SSIM mean |
+|---|---|---|---|
+| IP2P Rain v4 | 1652 (từ 3004, ~45% drop) | 0.871 | 0.756 |
+| IP2P Snow light v4 | 2940 | 0.927 | 0.723 |
+| IP2P Snow heavy v4 | 3004 | 0.790 | 0.598 |
+
+Rain grid v4: Above DINO≥0.75 = 1515 (91.7%), Below = 137 (8.3%) → rain
+streaks vật lý hiển thị rõ trong cả 2 nhóm sample.
+
+**Paper update (`paper/main.tex`, `paper/figures/`):**
+- Copy v4 retention chart + table → `fig5_retention_curves_all.pdf`,
+  `fig6_retention_table.pdf`.
+- Sửa đoạn "Retention characteristics across all augmentation conditions"
+  (Section 3): pattern cũ nói IP2P diffusion nói chung `≤ 77% at DINO ≥ 0.80`
+  không còn đúng với v4 (IP2P rain 85%, snow light 98%, do LPIPS filter giữ
+  lại phần semantic-preserving). Rewrite để phân biệt IP2P rain/snow-light
+  (filter giữ `>85%`) vs snow-heavy/night (aggressive edits, `59%`/`77%`).
+- Sửa SSIM mean snow_light: `0.76 → 0.72` (line 138).
+- Các số khác ở fig4 caption vẫn đúng (73% DINO≥0.75, 84% SSIM≥0.5 cho
+  snow_heavy N=3004) vì v4 snow_heavy không có LPIPS filter → số liệu giữ nguyên.
+- Rebuild `main.pdf` (25 pages, 10.6MB).
+
+**Quan sát**: DINO mean v4 rain (0.871) không thấp hơn pre-v4 (0.82) dù
+có rain streaks, vì (a) LPIPS filter đã loại 45% ảnh "too different", (b)
+DINOv3 encode semantic content → thin rain streaks overlay ít ảnh hưởng embedding.
+SSIM (pixel-level) phản ánh tốt hơn: v4 rain SSIM 0.756 (tight vì filter giữ
+ảnh semantic-preserved). IP2P Snow heavy có DINO/SSIM thấp nhất trong nhóm
+IP2P (0.790/0.598) — biến đổi mạnh nhất, snow phủ white overlay diện rộng.
+
+**Bài học**: khi registry trong extraction script trỏ đến thư mục có tên
+trông-hợp-lý (`diffusion_rain_heavy`) mà KHÔNG phải output pipeline mới nhất →
+kết quả evaluation sai lệch mà không có warning. Cần
+sanity-check mean DINO sau mỗi lần gen (v4 rain expected ~0.5-0.7 do physics
+overlay, pre-v4 ~0.82).
+
+### Self-contained refactor for DSA Best Data Award submission
+
+Restructured repository so that reviewers can clone ConSynth-X and run the
+generation + evaluation pipelines without depending on the adjacent
+`ConstructionSite/` working tree.
+
+Changes:
+- **Vendored** `Weather_Effect_Generator` into `generation/weather/libs/Weather_Effect_Generator/`
+  (upstream `hgupta01/Weather_Effect_Generator@7d62b67`, Apache-2.0) with
+  first-party additions: `rain_pipeline.py`, `snow_pipeline.py`,
+  `weather_pipeline.py`, `style_transfer.py`, modified `lib/style_transfer_utils.py`
+  and `Snow_Effect_Generator.py`. Attribution + provenance: `libs/Weather_Effect_Generator/NOTICE.md`.
+  Removed duplicated copies previously sitting next to the worker scripts in
+  `rain_snow/style_transfer/`.
+- **Added** `img2img-turbo` as a pinned git submodule at
+  `generation/day2night/img2img-turbo/` (`GaParmar/img2img-turbo@86f5414`, MIT).
+- **Centralised** path resolution via `generation/_paths.py`, `.env.example` and
+  environment variables `CONSYNTH_REPO_ROOT`, `CONSYNTH_DATA_ROOT`,
+  `CONSYNTH_CONDA_ENV`, `CONSYNTH_WEIGHTS_URL` / `CONSYNTH_WEIGHTS_SRC`.
+  Replaced hardcoded `/users/PGS0407/...` references in `generation/`,
+  `benchmarks/`, `validation/`, `experiments/`, `paper/`, `slide/`,
+  `human_validation/` and `benchmarks/vlm/configs/base.yaml`.
+- **Weights manifest** at `weights/` with `checksums.sha256` (`day2night.pkl`,
+  `rain_vgg_512.pth`, `snow_vgg_512.pth`). `download.sh` pulls each file
+  directly from its **original upstream host** (CMU for `day2night.pkl`;
+  Weather_Effect_Generator Google Drive for the VGG `.pth` files — we are
+  not the model authors and do not re-host). It then verifies SHA256 and
+  symlinks the files to the paths each pipeline expects. A local mirror
+  override (`CONSYNTH_WEIGHTS_SRC`) is supported for offline clusters.
+- **Production IP2P worker**: verified `generation/weather/rain_snow/diffusion/batch_worker.py`
+  is the canonical version (newer than `ConstructionSite/weather_aug/rain_snow/batch_worker_v4.py`:
+  imports `physics` instead of `test_ip2p_v3`, has CLI overrides, `--no-filter`,
+  and the v2 prompt without "wet muddy ground"). No copy needed.
+
+---
+
+## 2026-04-20
+
+### Kaggle Sample Dataset v2 — Add IP2P Snow Heavy
+
+**Action**: Updated public sample dataset at https://www.kaggle.com/datasets/viethuyduong/consynth-x-augmentation-sample with new IP2P snow heavy variant.
+
+**Changes**:
+- Added: `cs_diff_snow_heavy_test.arrow` — 100 samples from new `diffusion_snow_heavy` set (gs=12, 2026-04-18, no-filter)
+- Renamed: `cs_diff_snow_test.arrow` → `cs_diff_snow_light_test.arrow` to disambiguate from heavy variant
+- Upload size delta: +28 MB (heavy) vs −38 MB (light renamed)
+
+**Upload script**: `scripts/update_kaggle_sample.py` (reads schema from existing sample, samples 100 deterministic via seed=42, writes with matching columns)
+
+**Command used**:
+```bash
+cd augmentation_data_sample
+kaggle datasets version -m "Add IP2P snow heavy variant (gs=12); rename old snow test to snow_light"
+```
+
+**Why this matters**: Reviewers can now compare both snow intensity variants side-by-side without downloading the full dataset. Aligns public sample with paper's IP2P snow_heavy introduction (Section 2.2.2).
+
+---
+
+## 2026-04-19
+
+### Full Retention Analysis: DINO + SSIM Across 13 Augmentation Conditions
+
+**Mục tiêu**: Đánh giá retention rate của tất cả augmentation variants dưới DINO similarity và SSIM thresholds, để inform filter selection.
+
+#### Pipeline:
+1. Extract DINOv3 ViT-L/16 CLS embeddings cho 3004 ảnh gốc + tất cả augmented conditions
+2. Compute cosine similarity (original vs augmented)
+3. Compute SSIM (256x256 resized) per-pair
+4. Generate retention curves + heatmap
+
+#### Files:
+- Script: `validation/extract_dino_ssim_all.py`, `validation/make_retention_charts_all.py`
+- Data: `validation/results/dino_ssim/*.csv` (13 conditions)
+- Charts: `validation/results/dino_ssim_retention_all.{pdf,png}`, `dino_ssim_retention_table.{pdf,png}`
+- Paper: `paper/figures/fig4_snow_heavy_retention.{pdf,png}`, `fig5_retention_curves_all.pdf`
+
+#### Summary (DINO mean / SSIM mean per condition):
+
+| Condition | N | DINO mean | SSIM mean | Retention@DINO≥0.75 |
+|---|---|---|---|---|
+| ST Rain A | 2211 | 0.919 | 0.821 | **98%** |
+| ST Rain B | 1243 | 0.886 | 0.796 | 93% |
+| ST Rain C | 1208 | 0.898 | 0.809 | 95% |
+| ST Snow A | 2159 | 0.898 | 0.775 | 96% |
+| ST Snow B | 1649 | 0.859 | 0.687 | 91% |
+| ST Snow C | 1796 | 0.867 | 0.703 | 92% |
+| IP2P Rain | 3004 | 0.800 | 0.591 | 74% |
+| IP2P Snow (light) | 3004 | 0.774 | 0.590 | 67% |
+| IP2P Snow (heavy) | 3004 | 0.790 | 0.598 | 73% |
+| Fog (light) | 1002 | **0.938** | **0.788** | **99%** |
+| Fog (medium) | 1001 | 0.918 | 0.719 | 99% |
+| Fog (heavy) | 1001 | 0.868 | 0.617 | 93% |
+| Night (CycleGAN) | 3004 | 0.841 | 0.390 | 88% |
+
+#### Key findings:
+
+1. **Style transfer + light fog preserve DINO structure rất tốt** (>90% retention ở DINO ≥ 0.80). Minimal semantic shift.
+2. **IP2P diffusion + night aggressive global edits** → larger DINO distances (retention ≤77% at DINO ≥ 0.80).
+3. **SSIM degrades faster than DINO** cho IP2P và night — pixel-level changes > structural feature changes. Consistent với DINO robustness to texture.
+4. **DINO vs SSIM correlation moderate** (r=0.40 cho snow_heavy). Không thay thế được nhau → joint filtering more restrictive.
+
+#### Implication for filter selection:
+
+- **Mild edits** (fog_light, ST rain): SSIM filtering đủ
+- **Aggressive edits** (IP2P, night): DINO-based filtering để tránh discard quá nhiều data
+- **Không có threshold tối ưu chung** — phụ thuộc condition và downstream task
+
+---
+
+## 2026-04-18
+
+### IP2P Snow Heavy Variant + VLM Jury Validation
+
+**Motivation**: VLM Jury evaluation (2026-04-15) phát hiện IP2P snow light (gs=8) có acceptance rate rất thấp (InternVL 30%, Phi-4 8%, Qwen 4%). Cần variant mạnh hơn để snow effect visible.
+
+#### Changes:
+- **Heavy variant**: `guidance_scale=12.0`, `image_guidance_scale=1.2`
+- **New prompt**: "a cold winter day with heavy snow, thick snow covering the ground and surfaces, grey overcast sky, snowfall"
+- **No pre-filter** (`--no-filter`) — keep all 3004 images, user designs filter post-hoc
+- Added `--guidance-scale`, `--image-guidance-scale`, `--prompt`, `--no-filter` CLI args to `batch_worker.py`
+
+#### Structure changes:
+- `ConstructionSite/output/.../diffusion_snow_heavy` (old) → renamed to `diffusion_snow_light`
+- New `diffusion_snow_heavy` = strong config output (3004 unfiltered)
+- `ConSynth-X/augmentation_data/.../snow/` → `snow_light/` + symlink `snow_heavy → ConstructionSite/...`
+- Updated code references: `data_loader.py`, `compute_relative_mahalanobis.py`
+
+#### VLM Jury on heavy variant (3 judges × 3004 images):
+
+| Judge | Acceptance | vs light variant |
+|---|---|---|
+| InternVL | **89.3%** | +59% (from 30%) |
+| Phi-4 | **92.3%** | +84% (from 8%) |
+| Qwen | 8.9% | +5% (still strict) |
+
+**Pattern**: Heavy variant dramatically cải thiện InternVL + Phi-4 acceptance. Qwen vẫn strict trên mọi snow variant (known bias, tương tự Gemini trong Ruck et al.).
+
+#### Empirical observation: DINO threshold ≠ VLM Jury agreement
+
+Tested: DINO ≥ 0.75 threshold on snow_heavy. VLM Jury agreement chỉ ~50-52% với DINO split (random level).
+
+**Interpretation**: DINO đo structural preservation ở feature level, VLM Jury đánh giá visual realism + semantic coherence. Complementary metrics, không thay thế được.
+
+**Conclusion (per research integrity rules)**: Không có empirical justification để dùng DINO ≥ 0.75 làm filter. Release both variants với per-image DINO + SSIM scores; user chọn threshold theo application.
+
+---
+
+## 2026-04-17
+
+### VLM Jury Evaluation — Full Dataset
+
+**Method**: 3 local VLM judges (Qwen2.5-VL-7B, InternVL2.5-8B, Phi-4-multimodal) đánh giá pair (original | augmented) → binary accept/reject. Following Ruck et al. (2026) methodology.
+
+#### Results per condition (majority vote 2/3):
+
+| Condition | Majority | ACDC baseline |
+|---|---|---|
+| Fog heavy | **98%** | 97.5% |
+| IP2P Rain | 72% | 87.5% |
+| ST Rain (A/B/C) | 70% | 87.5% |
+| Night | 58% | 90.0% |
+| ST Snow B | 10% | 87.5% |
+| IP2P Snow light | 8% | 87.5% |
+
+**Pattern**: Fog augmentation vượt cả real ACDC fog. Rain good. Night moderate. Snow weak (led to heavy variant introduction).
+
+**Inter-judge agreement (Cohen's κ)**: 0.16-0.36 — moderate. InternVL lenient (78%), Qwen strict (57%), Phi-4 middle (57%).
+
+---
+
+## 2026-04-15
+
+### DINOv2 → DINOv3 Migration
+
+**Motivation**: Ruck et al. (2026) paper gốc dùng DINOv3, nhưng implementation ban đầu dùng DINOv2 (do transformers 4.49 không support DINOv3). Nâng cấp transformers → 5.5.4 để match paper methodology.
+
+#### Changes:
+- `validation/compute_relative_mahalanobis.py`: DINOv2Embedder → DINOv3Embedder
+- `paper/main.tex`: All DINOv2 references → DINOv3
+- `paper/references.bib`: Added Siméoni et al. 2025 DINOv3 citation
+- `slide/slide_simple.tex`: Updated labels
+- `jobs/relative_mahalanobis.sh`: Updated description
+
+#### Results comparison (CLIP unchanged; DINOv3 new):
+
+| Condition | DINOv2 gap closed | DINOv3 gap closed | Change |
+|---|---|---|---|
+| Night | 8.0% | 9.0% | +1% |
+| Snow (ST) | 2.1% | 2.8% | +0.7% |
+| Rain (ST) | 1.1% | 1.2% | +0.1% |
+| Fog | 0.2% | 0.9% | +0.7% |
+
+DINOv3 slightly higher than DINOv2 but **pattern identical** — cross-domain limitation (ACDC driving ≠ construction) persists regardless of embedding choice.
+
+---
+
 ## 2026-04-12
 
 ### Cross-Validation Synthesis — Tổng hợp 5 Approaches

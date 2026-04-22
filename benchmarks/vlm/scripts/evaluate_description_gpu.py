@@ -18,7 +18,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 OUTPUT_DIR = PROJECT_ROOT / 'output' / 'description'
-ANNOTATION_ROOT = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite-10k-Implementation/Annotations')
+ANNOTATION_ROOT = Path(os.environ.get('CONSYNTH_ANNOTATION_ROOT',
+                                       str(Path(os.environ.get('CONSYNTH_DATA_ROOT', Path.home() / 'consynth_data')).parent / 'ConstructionSite-10k-Implementation' / 'Annotations')))
 REF_PATH = ANNOTATION_ROOT / 'random1_references.json'
 LMUDATA = os.path.expanduser('~/LMUData')
 

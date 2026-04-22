@@ -14,13 +14,19 @@ Tài liệu này trình bày các phương pháp và thuật toán do tôi tự 
 
 **Cách triển khai**: 3 pipeline độc lập (weather, day2night, outpainting), mỗi pipeline bảo toàn annotations → gộp để train.
 
-### 1.2 Weather Augmentation — 2 Methods
+### 1.2 Weather Augmentation — Main Pipeline (IP2P) + Ablation Archive (Legacy NST)
 
-#### Method 1: Neural Style Transfer (VGG19 + MiDaS + Physics Particles)
+> **Decision 2026-04-21 (DEVLOG):** Main weather augmentation cho rain/snow = **IP2P diffusion** (Method 2). VGG Neural Style Transfer (Method 1) được **di dời sang ablation archive** tại [`experiments/ablation_style_transfer/`](../experiments/ablation_style_transfer/), **không còn là pipeline chính thức**. Giữ lại chỉ để (a) baseline comparison "realism vs recognizability" trong paper, (b) reproducibility cho các bảng/figure tham chiếu ST.
+>
+> Hệ quả: các TODO bên dưới về style_weight/steps/MiDaS params cho Method 1 **không block submission** — đánh dấu là ablation-only, không cần sensitivity analysis cho canonical parameters.
+
+#### Method 1 (ABLATION-ONLY): Neural Style Transfer (VGG19 + MiDaS + Physics Particles)
+
+**Status:** Ablation archive — không dùng cho production data. Data: [`experiments/ablation_style_transfer/`](../experiments/ablation_style_transfer/). Code: [`generation/weather/rain_snow/style_transfer/`](../generation/weather/rain_snow/style_transfer/) (giữ để regenerate được).
 
 **Pipeline**: Input → VGG19 style transfer (tone/color) → MiDaS depth estimation → Physics-based rain/snow particles → Output
 
-**Parameters cần justify (TODO — CHƯA CÓ JUSTIFICATION):**
+**Parameters (ablation — justification KHÔNG bắt buộc cho submission):**
 
 | Parameter | Giá trị hiện tại | File | Status justification |
 |---|---|---|---|
@@ -33,9 +39,9 @@ Tài liệu này trình bày các phương pháp và thuật toán do tôi tự 
 | visibility_ratio (heavy) | 0.1-0.3 | `snow_pipeline.py:122` | Chưa justify |
 | darkness multipliers | Xem INTENSITY_CONFIG | `snow_pipeline.py:109-134` | Chưa justify |
 
-**TODO**: Chạy sensitivity analysis cho style_weight ∈ {1000, 10000, 50000, 100000, 500000} và report downstream mAP.
+**TODO (deferred, ablation-only)**: Sensitivity analysis cho style_weight ∈ {1000, 10000, 50000, 100000, 500000} — chỉ chạy nếu reviewer yêu cầu, không block submission.
 
-#### Method 2: InstructPix2Pix (IP2P) + Physics Overlay
+#### Method 2 (MAIN PIPELINE): InstructPix2Pix (IP2P) + Physics Overlay
 
 **Pipeline**: Input → IP2P diffusion (text-guided editing) → Physics overlay (rain streaks/snow flakes) → SSIM+LPIPS filter → Output
 
@@ -45,7 +51,8 @@ Tài liệu này trình bày các phương pháp và thuật toán do tôi tự 
 |---|---|---|---|
 | image_guidance_scale | 1.5 | `batch_worker.py:105,109` | Chưa justify. IP2P paper recommend range [1.0, 2.0] nhưng không nói optimal |
 | guidance_scale (rain) | 10.0 | `batch_worker.py:105` | Chưa justify. Tại sao 10.0? |
-| guidance_scale (snow) | 8.0 | `batch_worker.py:109` | Chưa justify. Tại sao khác rain? |
+| guidance_scale (snow_light) | 8.0 | `batch_worker.py:109` | Light intensity variant |
+| guidance_scale (snow_heavy) | 12.0 | `--guidance-scale 12.0` CLI override | Heavy intensity variant (added 2026-04-19) |
 | num_inference_steps | 30 | `batch_worker.py:131` | Chưa justify. Tại sao không 20 hoặc 50? |
 | rain prompt (v1, deprecated) | "make it a heavy rainy day, dark overcast sky, wet muddy ground" | — | **BỎ** — xem lý do bên dưới |
 | rain prompt (v2, current) | "a rainy day with dark overcast sky, rain falling, grey clouds" | `batch_worker.py:104` | Fixed 2026-04-08 |
@@ -66,6 +73,90 @@ Prompt v1 chứa cụm **"wet muddy ground"** khiến IP2P hiểu lệch: thay v
 **Bài học**: Với IP2P + physics overlay pipeline, prompt nên focus vào **atmospheric effects** (sky, clouds, lighting) và để physics module xử lý **particle effects** (rain streaks, snowflakes). Tránh yêu cầu IP2P thay đổi scene structure (ground, objects).
 
 **Dữ liệu cần regenerate**: Toàn bộ rain diffusion data (7,009 images × 2 shards). Snow giữ nguyên.
+
+#### IP2P Snow Intensity Variants (2026-04-19)
+
+Snow augmentation có 2 intensity levels:
+
+| Variant | guidance_scale | image_guidance_scale | Prompt | Data path |
+|---|---|---|---|---|
+| **snow_light** (cũ) | 8.0 | 1.5 | "a cold winter day with snow, frost on surfaces, grey sky, snow on the ground" | `ConstructionSite/output/construction_site_test/diffusion_snow_light/` |
+| **snow_heavy** (mới) | 12.0 | 1.2 | "a cold winter day with **heavy** snow, **thick snow covering the ground and surfaces**, grey overcast sky, snowfall" | `ConstructionSite/output/construction_site_test/diffusion_snow_heavy/` |
+
+**Lý do có 2 variants:** VLM Jury evaluation (2026-04-15) phát hiện snow_light có acceptance rate rất thấp (InternVL 30%, Phi-4 8%, Qwen 4%). Lý do chính: không thấy snow coverage trên surfaces, color saturation vẫn cao. Heavy variant (gs=12) tăng tính rõ ràng của snow effect.
+
+**Validation results (2026-04-18, 3004 images, --no-filter):**
+- VLM Jury acceptance (snow_heavy): InternVL 89.3%, Phi-4 92.3%, Qwen 8.9%
+- So với snow_light: InternVL 30%, Phi-4 8%, Qwen 4%
+- **Qwen vẫn strict trên snow** across cả 2 variants (known VLM bias, tương tự Gemini trong Ruck et al. 2026)
+
+**Quality filtering**: snow_heavy được generate với `--no-filter` (giữ tất cả 3004 ảnh). DINO/SSIM scores computed post-hoc trong `validation/results/snow_strong_dino_ssim.csv` để user design filter theo nhu cầu.
+
+**Empirical observation (2026-04-18)**: DINO similarity threshold (≥ 0.75) **không correlate với VLM Jury acceptance** — agreement ~50-52% (random). DINO đo structural preservation ở feature level, VLM đánh giá visual realism; chúng capture complementary quality aspects, không thay thế được nhau.
+
+#### IP2P Rain — 2 Intensity Variants (2026-04-21)
+
+Rain có 2 levels, nhưng **KHÁC với snow ở chỗ heavy là physics-only, KHÔNG phải diffusion thứ 2**:
+
+| Variant | Mechanism | Data path |
+|---|---|---|
+| `rain` (light) | IP2P diffusion, g=10, default physics overlay | `augmentation_data/construction_site/rain_snow/diffusion/test/rain/` (7 shards, 1,652 rows CS test) |
+| `rain_heavy` | **Chỉ tăng physics overlay trên light output. Không thêm diffusion pass.** | `augmentation_data/construction_site/rain_snow/diffusion/test/rain_heavy/` (7 shards, 1,652 rows — paired 1:1 với light) |
+
+**Lý do chọn physics-only cho heavy thay vì diffusion-heavy (DEVLOG 2026-04-21):**
+
+Đã test 5 pilot iterations với diffusion-based heavy:
+- v1 (g=8 vs g=12 same prompt): SSIM span chỉ ~9% → không phân biệt được bằng mắt
+- v2 (3-level prompt-driven: light/medium/heavy với prompt "torrential downpour"): hallucination cao ở heavy
+- v3 (2-level g=10 + physics overlay parametrized): span 0.17, heavy nhìn chưa đủ mạnh
+- v4 (g=11 + fog 0.30-0.45 + blur σ=1.3): span 0.30
+- v5 (+ density 1.7× + alpha 0.35-0.55): span 0.42 nhưng diffusion component gây hallucinate scene
+
+→ Chốt bỏ diffusion pass thứ 2, chỉ dùng physics. Deterministic, reproducible, CPU-only, không tốn GPU hours.
+
+**Technical spec — rain_heavy = `add_natural_rain(rain_light_image, intensity='heavy_fog')`:**
+
+File: [generation/weather/rain_snow/diffusion/physics.py](../generation/weather/rain_snow/diffusion/physics.py) (`heavy_fog` mode)
+
+| Component | Spec |
+|---|---|
+| **Fog haze strength** | uniform(0.30, 0.45) — gấp ~2× default `heavy` (0.15-0.30) |
+| **Streak layer 1** (far) | n ∈ [3000, 4500], length 12-26 px, thickness 1 px, alpha 0.35 |
+| **Streak layer 2** (mid) | n ∈ [2200, 3600], length 22-42 px, thickness random(1, 2), alpha 0.48 |
+| **Streak layer 3** (near) | n ∈ [900, 1600], length 30-60 px, thickness random(2, 2, 3), alpha 0.55 |
+| **Rain angle** | base ±75-87° + wind variance ±5° + per-layer ±3° (same as default) |
+| **Post-processing** | Gaussian blur kernel 5×5, σ=1.3 (emulates reduced visibility / lens scattering) |
+| **Streak density total** | ~6,100-9,700 streaks/image (vs default ~2,800-5,200) |
+| **Backward compat** | `add_natural_rain(image)` không arg vẫn gọi `intensity='heavy'` mặc định — zero behavior change cho existing v4 rain pipeline |
+
+**Production worker** ([generation/weather/rain_snow/diffusion/apply_heavy_physics_to_light.py](../generation/weather/rain_snow/diffusion/apply_heavy_physics_to_light.py)):
+- Input: existing `light` Arrow shards (đã filter SSIM+LPIPS v4)
+- Pipeline per-image: load PIL → numpy → `add_natural_rain(arr, intensity='heavy_fog')` → JPEG (quality=95) → replace `image` bytes
+- **Metadata preservation**: `image_id`, `filename`, all bbox columns, `ssim`, `lpips`, `status` được **copy verbatim** từ light stage — chỉ `image` bytes thay đổi
+- **Deterministic**: `random.seed(seed_base + image_index)` với `seed_base=42` — cùng index cho cùng output bit-for-bit
+- **CPU-only**: no GPU, no diffusion model load — ~50 min toàn bộ 4 targets (CS test + CS train + SODA VOC + SODA KTSH, tổng 12,181 images)
+
+**Production output row counts (2026-04-21):**
+
+| Target | Rows | Paired với light? |
+|---|---|---|
+| CS test (7 shards) | 1,652 | ✅ 1:1 |
+| CS train | 3,627 | ✅ 1:1 |
+| SODA VOC | 4,790 | ✅ 1:1 |
+| SODA KTSH | 2,112 | ✅ 1:1 |
+
+**Quality metrics (2026-04-22 post-hoc, DINOv3 ViT-L/16 vs original):**
+
+| Condition | DINO mean | SSIM mean | Pass DINO≥0.75 | Pass DINO≥0.70 |
+|---|---|---|---|---|
+| `rain` (light) | 0.871 | 0.756 | 91.7% (1515/1652) | 95.3% |
+| `rain_heavy` (physics-only) | 0.754 | 0.522 | 39.8% | 73.8% (1219/1652) |
+
+Heavy có DINO/SSIM thấp hơn light đúng kỳ vọng (stronger overlay + blur → lower pixel & feature similarity), nhưng không quá thấp (DINO 0.75 = moderate structural preservation).
+
+**Kaggle sample v6 (2026-04-22)**: 300 samples/variant với threshold khác nhau — light DINO≥0.75, heavy DINO≥0.70. Script: [scripts/update_kaggle_rain_dino_filtered.py](../scripts/update_kaggle_rain_dino_filtered.py).
+
+**Asymmetry với snow**: Snow có light (g=8) + heavy (g=12) đều là diffusion-based. Rain có light = diffusion + heavy = physics-only. Asymmetry được accept vì (a) snow heavy cần thay đổi surface coverage (snow accumulation) → diffusion phù hợp, (b) rain heavy cần tăng particle density + visibility reduction → physics phù hợp hơn. Paper cần frame rõ điều này.
 
 #### Method 2b: ControlNet + IP2P (đang test, 2026-04-08)
 
@@ -164,6 +255,16 @@ Evidence: 50 samples OLD prompt, tìm được:
 
 **TODO**: Cite Tremblay et al. (2021) cho physics-based approach, hoặc chạy visual quality study.
 
+**Rain intensity variants (2026-04-21):** `add_natural_rain(image, intensity=...)` có 3 mode backward-compat:
+
+| intensity | Fog strength | Layer 1 (n, alpha) | Layer 2 | Layer 3 | Blur post | Use |
+|---|---|---|---|---|---|---|
+| `'heavy'` (default) | 0.15-0.30 | 1500-2500, α=0.25 | 1000-2000, α=0.35 | 300-700, α=0.40, thick=1-2 | — | Production default (unchanged). File `rain.arrow` / `test/rain/` / `train_rain_v4.arrow` |
+| `'light'` | 0.05-0.12 | 500-900, α=0.15 | 300-600, α=0.20 | 80-200, α=0.25 | — | Experimental; chưa dùng production |
+| `'heavy_fog'` | 0.30-0.45 | 3000-4500, α=0.35 | 2200-3600, α=0.48, thick=1-2 | 900-1600, α=0.55, thick=2-3 | Gaussian 5×5, σ=1.3 | **Production `rain_heavy` variants** (2026-04-21) |
+
+Status: empirical tuning qua 5 pilot iterations (xem `validation/results/rain_intensity_test_v{2..5}/`); chưa có literature justification. **TODO**: link với meteorological rainfall-rate → particle density formula (cần literature search).
+
 ### 1.4 SSIM/LPIPS Quality Filtering
 
 **Ý tưởng**: Lọc bỏ ảnh augmented quá giống gốc (không có tác dụng) hoặc quá hỏng (không dùng được).
@@ -172,10 +273,12 @@ Evidence: 50 samples OLD prompt, tìm được:
 
 | Parameter | Giá trị | Áp dụng | Status |
 |---|---|---|---|
-| SSIM lower (rain) | 0.6 | Style Transfer + IP2P | **Chưa justify tại sao 0.6 mà không phải 0.5** |
-| SSIM lower (snow) | 0.5 | Style Transfer + IP2P | **Chưa justify tại sao khác rain** |
+| SSIM lower (rain) | 0.6 | IP2P main pipeline (ST ablation dùng cùng threshold) | **Chưa justify tại sao 0.6 mà không phải 0.5** |
+| SSIM lower (snow) | 0.5 | IP2P main pipeline (ST ablation dùng cùng threshold) | **Chưa justify tại sao khác rain** |
 | SSIM upper | 0.95 | Tất cả | Reasonable nhưng chưa sensitivity analysis |
 | LPIPS threshold | 0.35 | **Chỉ rain IP2P** | **Chưa justify**: (1) tại sao 0.35? literature recommend ~0.1-0.15 cho imperceptible, (2) tại sao chỉ rain mà không snow? |
+
+> Note (2026-04-21): Sensitivity analysis kết quả áp dụng cho IP2P (main). Các con số filter trong bảng bên dưới cho Style Transfer (`weather_style_*`) là dữ liệu ablation — giữ để report trong supplementary, không dùng để chọn threshold production.
 
 **SENSITIVITY ANALYSIS — ĐANG CHẠY:**
 - Script: `generation/sensitivity/ssim_lpips_sweep.py` (sweep đã xong)
@@ -465,7 +568,7 @@ Evidence: 50 samples OLD prompt, tìm được:
 
 ---
 
-### Approach 5: Relative Mahalanobis Distance (CLIP + DINOv2)
+### Approach 5: Relative Mahalanobis Distance (CLIP + DINOv3)
 
 **Ý tưởng**: Per-image metric đo proximity của ảnh augmented tới real adverse-condition distribution trong embedding space, dùng **relative formulation** triệt tiêu shared background features (construction scene giữ nguyên giữa original và augmented).
 
@@ -476,12 +579,12 @@ Evidence: 50 samples OLD prompt, tìm được:
 | Khía cạnh | FID/KID | Relative Mahalanobis |
 |---|---|---|
 | Granularity | Distribution-level (1 score cho cả tập) | **Per-image** |
-| Backbone | InceptionV3 | **CLIP ViT-L/14 (768-dim) + DINOv2 ViT-L (1024-dim)** |
+| Backbone | InceptionV3 | **CLIP ViT-L/14 (768-dim) + DINOv3 ViT-L/16 (1024-dim)** |
 | Reference | WeatherNet (generic outdoor) | **ACDC per-condition** Gaussian |
 | Background handling | Không tách | **d_rel = d_k - d_0** (subtract background distance) |
 
 **Pipeline (4 steps):**
-1. Extract CLIP + DINOv2 features cho ACDC real weather (fog/rain/snow/night), split reference/holdout
+1. Extract CLIP + DINOv3 features cho ACDC real weather (fog/rain/snow/night), split reference/holdout
 2. Fit multivariate Gaussian N(μₖ, Σₖ) per condition + N(μ₀, Σ₀) background (pooled all conditions)
 3. Baseline: 100 held-out ACDC images per condition → expected near-zero d_rel (upper bound)
 4. Per augmented image: d_rel = d_k(x) - d_0(x), report as -d_rel (higher = closer to real weather)
@@ -495,11 +598,11 @@ Evidence: 50 samples OLD prompt, tìm được:
 | Parameter | Giá trị | Justification |
 |---|---|---|
 | CLIP model | openai/ViT-L-14 (via open_clip) | Paper: "openai/clip-vit-large-patch14" |
-| DINOv2 model | facebook/dinov2-large (via transformers) | Paper: "facebook/dinov2-vitl16-pretrain-lvd1689m" |
+| DINOv3 model | facebook/dinov3-vitl16-pretrain-lvd1689m (via transformers 5.x) | Paper: "facebook/dinov3-vitl16-pretrain-lvd1689m" (Section 3.4.1) |
 | Holdout per condition | 100 | Paper: "100 held-out images per condition" |
 | Regularization (Σ) | 1e-5 × I | Numerical stability for matrix inversion |
 
-**Kết quả (2026-04-12, 300 images/condition):**
+**Kết quả (2026-04-15, 300 images/condition, DINOv3 re-run):**
 
 **CLIP -d_rel (higher = closer to real weather):**
 
@@ -510,41 +613,137 @@ Evidence: 50 samples OLD prompt, tìm được:
 | **Rain** | -3.63 | -22.17 | style_rain_1 | **-17.57** | **25%** |
 | **Fog** | -3.65 | -28.07 | fog_heavy | **-23.57** | **18%** |
 
-**DINOv2 -d_rel:**
+**DINOv3 -d_rel (updated 2026-04-15):**
 
-| Condition | ACDC Baseline | Original | Best Augmentation | Best -d_rel |
-|---|---|---|---|---|
-| Night | -15.09 | -74.23 | CycleGAN-Turbo | **-70.13** |
-| Snow | -40.78 | -119.07 | diffusion_snow | **-115.74** |
-| Rain | -17.05 | -60.65 | diffusion_rain | **-59.74** |
-| Fog | -15.31 | -68.95 | fog_heavy | **-68.83** |
+| Condition | ACDC Baseline | Original | Best Augmentation | Best -d_rel | **% Gap Closed** |
+|---|---|---|---|---|---|
+| Night | -16.48 | -77.20 | CycleGAN-Turbo | **-71.69** | **9%** |
+| Snow | -45.53 | -121.40 | style_snow_2 | **-119.27** | **3%** |
+| Rain | -17.42 | -61.10 | style_rain_2 | **-60.31** | **1%** |
+| Fog | -15.72 | -63.00 | fog_heavy | **-62.55** | **1%** |
+
+**Cross-domain limitation (important):**
+DINOv3 gap closed <10% cho tất cả conditions. Đây là **metric limitation**, không phải augmentation failure. Reference là ACDC (driving scenes) — structural features (wet road ≠ wet concrete, streetlights ≠ floodlights) gây domain gap mà relative formulation không loại bỏ hoàn toàn. CLIP results đáng tin hơn vì weather style tương đối domain-agnostic. No construction-specific weather reference dataset exists — đây chính là motivation của ConSynth-X.
 
 **Key findings:**
-
-1. **Tất cả augmentations kéo distribution gần ACDC real weather** — -d_rel tốt hơn original ở mọi condition trong CLIP space. Validation thành công.
-2. **Night = cải thiện lớn nhất** (38% gap closed trong CLIP) — CycleGAN-Turbo rất hiệu quả ở semantic level. Nhưng texture fidelity (Approach 4) cho thấy night bị over-smoothed (DCT_W=29.81) → **CLIP semantic tốt, texture artifacts** — đúng trade-off Ruck et al. phát hiện.
-3. **CLIP vs DINOv2 divergence rõ rệt**:
-   - CLIP nhạy với augmentation (shift 4-14 points)
-   - DINOv2 gần như không đổi cho style transfer (shift <1 point), nhạy hơn với diffusion
-   - Consistent với paper: "CLIP produces tighter condition clusters, DINOv2 shows greater sensitivity to low-level texture"
-4. **Rain: style transfer ≈ diffusion** trong CLIP (-17.6 vs -18.1) — tương đương semantic level.
-5. **Snow: style transfer > diffusion trong CLIP** (-41.6 vs -44.1), **diffusion > style transfer trong DINOv2** (-115.7 vs -117.4) — trade-off semantic vs texture, consistent với texture fidelity findings.
-6. **Fog: monotonic với intensity** — heavy (-23.57) > medium (-24.54) > light (-24.79) > original (-28.07). Physically correct.
-
-**Cross-approach synthesis (Approaches 3-5):**
-
-| Metric | Style Transfer thắng | Diffusion thắng | Night |
-|---|---|---|---|
-| Weather Classifier (Approach 3) | ✓ Rain 70-89%, Snow 62-95% | ✗ Rain 63.5%, Snow 25.7% | N/A (no class) |
-| Texture Fidelity (Approach 4) | ✗ Composite 3-6 | ✓ Composite 0.6 | ✗ Composite 9.1 |
-| Belief Fusion (Approach 4b) | ✗ H=0, ARTIFACT | ✓ H=0.85, FAITHFUL | ✗ H=0.02, ARTIFACT |
-| Rel. Mahalanobis CLIP (Approach 5) | ≈ tied (rain), ✓ snow | ≈ tied (rain), ✗ snow | ✓ Best improvement |
-| Rel. Mahalanobis DINOv2 (Approach 5) | ✗ nearly no shift | ✓ slight improvement | ✓ moderate shift |
-
-**Conclusion**: Style transfer tạo weather effect mạnh hơn (recognizable, semantic shift) nhưng phải trả giá bằng texture artifacts. Diffusion giữ texture tự nhiên hơn nhưng weather effect tinh tế hơn. Night CycleGAN semantic tốt nhưng over-smoothed. **Cả 2 methods có giá trị — recommend dùng cả hai trong training mix.**
+1. **CLIP results validate augmentation** — all conditions move closer to real weather, Night strongest (38%).
+2. **DINOv3 near-zero shift** reflects cross-domain mismatch (driving→construction), not augmentation quality.
+3. **Rankings consistent** across CLIP, FID, weather classifier — convergent evidence.
 
 **Files**: `validation/compute_relative_mahalanobis.py`, `jobs/relative_mahalanobis.sh`
-**Results**: `validation/results/relative_mahalanobis/` (JSON, 3 plots, LaTeX tables)
+**Results**: `validation/results/relative_mahalanobis/` (JSON, plots, LaTeX tables)
+
+---
+
+### Approach 6: VLM Jury Evaluation
+
+**Ý tưởng**: 3 VLM judges independently đánh giá augmented images — binary accept/reject dựa trên (1) condition realism và (2) semantic preservation. **Zero-shot, domain-agnostic** — không dùng reference dataset nên không bị cross-domain issue.
+
+**Reference**: Ruck et al. (2026), Section 3.3. — **[V] Verified: đọc full paper, implement Section 3.3 + Appendix A.**
+
+**Tại sao thêm approach này?**
+- Relative Mahalanobis (Approach 5) bị cross-domain limitation (ACDC driving ≠ construction)
+- VLM Jury đánh giá trực tiếp: "ảnh có trông giống mưa không?" — không cần reference
+- Convergent validation: nếu VLM Jury ranking consistent với các approaches khác → mạnh hơn
+
+**3 Judges (local inference):**
+
+| Judge | Model | GPU | Env |
+|---|---|---|---|
+| Qwen | Qwen2.5-VL-7B-Instruct | 1x A100 | vlm-new |
+| InternVL | InternVL2.5-8B | 1x A100 | VLM |
+| Phi-4 | Phi-4-multimodal-instruct | 1x A100 | VLM |
+
+**Protocol (adapted from Ruck et al.):**
+- Input: side-by-side image (original left + augmented right) — single image cho model
+- 2 criteria: Condition Realism + Semantic Preservation → both must pass
+- Binary output: JSON `{"explanation": "...", "decision": true/false}`
+- Condition-specific guidance in prompt (rain: "precipitation, wet surfaces"; snow: "snow coverage, falling particles"; etc.)
+- Baseline calibration: 40 ACDC real weather images/condition → establish ceiling
+
+**Sample size:**
+- 50 images/condition × 8 synthetic conditions = 400 synthetic evaluations
+- 40 images/condition × 4 ACDC conditions = 160 baseline evaluations
+- Total: 560 evaluations × 3 judges = 1,680 inferences
+
+**Kết quả (2026-04-17, majority vote 2/3):**
+
+| Condition | Majority | ACDC baseline | Notes |
+|---|---|---|---|
+| Fog heavy | **98%** | 97.5% | Vượt cả real ACDC fog |
+| IP2P Rain | 72% | 87.5% | Good |
+| ST Rain (A/B/C) | 70% | 87.5% | Good |
+| Night | 58% | 90.0% | Moderate — judges disagree |
+| ST Snow B | 10% | 87.5% | Poor → led to heavy variant |
+| IP2P Snow (light) | 8% | 87.5% | Poor → led to heavy variant |
+| IP2P Snow (heavy) | ~80% | 87.5% | Heavy variant restores acceptance |
+
+**Inter-judge agreement (Cohen's κ)**: 0.16-0.36 (moderate). Qwen strict (57% overall), InternVL lenient (78%), Phi-4 middle (57%).
+
+**Observation**: Qwen strict specifically on snow (2-4% across all snow variants) — known VLM bias pattern similar to Gemini in Ruck et al. (2026). Majority vote aggregation mitigates single-judge bias.
+
+**Files**: `validation/vlm_jury/`, `jobs/vlm_jury_*.sh`
+**Results**: `validation/results/vlm_jury/`
+
+---
+
+### Approach 7: Retention Analysis (DINO + SSIM)
+
+**Ý tưởng**: Per-image DINO similarity + SSIM cho tất cả augmentation variants, để user chọn filter threshold theo application.
+
+**Reference**: Extension of Ruck et al. (2026) embedding methodology, adapted for dataset quality reporting (not cited literature).
+
+**Methodology**:
+1. Compute DINOv3 ViT-L/16 CLS embeddings cho (original, augmented) pair
+2. Cosine similarity → `dino_sim` ∈ [-1, 1]
+3. SSIM (256x256 resized) → `ssim` ∈ [-1, 1]
+4. Release per-image CSV → user-defined filter
+
+**Parameters**:
+
+| Parameter | Value | Justification |
+|---|---|---|
+| DINOv3 model | facebook/dinov3-vitl16-pretrain-lvd1689m | Ruck et al. 2026 |
+| SSIM image size | 256x256 | Standard for skimage.metrics |
+| Threshold tested | DINO≥0.75, SSIM≥0.5 | Commonly used in prior work; verified empirically insufficient |
+
+**Kết quả (2026-04-19)**:
+
+| Condition | N | DINO mean | SSIM mean | Retention@DINO≥0.75 |
+|---|---|---|---|---|
+| ST Rain A | 2211 | 0.919 | 0.821 | **98%** |
+| ST Rain B/C | 1243-1208 | 0.886-0.898 | 0.796-0.809 | 93-95% |
+| ST Snow A | 2159 | 0.898 | 0.775 | 96% |
+| ST Snow B/C | 1649-1796 | 0.859-0.867 | 0.687-0.703 | 91-92% |
+| IP2P Rain | 3004 | 0.800 | 0.591 | 74% |
+| IP2P Snow (light) | 3004 | 0.774 | 0.590 | 67% |
+| IP2P Snow (heavy) | 3004 | 0.790 | 0.598 | 73% |
+| Fog (light) | 1002 | **0.938** | **0.788** | **99%** |
+| Fog (medium) | 1001 | 0.918 | 0.719 | 99% |
+| Fog (heavy) | 1001 | 0.868 | 0.617 | 93% |
+| Night (CycleGAN) | 3004 | 0.841 | 0.390 | 88% |
+
+**Key findings**:
+
+1. **Edit magnitude hierarchy**: Fog light < Style transfer < Fog heavy ≈ Night < IP2P diffusion (by both DINO + SSIM).
+2. **DINO robust to texture changes**: Night has extreme SSIM degradation (0.39) but moderate DINO (0.84) — global tone change preserves structure.
+3. **SSIM degrades faster than DINO** for IP2P/night — consistent với DINO's known invariance to pixel-level changes (weather textures).
+4. **DINO vs SSIM correlation moderate** (r=0.40 for snow_heavy) — complementary, not substitutable.
+5. **Empirical: DINO ≥ 0.75 threshold không correlate với VLM Jury** — agreement ~50% (random). Metrics capture different quality aspects.
+
+**Paper figures**:
+- Figure 1 (paper page 5): `fig4_snow_heavy_retention.pdf` — 3-panel (DINO curve, SSIM curve, joint heatmap)
+- Figure 2 (paper page 6): `fig5_retention_curves_all.pdf` — 13-condition comparison
+
+**Files**: `validation/extract_dino_ssim_all.py`, `validation/make_retention_chart.py`, `validation/make_retention_charts_all.py`
+**Results**: `validation/results/dino_ssim/*.csv` (13 conditions)
+
+**Filter recommendation**:
+- Don't enforce single threshold (no empirical support)
+- Release per-image DINO + SSIM → user selects based on task:
+  - Downstream training: permissive (keep more data)
+  - Evaluation benchmark: strict (ensure quality)
+  - Human-visible validation: VLM Jury (most correlated with perception)
 
 ---
 

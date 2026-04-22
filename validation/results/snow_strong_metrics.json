@@ -1,0 +1,132 @@
+{
+  "weather_classifier": {
+    "current": {
+      "snow_accuracy": 0.95,
+      "snow_confidence": 0.8657661017618681,
+      "predictions": [
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "rain/storm",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty"
+      ],
+      "mean_confidence": 0.8507169991731643
+    },
+    "strong": {
+      "snow_accuracy": 0.9,
+      "snow_confidence": 0.8726261523034837,
+      "predictions": [
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "rain/storm",
+        "foggy/hazy",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty"
+      ],
+      "mean_confidence": 0.856795671582222
+    },
+    "extreme": {
+      "snow_accuracy": 0.45,
+      "snow_confidence": 0.7595191995302836,
+      "predictions": [
+        "foggy/hazy",
+        "foggy/hazy",
+        "foggy/hazy",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "foggy/hazy",
+        "foggy/hazy",
+        "rain/storm",
+        "foggy/hazy",
+        "snow/frosty",
+        "snow/frosty",
+        "snow/frosty",
+        "foggy/hazy",
+        "foggy/hazy",
+        "snow/frosty",
+        "snow/frosty",
+        "foggy/hazy",
+        "foggy/hazy"
+      ],
+      "mean_confidence": 0.7236614674329758
+    },
+    "original": {
+      "snow_accuracy": 0.05,
+      "snow_confidence": 0.765739381313324,
+      "predictions": [
+        "sun/clear",
+        "foggy/hazy",
+        "snow/frosty",
+        "rain/storm",
+        "rain/storm",
+        "cloudy/overcast",
+        "rain/storm",
+        "rain/storm",
+        "rain/storm",
+        "rain/storm",
+        "cloudy/overcast",
+        "rain/storm",
+        "cloudy/overcast",
+        "rain/storm",
+        "rain/storm",
+        "cloudy/overcast",
+        "rain/storm",
+        "cloudy/overcast",
+        "foggy/hazy",
+        "rain/storm"
+      ],
+      "mean_confidence": 0.7435044214129448
+    }
+  },
+  "texture_fidelity": {
+    "current": {
+      "glcm_wasserstein": 30.02203584687133,
+      "lbp_wasserstein": 0.015490146740762047,
+      "dct_wasserstein": 120093006.07154353,
+      "composite_distance": 40041.52570735482
+    },
+    "strong": {
+      "glcm_wasserstein": 33.349683619994835,
+      "lbp_wasserstein": 0.01905805768223023,
+      "dct_wasserstein": 195226824.5406287,
+      "composite_distance": 65087.36001000564
+    },
+    "extreme": {
+      "glcm_wasserstein": 78.47362828706108,
+      "lbp_wasserstein": 0.03265361787572171,
+      "dct_wasserstein": 341652019.5789761,
+      "composite_distance": 113911.25285635023
+    }
+  }
+}

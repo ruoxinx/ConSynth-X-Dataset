@@ -51,8 +51,8 @@ ALL_CONDITIONS = ['original', 'weather', 'night', 'small']
 ALL_TASKS = ['description', 'vqa_safety']
 
 # Conda environment paths
-CONDA_ENV_DEFAULT = '/users/PGS0407/binben14/.conda/envs/VLM'        # transformers 4.46.3 (InternVL, LLaVA, etc.)
-CONDA_ENV_NEW = '/users/PGS0407/binben14/.conda/envs/vlm-new'        # transformers 5.x (Qwen3.5, future models)
+CONDA_ENV_DEFAULT = os.environ.get('CONSYNTH_CONDA_ENV', 'VLM')        # transformers 4.46.3 (InternVL, LLaVA, etc.)
+CONDA_ENV_NEW = os.environ.get('CONSYNTH_CONDA_ENV_NEW', 'vlm-new')    # transformers 5.x (Qwen3.5, future models)
 
 # Models that need the newer env. All others use CONDA_ENV_DEFAULT.
 MODEL_CONDA_ENV = {
@@ -92,7 +92,7 @@ conda activate {conda_env}
 
 export LD_LIBRARY_PATH={conda_env}/lib:$LD_LIBRARY_PATH
 export PYTORCH_ALLOC_CONF=expandable_segments:True
-export HF_HOME=/users/PGS0407/binben14/.cache/huggingface
+export HF_HOME=${HF_HOME:-$HOME/.cache/huggingface}
 
 cd {project_root}
 
@@ -189,7 +189,7 @@ module load miniconda3/24.1.2-py310
 conda activate {conda_env}
 
 export LD_LIBRARY_PATH={conda_env}/lib:$LD_LIBRARY_PATH
-export HF_HOME=/users/PGS0407/binben14/.cache/huggingface
+export HF_HOME=${HF_HOME:-$HOME/.cache/huggingface}
 
 cd {project_root}
 

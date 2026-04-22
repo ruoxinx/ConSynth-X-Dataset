@@ -17,9 +17,9 @@ import numpy as np
 from PIL import Image
 import torch
 
-# Setup path
+# Setup path (Weather_Effect_Generator is vendored at generation/weather/libs/Weather_Effect_Generator)
 PROJECT_ROOT = Path(__file__).parent.resolve()
-WEATHER_GEN_ROOT = PROJECT_ROOT.parents[1] / 'Weather_Effect_Generator'
+WEATHER_GEN_ROOT = PROJECT_ROOT.parents[1] / 'libs' / 'Weather_Effect_Generator'
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 if str(WEATHER_GEN_ROOT) not in sys.path:

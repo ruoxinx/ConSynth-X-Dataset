@@ -16,6 +16,11 @@ Usage:
 import argparse, gc, json, shutil, sys
 from pathlib import Path
 from io import BytesIO
+import os as _os
+from pathlib import Path as _Path
+_DATA_ROOT = _Path(_os.environ.get("CONSYNTH_DATA_ROOT", str(_Path.home() / "consynth_data")))
+_REPO_ROOT = _Path(_os.environ.get("CONSYNTH_REPO_ROOT", str(_Path(__file__).resolve().parents[1])))
+_BR_ROOT = _Path(_os.environ.get("CONSYNTH_BENCHMARK_RUNNER", str(_REPO_ROOT.parent / "Benchmark_runner")))
 
 import numpy as np
 import pyarrow as pa
@@ -23,9 +28,9 @@ from PIL import Image
 from tqdm import tqdm
 
 # ── Paths ─────────────────────────────────────────────────────────────
-BASE = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X')
-CS_DIR = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/LouisChen15___construction_site')
-AUG_ARROW = Path('/users/PGS0407/binben14/VietHuy/ConstructionSite/augmentation_data_arrow')
+BASE = _REPO_ROOT
+CS_DIR = (_DATA_ROOT / "LouisChen15___construction_site")
+AUG_ARROW = (_DATA_ROOT / "augmentation_data_arrow")
 AUG_DATA = BASE / 'augmentation_data/construction_site'
 
 SENS_DIR = BASE / 'generation/sensitivity/detection_results'

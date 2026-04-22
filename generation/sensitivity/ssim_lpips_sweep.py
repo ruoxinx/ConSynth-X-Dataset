@@ -9,6 +9,7 @@ Outputs:
 """
 
 import argparse
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ from pathlib import Path
 import json
 
 # ── Paths ──────────────────────────────────────────────────────────────
-BASE = Path('/users/PGS0407/binben14/VietHuy/ConSynth-X')
+BASE = Path(os.environ.get('CONSYNTH_REPO_ROOT', Path(__file__).resolve().parents[2]))
 AUG  = BASE / 'augmentation_data' / 'construction_site' / 'rain_snow'
 
 # Style Transfer CSVs (train)

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Home - ConSynth-X Validation{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 style="margin-bottom: 0.5rem;">Welcome, {{ session.username }}</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2rem;">
+        Please complete the following three evaluation tasks. Start with the Tutorial if this is your first time.
+    </p>
+
+    {% if total_images == 0 %}
+    <div class="card" style="text-align:center; padding: 3rem;">
+        <h3 style="margin-bottom: 0.5rem;">No images loaded yet</h3>
+        <p style="color: var(--text-muted);">
+            An admin needs to load images first. Place images in <code>static/images/&lt;condition&gt;/</code>
+            and click "Load Images" in the dashboard.
+        </p>
+    </div>
+    {% else %}
+
+    <div class="task-cards">
+        <a href="{{ url_for('tutorial') }}" class="task-card">
+            <h3>Tutorial</h3>
+            <p>Learn how to evaluate images with guided examples before starting.</p>
+            <span class="task-progress">Start here</span>
+        </a>
+
+        <a href="{{ url_for('task_turing') }}" class="task-card">
+            <h3>Task 1: Real vs Synthetic</h3>
+            <p>Decide whether each image is a real photograph or AI-generated.</p>
+            <span class="task-progress">{{ turing_done }} / {{ turing_total }} completed</span>
+        </a>
+
+        <a href="{{ url_for('task_realism') }}" class="task-card">
+            <h3>Task 2: Realism Rating</h3>
+            <p>Rate how realistic the weather/lighting condition looks (1-5 scale).</p>
+            <span class="task-progress">{{ realism_done }} / {{ realism_total }} completed</span>
+        </a>
+
+        <a href="{{ url_for('task_recognition') }}" class="task-card">
+            <h3>Task 3: Condition Recognition</h3>
+            <p>Identify the weather or lighting condition shown in the image.</p>
+            <span class="task-progress">{{ recognition_done }} / {{ recognition_total }} completed</span>
+        </a>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
