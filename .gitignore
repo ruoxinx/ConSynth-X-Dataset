@@ -27,6 +27,9 @@ build/
 # Images & media (keep style references via git add -f)
 *.jpg
 !assets/preview/*.jpg
+
+# Secrets
+.env
 *.jpeg
 *.png
 *.gif
