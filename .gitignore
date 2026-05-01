@@ -71,6 +71,7 @@ wandb/
 runs/
 checkpoints/
 augmentation_data/
+ConSynth-X/d2n_recovery_kit/
 
 # Claude Code
 CLAUDE.md

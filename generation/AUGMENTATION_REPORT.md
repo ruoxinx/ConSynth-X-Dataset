@@ -26,8 +26,9 @@ ConSynth-X applies synthetic augmentation pipelines to base datasets, producing 
 
 | Dataset | Format | Classes | Images |
 |---|---|---|---|
-| Construction Site | HuggingFace Arrow | 3 (excavator, rebar, worker_with_white_hard_hat) | 3,004 (test) |
-| SODA | Pascal VOC (XML) | 15 | 19,846 |
+| Construction Site (CS10k) | HuggingFace Arrow | 3 (excavator, rebar, worker_with_white_hard_hat) | 10,013 (train 7,009 + test 3,004) |
+| SODA-VOC | Pascal VOC (XML) | 15 | 19,846 |
+| SODA-KTSH (auxiliary) | KTSH | — | 9,988 |
 
 ---
 
@@ -165,7 +166,7 @@ Day-to-night is a global illumination transform. Object positions and sizes rema
 | Dataset | Original | Night |
 |---|---|---|
 | Construction Site (test) | 3,004 | 3,004 |
-| SODA | 19,846 | Pending |
+| SODA-VOC | 19,846 | 19,846 |
 
 ---
 
@@ -228,8 +229,8 @@ Night weather is a pixel-level transform chain (CycleGAN → IP2P → physics ov
 
 | Dataset | Night Input | Rain Night | Snow Night |
 |---|---|---|---|
-| Construction Site (test) | 3,004 | Pending | Pending |
-| SODA | Pending | Pending | Pending |
+| Construction Site (test) | 3,004 | 3,004 | 3,004 |
+| SODA-VOC | 19,846 | Pending | Pending |
 
 ### 4.6 Configuration
 
@@ -365,18 +366,22 @@ All augmentation jobs run on the OSC SLURM cluster:
 
 ### Construction Site Dataset — Main Pipeline
 
+Counts verified from Arrow files in `augmentation_data/construction_site/` on 2026-04-25.
+
 | Condition | Method | Images | Annotations |
 |---|---|---|---|
-| `original` | Baseline | 3,004 | Unchanged |
-| `rain` (light) | IP2P g=10 + physics overlay | 1,652 (paired test) | Copied |
-| `rain_heavy` | Light + heavy_fog physics overlay (no 2nd diffusion) | 1,652 (paired test) | Copied |
-| `snow_light` | IP2P g=8 + physics | 3,004 | Copied |
-| `snow_heavy` | IP2P g=12 + physics | 3,004 | Copied |
-| `fog` (3 zones) | Koschmieder + Depth Anything V2 | 3,004 × 3 | Copied |
-| `night` | CycleGAN-Turbo | 3,004 | Copied |
-| `night_rain` | Night → IP2P rain → Physics | Pending | Copied |
-| `night_snow` | Night → IP2P snow → Physics | Pending | Copied |
-| `small` | FLUX outpainting | 1,323 | Bbox transferred |
+| `original` | Baseline (CS10k full) | 10,013 (train 7,009 + test 3,004) | Unchanged |
+| `rain` (light) | IP2P g=10 + physics overlay | test 1,652 + train 3,627 = 5,279 | Copied |
+| `rain_heavy` | Light + heavy_fog physics overlay (no 2nd diffusion) | test 1,652 + train 3,627 = 5,279 | Copied |
+| `snow_light` | IP2P g=8 + physics | test 2,940 + train 6,755 = 9,695 | Copied |
+| `snow_heavy` | IP2P g=12 + physics | test 3,004 (train pending) | Copied |
+| `fog` (light/medium/heavy) | Koschmieder + Depth Anything V2 | 1,002 + 1,001 + 1,001 = 3,004 (test) | Copied |
+| `night` | CycleGAN-Turbo | 3,004 (test) | Copied |
+| `night_rain` | Night → IP2P rain → Physics | 3,004 (test) | Copied |
+| `night_snow` | Night → IP2P snow → Physics | 3,004 (test) | Copied |
+| `small` | FLUX outpainting | 1,323 (test) | Bbox transferred |
+| **Augmented total (excluding original)** | | **36,596** | |
+| **Total including baseline** | | **46,609** | |
 
 ### Construction Site Dataset — Ablation Archive (legacy NST)
 
@@ -388,12 +393,30 @@ All augmentation jobs run on the OSC SLURM cluster:
 
 ### SODA Dataset — Main Pipeline
 
+Counts verified from Arrow files in `augmentation_data/soda_voc/` and `augmentation_data/soda_ktsh/` on 2026-04-25.
+
+**SODA-VOC** (15-class, full 19,846-image corpus unless noted):
+
 | Condition | Method | Images | Annotations |
 |---|---|---|---|
 | `original` (VOC) | Baseline | 19,846 | Unchanged |
-| IP2P rain / rain_heavy | IP2P + physics (VOC) | See `dataset_card.md` | Copied (XML) |
-| IP2P snow | IP2P + physics (VOC) | See `dataset_card.md` | Copied (XML) |
-| `small` | FLUX outpainting | 1,001 | Bbox transferred (XML) |
+| IP2P rain (light) | IP2P + physics | 4,790 | Copied (XML) |
+| IP2P rain_heavy | physics-only overlay | 4,790 | Copied (XML) |
+| IP2P snow | IP2P + physics | 19,623 | Copied (XML) |
+| `fog` (light/medium/heavy) | Koschmieder + Depth Anything V2 (3,000 subset) | 1,000 × 3 = 3,000 | Copied (XML) |
+| `night` | CycleGAN-Turbo | 19,846 | Copied (XML) |
+| `small` | FLUX outpainting (3,000 subset) | 1,000 | Bbox transferred (XML) |
+| **SODA-VOC augmented total** | | **53,049** | |
+| **SODA-VOC total including baseline** | | **72,895** | |
+
+**SODA-KTSH** (auxiliary split, 9,988 source images):
+
+| Condition | Method | Images | Annotations |
+|---|---|---|---|
+| IP2P rain (light) | IP2P + physics | 2,112 | Copied |
+| IP2P rain_heavy | physics-only overlay | 2,112 | Copied |
+| IP2P snow | IP2P + physics | 9,671 | Copied |
+| **SODA-KTSH augmented total** | | **13,895** | |
 
 ### SODA Dataset — Ablation Archive (legacy NST)
 

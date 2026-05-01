@@ -31,6 +31,7 @@ ARROW_DATA = CONSTRUCTION / "augmentation_data_arrow"
 IP2P_DATA = CONSYNTHX / "augmentation_data" / "construction_site" / "rain_snow" / "diffusion" / "test"
 FOG_DATA = CONSYNTHX / "augmentation_data" / "construction_site" / "fog" / "diffusion" / "test"
 NIGHT_DATA = CONSYNTHX / "augmentation_data" / "construction_site" / "night" / "test"
+NIGHT_WEATHER_DATA = CONSYNTHX / "augmentation_data" / "construction_site" / "night_weather"
 OUT_DIR = CONSYNTHX / "validation" / "results" / "dino_ssim"
 
 ORIG_PATH = ARROW_DATA / "construction_site_test.arrow"
@@ -57,6 +58,9 @@ CONDITIONS = {
     "fog_light":  {"type": "dir", "path": FOG_DATA / "light"},
     "fog_medium": {"type": "dir", "path": FOG_DATA / "medium"},
     "fog_heavy":  {"type": "dir", "path": FOG_DATA / "heavy"},
+    # Night + weather (Order B: IP2P -> CycleGAN Night -> physics)
+    "night_rain": {"type": "dir", "path": NIGHT_WEATHER_DATA / "rain_night"},
+    "night_snow": {"type": "dir", "path": NIGHT_WEATHER_DATA / "snow_night"},
 }
 
 

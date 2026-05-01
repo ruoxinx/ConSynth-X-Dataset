@@ -1,0 +1,29 @@
+{
+  "image_id": "zl22",
+  "original_size": [
+    4032,
+    3024
+  ],
+  "resized_size": [
+    2016,
+    1512
+  ],
+  "canvas_size": [
+    3176,
+    2382
+  ],
+  "scale_factor": 0.287806,
+  "resize_input": 0.5,
+  "paste_position": {
+    "x": 580,
+    "y": 435,
+    "width": 2016,
+    "height": 1512
+  },
+  "num_steps": 28,
+  "guidance_scale": 30.0,
+  "max_size": 1024,
+  "prompt": "Extend the image edges seamlessly. Continue only the existing ground texture, dirt, concrete, and sky. Match lighting, colors, and perspective. Do not add any new objects.",
+  "num_objects_original": 4,
+  "num_objects_transferred": 4
+}

@@ -410,3 +410,120 @@ Guan, Q. et al. (2025). "WeatherBench: A Real-World Benchmark for Weather Image 
 - Bảng data paths chi tiết: xem [`docs/infrastructure.md`](infrastructure.md) mục "Data Locations".
 - Xem thêm `data_card.md` và `dataset_card.md` tại root project để biết chi tiết schema.
 - **Tất cả absolute paths phải được thay bằng relative paths hoặc environment variables trước khi publish.**
+
+---
+
+## 7. Release v1 — Packaged distribution (2026-04-30)
+
+The post-augmentation, repacked release that consumers actually download. Built
+by `release_pipeline/` from `augmentation_data/` + `validation/results/dino_ssim/*.csv`.
+
+### Storage locations
+
+| Artefact | Path | Size | Files |
+|---|---|---|---|
+| Parquet release | `/fs/scratch/PGS0407/binben14/ConSynth-X-release-v1/` | 50 GB | 35 `.parquet` (image bytes embedded) |
+| COCO release | `/fs/scratch/PGS0407/binben14/ConSynth-X-release-v1-coco/` | 53 GB | 35 `annotations.json` + ~119k JPEG |
+| Backup (pilot, frozen) | `/fs/scratch/PGS0407/binben14/ConSynth-X-release-v1-pilot_*/` | various | early-stage outputs (kept for traceability) |
+
+The Parquet release is fully self-contained (each row carries the JPEG bytes).
+The COCO release exists as a parallel archive for users who need
+pycocotools/ultralytics/mmdetection compatibility — not shipped to the public
+mirrors yet.
+
+### Public mirrors
+
+| Mirror | URL / id | Status |
+|---|---|---|
+| Kaggle | `viethuyduong/construction-site-augmentation-data` | LIVE (uploaded 2026-04-30, 3 zips: cs10k.zip 13 GB, soda_voc.zip 31 GB, soda_ktsh.zip 6.4 GB; backend GCS sync intermittent for new versions) |
+| HuggingFace | `Ben11304/ConSynth-X` | PENDING — repo created, but private storage cap reached on first push attempt; awaiting visibility decision |
+
+### Coverage (counted directly from shipped Parquet)
+
+| Sub | Rows | Detection bboxes | Rule violations | Captions | Conditions |
+|---|---:|---:|---:|---:|---|
+| `cs10k`     | 44,105  | 36,804 | 8,152 | 29,266 (caption per row) | rain×2, snow×2, fog×3, night, rain_night, snow_night, small (train+test) |
+| `soda_voc`  | 56,021  | 817,127 | — | — | rain×2, snow×2, fog×3, night, small (incl. extra2k batch) |
+| `soda_ktsh` | 22,030  | — | — | 21,789 rows × 5 captions = 108,945 (98.9% coverage; remainder shipped with `captions=[]`) | rain×2, snow×2, fog×3, night, small |
+| **Total**   | **122,156** | **853,931** | **8,152** | — | 35 shards |
+
+### Schema (per-sub canonical, identical across Parquet and COCO)
+
+Common fields: `image` (bytes), `image_id`, `source_id`, `source_dataset`,
+`condition`, `condition_labels` (list[str], multi-label), `objects` (list of
+`{class_id, class_name, bbox}` with bbox in normalised xyxy `[0,1]`),
+`pipeline` (struct: method, checkpoint, prompt_template, params(JSON)),
+`quality_scores` (struct: dino_sim, ssim, clip_sim, lpips; nullable),
+`quality_alert` (`dino_sim < 0.75`, nullable when DINO not yet computed).
+
+Sub-specific extensions:
+- `cs10k`: `image_attributes` (caption + illumination/distance/view/quality_of_info), `rule_violations` (list of `{rule_id, bbox, reason}`)
+- `soda_ktsh`: `captions` (list[str], 5 per row when populated)
+
+Bounding-box convention: **normalised xyxy** in Parquet for resolution
+agnosticism; convert to absolute pixels via the per-row image (W, H) decoded
+from `image` bytes. COCO mirror uses standard COCO 2017 `[x, y, w, h]` pixels.
+
+### Provenance & integrity
+
+- Single source of truth: `release_pipeline/metadata/condition_registry.yaml`
+- Per-shard audit JSONs: `<release>/<sub>/_audit/<basename>.json` (records rows_in/out, n_objects, n_rule_violations, dino match counts, warnings)
+- Run-level audit: `<release>/_run_audit_<timestamp>.json`
+- File checksums: `<release>/checksums.sha256` (83 entries: every Parquet, COCO JSON, audit JSON, README, PDF, schema, license)
+- Canonical schema dump: `<release>/schema.json`
+- Round-trip identity (Parquet ↔ COCO ↔ Parquet) verified on 2% sample, 0 mismatches
+
+### Repack pipeline
+
+Source code in [`release_pipeline/`](../release_pipeline/):
+
+```
+release_pipeline/
+├── convert/
+│   ├── release_schema.py       # canonical pa.schema per sub + validate_table()
+│   ├── voc_to_objects.py       # VOC XML parser with round-trip test + size mismatch hard-error
+│   ├── cs10k_to_objects.py     # cs10k per-class columns + rule_violations + image_attributes
+│   ├── bbox_join.py            # join bbox from source for shards lacking annotation
+│   ├── coco_emitter.py         # streaming COCO writer
+│   └── integrity.py            # SHA256, EXIF rotation, atomic write helpers
+├── scripts/
+│   ├── repack_to_release.py    # main runner — dry-run default, --execute writes
+│   ├── validate_release.py     # post-execute byte/bbox round-trip check
+│   ├── pack_extra2k.py         # one-off packer for soda_voc/small extra2k FLUX outputs
+│   └── pack_soda_ktsh_original.py  # ktsh raw-jpg → arrow source builder
+├── metadata/
+│   ├── condition_registry.yaml # 35 shards mapped to format, condition, pipeline, dino csv
+│   └── pending_dino_shards.yaml # historical (now empty after DINO compute)
+└── tests/
+    └── test_parsers.py         # 12 unit tests, all passing
+```
+
+Run repack:
+```bash
+cd /users/PGS0407/binben14/VietHuy/ConSynth-X
+python -m release_pipeline.scripts.repack_to_release \
+  --registry release_pipeline/metadata/condition_registry.yaml \
+  --workspace-root . \
+  --output-root /fs/scratch/PGS0407/binben14/ConSynth-X-release-v1 \
+  --coco-output-root /fs/scratch/PGS0407/binben14/ConSynth-X-release-v1-coco \
+  --execute
+```
+
+Default mode is dry-run (writes nothing); pass `--execute` for actual writes.
+Atomic per-shard writes via `*.tmp` + rename so partial failures leave no
+half-written files.
+
+### Download recipes
+
+```bash
+# Kaggle (after backend completes per-version GCS sync; ~10 min to several h)
+kaggle datasets download -d viethuyduong/construction-site-augmentation-data -p ./consynthx
+unzip -d ./consynthx/cs10k     ./consynthx/cs10k.zip
+unzip -d ./consynthx/soda_voc  ./consynthx/soda_voc.zip
+unzip -d ./consynthx/soda_ktsh ./consynthx/soda_ktsh.zip
+
+# Direct from OSC scratch (rsync over SSH, resume-safe)
+rsync -avh --progress --partial \
+  binben14@pitzer.osc.edu:/fs/scratch/PGS0407/binben14/ConSynth-X-release-v1/ \
+  ./consynthx-parquet/
+```

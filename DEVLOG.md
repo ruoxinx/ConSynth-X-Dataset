@@ -4,6 +4,235 @@
 
 ---
 
+## 2026-04-30 — Release v1 packaged + Kaggle mirror live
+
+**Output:** `release_pipeline/` shipped a 35-shard, 122,156-row release.
+
+**Storage**
+- Parquet: `/fs/scratch/PGS0407/binben14/ConSynth-X-release-v1/` (50 GB, embedded JPEG bytes)
+- COCO mirror: `/fs/scratch/PGS0407/binben14/ConSynth-X-release-v1-coco/` (53 GB, decoded JPEG + annotations.json)
+
+**Public**
+- Kaggle: `viethuyduong/construction-site-augmentation-data` — uploaded as 3 zips (cs10k 13 GB, soda_voc 31 GB, soda_ktsh 6.4 GB) + metadata. v5 indexed (totalBytes=53.7 GB) but per-version GCS sync pending.
+- HuggingFace `Ben11304/ConSynth-X` — repo created but private storage cap hit on first push; awaiting public/upgrade decision.
+
+**Coverage** (cs10k 44,105 / soda_voc 56,021 / soda_ktsh 22,030)
+- 11 conditions × 3 subs in Table 3 (rain_night/snow_night cs10k-only).
+- soda_ktsh captions: 21,789 / 22,030 = 98.9% — `fog_*` and `snow_heavy` shards originally `captions=[]`; recovered by joining from `rain_*.arrow` and `snow_light.arrow` via image_id (caption_join_sources in registry; verbatim copy verified by agent: 0 byte drift, 0 overwrite, 5,328 rows filled).
+- soda_ktsh night ships 1,135 / 1,500 — 365 rows had empty/non-JPEG bytes from a failed upstream day2night batch; skipped at repack with explicit warnings.
+- DINO scores: 8/13 v1.x conditions done (cs_small × 2, soda_voc × 6); 5 soda_ktsh conditions still computing on pitzer gpu-exp.
+
+**Schema** — see `docs/data_sources.md` §7. Key choices:
+- bbox: normalised xyxy in Parquet, COCO mirror in absolute pixel `[x,y,w,h]`.
+- `quality_alert = (dino_sim < 0.75)`, nullable when DINO not yet computed.
+- Fixed-seed pipelines per condition (IP2P weather: `seed = 42 + image_index`; fog: `42 + batch_start`; day2night and FLUX outpaint: fixed 42).
+
+**Repack runner discoveries (in audit JSONs)**
+- 36 cs10k rows: `rule_violations[].bbox = null` (rule fired with reason text but no bbox at source) — preserved.
+- 3 soda_voc rows (zl220–222): irreconcilable VOC `<size>` vs JPEG dims — skipped.
+- 1 shard missed during initial registry: cs10k `test/snow_heavy/snow_heavy.arrow` (3,004 rows). Fixed; bumped cs10k total 41,101 → 44,105.
+- Train/test path collision (`<condition>/<basename>.parquet` overwriting) caught + fixed by split-prefixed basename (`train__<basename>.parquet`).
+
+**Documentation**
+- `paper/dataset_description.{tex,pdf}` updated for post-augmentation truth (MiDaS DPT_Large not Depth Anything V2; FLUX.1-Fill-dev not FLUX.1-dev; per-shard row counts; caption coverage).
+- HF-style README at `paper/DSA/{readme.md,README.md}` and mirrored at release root.
+- Schema dump at `<release>/schema.json`; checksums (83 entries) at `<release>/checksums.sha256`.
+
+---
+
+## 2026-04-29
+
+### Image-quality-control funnel — end-to-end accounting (N_input → SSIM+LPIPS → DINO audit)
+
+**Mục tiêu.** Cho paper section "Image Quality Control": ghi rõ **mỗi (source × condition) có bao nhiêu ảnh đi vào pipeline, bao nhiêu sống qua filter, bao nhiêu đạt audit DINO≥0.75**, để reviewer Nature Sci Data thấy toàn bộ pipeline minh bạch.
+
+**Scope filter (quan trọng — không nhầm lẫn).** SSIM+LPIPS filter **chỉ áp cho rain** (light & heavy paired):
+- Rain SSIM ∈ [0.60, 0.95], LPIPS < 0.35 (`generation/weather/rain_snow/diffusion/batch_worker.py:25-27,168`).
+- Snow / fog / night / night_weather → **không filter** ở generation time. `N_kept < N_input` cho các condition này phản ánh **partial generation** (chạy subset, ví dụ snow_heavy = b2 1k, fog = subset 1k của CS test), KHÔNG phải filter rejection.
+
+**Code mới.**
+- [`validation/build_qc_funnel.py`](validation/build_qc_funnel.py) — đếm N_input/N_kept/DINO retention per (source × condition); tách `filter_retention_pct` (chỉ rain) khỏi `coverage_pct` (mọi condition khác).
+- [`validation/extract_dino_ssim_extended.py`](validation/extract_dino_ssim_extended.py) — streaming chunk=256, lazy decode JPEG bytes → tính DINOv3 + SSIM cho 12 (source, condition) chưa có CSV: CS train + SODA-VOC + SODA-KTSH × {rain_light, rain_heavy, snow_light, snow_heavy}. Cần streaming vì soda_voc/snow_light = 19,623 ảnh — preload toàn bộ PIL OOM với 64G.
+- [`validation/plot_qc_funnel.py`](validation/plot_qc_funnel.py) — 3 figures: exemplar (CS test rain_light, 4-stage funnel), overview bar chart (rain solid bars vs non-rain dotted; DINO≥0.75 hatched overlay), DINO retention curves 4-panel per source.
+- [`validation/refresh_qc_funnel.sh`](validation/refresh_qc_funnel.sh) — wrapper rebuild funnel CSV + figures sau khi DINO compute landing.
+- SLURM job scripts: [`validation/jobs/extract_dino_ssim_extended_pitzer.sh`](validation/jobs/extract_dino_ssim_extended_pitzer.sh) (V100-32g, gpu-exp, 96G mem) và `..._cardinal.sh` (H100, gpu, 96G mem) làm race backup.
+
+**Compute.** 12 (source, condition) DINO/SSIM CSVs sinh trên Pitzer V100-32g node `p0339` (3 jobs parallel: cs_train + soda_voc + soda_ktsh). Wall ≈ 75 phút từ start tới CSV cuối (soda_voc snow_light 19,623 rows là bottleneck — ~30 phút riêng nó). OOM lần đầu (`--mem=64G`) đã fix bằng streaming + bump 96G. Cardinal duplicates hủy sau khi Pitzer xong.
+
+**Findings cho paper.**
+
+| Source | rain filter retention |
+|---|---:|
+| cs_train | 51.75% |
+| cs_test | 54.99% |
+| soda_voc | **24.14%** |
+| soda_ktsh | **21.15%** |
+
+→ Rain SSIM/LPIPS thresholds (calibrated trên CS) cắt **~75-79% ảnh trên SODA** — domain shift rõ rệt: SODA street scenes có cấu trúc khác CS construction sites, nên IP2P rain output rời xa original hơn → bị filter. Ghi vào paper như sensitivity caveat.
+
+**DINO≥0.75 audit (post-hoc) cho mọi condition × source:**
+- **night_rain** worst-case: DINO mean 0.447, chỉ **10.8% pass** DINO≥0.75 — Order-B (CycleGAN day2night → IP2P weather) cộng dồn semantic drift. Sẽ flag rõ trong paper.
+- rain_heavy DINO consistency thấp hơn rain_light đáng kể: cs_train 90.4 → 58.3%, soda_ktsh 88.1 → 46.8% — physics overlay heavy đẩy ảnh xa thêm sau IP2P.
+- snow_light gần như perfect: 96-99% retention (gen) + 98-99% DINO≥0.75 → pipeline ổn định nhất.
+- fog × 3 và night (CS test): pass-through không filter, DINO≥0.75 đạt 87-99%.
+
+**Outputs.**
+- [`validation/results/qc_funnel/funnel_counts.csv`](validation/results/qc_funnel/funnel_counts.csv) (20 rows, full DINO stats + filter/coverage tách bạch).
+- [`validation/results/qc_funnel/funnel_report.md`](validation/results/qc_funnel/funnel_report.md).
+- [`validation/results/qc_funnel/figures/funnel_exemplar_cs_test_rain_light.pdf`](validation/results/qc_funnel/figures/funnel_exemplar_cs_test_rain_light.pdf), `funnel_overview_yields.pdf`, `funnel_dino_distributions.pdf`.
+
+**Anomalies pending.**
+- **CS train snow_heavy = 6,009/7,009** (85.7%) trong khi `docs/methods.md` nói `--no-filter`. Có thể là partial regeneration. Cần verify trước submit.
+- Discrepancies với paper Table 1 (snow/small counts) — đã tracked trong checklist.
+
+---
+
+## 2026-04-28
+
+### Zero-shot detection robustness benchmark — unified 100-img matched-pair set across 11 conditions
+
+**Mục tiêu.** Trả lời GAP-1 trong `docs/checklist.md`: "augmented conditions có thực sự stress detection không?" Trước đây các sanity bench dùng *subset khác nhau* per-condition (rain_light có 4,790 ids, fog test có 1,000 ids, intersect = 0) → ∆mAP không cross-comparable.
+
+**Thiết kế.** 100 SODA-VOC ids deterministic (seed=42) có ≥1 person GT (460 boxes), generate qua mọi condition cùng lúc — **matched-pair**. Source materialised tại [`detection_validation/source_100/`](detection_validation/source_100/) với 3 artifact: `clear/` (jpgs), `clear.arrow` (4-col SODA-VOC schema), `manifest.json` (COCO GT person-only). Builder: [`bench/build_unified_100.py`](bench/build_unified_100.py).
+
+**Generation pipeline (Pitzer V100, total ≈40 min wall-clock).** 6 SLURM jobs trong [`jobs/det_val/`](jobs/det_val/):
+
+| Job | Pipeline | Output | Walltime |
+|---|---|---|---|
+| `j1_weather_ip2p` | IP2P rain (light prompt + default physics) + IP2P snow + IP2P snow_heavy (g=12, igs=1.2) | `rain_light/`, `snow_light/`, `snow_heavy/` (JPGs) + `rain_light.arrow`, `snow_light.arrow` | 21:07 |
+| `j2_rain_heavy_cpu` | `bench/heavy_rain_jpgs.py`: `add_natural_rain(intensity='heavy_fog')` post-process trên `rain_light/` JPGs | `rain_heavy/` (JPGs) | 1:19 |
+| `j3_fog` | `arrow_fog_worker_soda.py` × 3 intensities (Depth-Anything-V2-Small + Perlin fog) | `fog_light.arrow`, `fog_medium.arrow`, `fog_heavy.arrow` | 9:44 |
+| `j4_night` | `day2night_soda_worker.py` (CycleGAN-Turbo `day_to_night`) | `night/images/` (JPGs) | 2:12 |
+| `j5_night_weather` | `voc_b2_night_worker.py` × 2 (rain_light → CycleGAN night → rain physics; snow_light → CycleGAN night → snow physics) | `night_rain/batch_0-100.arrow`, `night_snow/batch_0-100.arrow` | 5:00 |
+| `j6_small` | `flux_pipeline_worker_voc.py` array 10×10 (FLUX.1-Fill outpainting với resize 0.5, scale 0.25–0.4, 28 steps) | `small/{JPEGImages,Annotations}/` — **bbox được transfer sang canvas mới** | ~25 min/task parallel |
+
+Lưu ý kỹ thuật: `j5` dùng VOC-B2 flow (weather → night) thay vì night → weather, để khớp với existing `submit_voc_b2_night.py` convention. `j6` dùng `flux_pipeline_worker_voc.py` (vs `flux_pipeline_worker.py` arrow flow) để có annotation transfer XML output.
+
+**Detection eval.** [`bench/zero_shot_unified.py`](bench/zero_shot_unified.py) chạy 3 detector COCO-pretrained zero-shot, person-only IoU=0.5 via pycocotools:
+- YOLOv8m (`ultralytics`)
+- Faster R-CNN R50-FPN-v2 (`torchvision.models.detection`, `box_score_thresh=0.0`)
+- DETR R50 (`facebook/detr-resnet-50` no_timm, `threshold=0.0`)
+
+Submit: `jobs/det_val/run_unified_eval.sh` (3-task array, V100). Walltime mỗi task: 1:41 / 3:13 / 2:56.
+
+**Kết quả** (`bench/sanity_results/unified_{model}.csv`):
+
+| condition | YOLOv8m mAP@0.5 | Faster R-CNN mAP@0.5 | DETR mAP@0.5 |
+|---|---:|---:|---:|
+| **clear (baseline)** | **0.509** | **0.627** | **0.529** |
+| rain_light  | 0.203 (∆+0.31) | 0.218 (∆+0.41) | 0.201 (∆+0.33) |
+| rain_heavy  | 0.140 (∆+0.37) | 0.149 (∆+0.48) | 0.110 (∆+0.42) |
+| snow_light  | 0.404 (∆+0.11) | 0.381 (∆+0.25) | 0.390 (∆+0.14) |
+| snow_heavy  | 0.259 (∆+0.25) | 0.249 (∆+0.38) | 0.252 (∆+0.28) |
+| fog_light   | 0.443 (∆+0.07) | 0.518 (∆+0.11) | 0.451 (∆+0.08) |
+| fog_medium  | 0.437 (∆+0.07) | 0.509 (∆+0.12) | 0.445 (∆+0.08) |
+| fog_heavy   | 0.426 (∆+0.08) | 0.477 (∆+0.15) | 0.417 (∆+0.11) |
+| night       | 0.355 (∆+0.15) | 0.384 (∆+0.24) | 0.300 (∆+0.23) |
+| **night_rain** | **0.069 (∆+0.44)** | **0.092 (∆+0.53)** | **0.067 (∆+0.46)** |
+| night_snow  | 0.256 (∆+0.25) | 0.256 (∆+0.37) | 0.233 (∆+0.30) |
+| small       | 0.279 (∆+0.23) | 0.340 (∆+0.29) | 0.274 (∆+0.25) |
+
+**Quan sát chính** (consistent across 3 detectors):
+1. **Robust band — fog × 3** (∆ 0.07–0.15): Fog chỉ giảm contrast/visibility, không thay đổi texture frequencies → person silhouette vẫn detectable.
+2. **Mid band — snow_light, night, small** (∆ 0.10–0.30): Single-axis distribution shift, detectors degrade gracefully.
+3. **Heavy band — rain × 2, snow_heavy, night_snow** (∆ 0.25–0.48): Cao-frequency physics overlay (rain streaks, snow flakes) phá feature maps; heavy_fog rain post-process gây drop nhiều nhất trong rain group.
+4. **Worst case — `night_rain`** (∆ 0.44–0.53, ~85% mAP loss): Combinational stress (low-light + rain) cho thấy đây là condition khó nhất.
+5. **Faster R-CNN** có clear baseline cao nhất (0.627) nhưng cũng drop tuyệt đối lớn nhất → có dấu hiệu over-fit COCO; YOLOv8m và DETR degrade uniform hơn.
+6. `small` (∆ 0.23–0.29) đánh giá *task difficulty* khi objects nhỏ + canvas mở rộng — đây là test case riêng vì GT bbox bị transform; mAP đo trên GT mới của chính nó (FLUX preserve count = 460 boxes).
+
+**Implications cho paper.** Closes GAP-1 trong `docs/checklist.md`: synthesized conditions tạo *task-relevant* distribution shift đủ mạnh để stress 3 representative detection paradigms (single-stage CNN, two-stage CNN, transformer). Bảng này có thể đi vào Technical Validation section như evidence rằng dataset có *practical utility* cho robustness research, không chỉ "không gây hại". Limitation: zero-shot COCO-pretrained, chưa benchmark training-on-aug; có thể follow up trong supplementary.
+
+**Files**:
+- Generation: [`bench/build_unified_100.py`](bench/build_unified_100.py), [`bench/heavy_rain_jpgs.py`](bench/heavy_rain_jpgs.py), [`jobs/det_val/`](jobs/det_val/)
+- Eval: [`bench/zero_shot_unified.py`](bench/zero_shot_unified.py), [`jobs/det_val/run_unified_eval.sh`](jobs/det_val/run_unified_eval.sh)
+- Data: [`detection_validation/`](detection_validation/) — 11 condition outputs + `source_100/`
+- Results: [`bench/sanity_results/unified_{yolov8m,fasterrcnn,detr}.{csv,json}`](bench/sanity_results/)
+
+---
+
+## 2026-04-27
+
+### Dataset overview figures (DAWN-style) + CS snow_heavy train file appearance + Table 1 reconciliation
+
+**Figures created.** Four new generation scripts under `paper/`, all reading directly from `augmentation_data/` Arrow tables:
+
+| Script | Output | Purpose |
+|---|---|---|
+| [`paper/generate_class_statistics.py`](paper/generate_class_statistics.py) | `fig_class_distribution.{pdf,png}` (4-panel bars) + `class_distribution_counts.csv` | DAWN-style per-class bbox counts × 5 conditions for CS (3 classes) and SODA-VOC (top-5 / mid-5 / bottom-5 by frequency) |
+| [`paper/generate_condition_pies.py`](paper/generate_condition_pies.py) | `fig_condition_share.{pdf,png}` (3 pies) + `condition_share_counts.csv` | Per-dataset pie of condition share, intensities merged, CS train+test merged |
+| [`paper/generate_condition_pies_dino_filtered.py`](paper/generate_condition_pies_dino_filtered.py) | `fig_condition_share_dino_filtered.{pdf,png}` (loose) + `fig_condition_share_dino_strict.{pdf,png}` (5-tier sweep) + sweep CSV | Effect of DINOv3 filter `light≥{0.70,0.80,0.85,0.90}` / `heavy≥{0.60,0.70,0.75,0.80}` on the pie. Pass rate measured on CS test split (only split with DINO scores), extrapolated to other splits — caveat in the suptitle |
+| [`paper/generate_dataset_overview_figure.py`](paper/generate_dataset_overview_figure.py) | `fig_dataset_overview.{pdf,png}` | Single combined figure (3 pies + 4 bar panels) ready for paper inclusion via `\includegraphics` |
+
+**Row-count cache.** [`paper/figures/arrow_row_counts.json`](paper/figures/arrow_row_counts.json) caches `num_rows` per arrow file (~50 GB combined). The pie scripts read cache first → skip the full disk scan on re-runs. To force re-count: delete the entry (or the whole file).
+
+**SODA-KTSH "Original" bug fix.** First pie pass mistakenly used `SODA_KTSH_ORIGINAL_TOTAL = 1500` (the row count of `soda_ktsh/night/soda_ktsh_day2night.arrow`, which is only a subset). Per `data_card.md` 2026-04-25 entry, the canonical SODA-KTSH source corpus = **9,988**. Verified by inspecting unique `image_id`s in `soda_ktsh/rain_snow/diffusion/snow_light.arrow` (9,671 unique ids ranging up to `ktsh13999`, all ≤ 9,988). After fix, KTSH pie: Original 30.8% / Rain 13.0% / Snow 33.0% / Fog 13.9% / Night 4.6% / Small 4.6%.
+
+**Disk vs paper Table 1 — three discrepancies discovered.** Direct row-count of the Arrow tables under `augmentation_data/` no longer agrees with [`paper/main.tex`](paper/main.tex) Table 1 (`tab:dataset-overview`):
+
+| Condition | Paper Table 1 | Disk now (row-count) | Cause |
+|---|---:|---:|---|
+| CS Snow (light+heavy) | 12,699 | **15,704** | `construction_site/rain_snow/diffusion/train/snow_heavy/snow_heavy.arrow` (rows=6,009) was generated **2026-04-27 14:04** — appeared after the 2026-04-25 verification entry (which explicitly noted "snow_heavy train deferred"). With train_snow_heavy now on disk, total = 9,695 light + 6,009 heavy = 15,704. The DINO csv `ip2p_snow_heavy.csv` still has 3,004 entries that map to a planned test_snow_heavy (no test arrow exists on disk). |
+| CS Small | 1,323 (test only) | **2,823** | `small/train/small_constructionsite_train.arrow` (rows=1,500) is on disk and was not counted in Table 1. |
+| SODA-VOC Snow (light+heavy) | 19,623 | **20,623** | Paper counts only snow_light (19,623); snow_heavy 1,000-row subset was either missed or treated as a paired sub-sample. |
+
+**Action items:**
+- [ ] Reconcile [`paper/main.tex`](paper/main.tex) Table 1 line ≈234–238 with the disk numbers. Decide whether to (a) update the table, or (b) state explicitly which rows are excluded ("snow_heavy train deferred", "small only test", "snow_heavy paired subset of light").
+- [ ] If the figure is added to the paper, update Section 3 (Data Records) caption to reference `fig_dataset_overview` and re-state totals to match the disk.
+
+**SODA-VOC Small × 3 projection.** User flagged that 2,000 additional `small` SODA-VOC samples are in flight (from 1,000 → 3,000 target). The pie + class-distribution scripts apply a uniform ×3 multiplier on the SODA-VOC Small bucket (constant `SODA_PROJECT['Small'] = 3.0` in [`paper/generate_class_statistics.py`](paper/generate_class_statistics.py); cache override `soda_voc/small/soda_small.arrow: 3000` in `arrow_row_counts.json`). When the augmentation job completes, **revert both overrides** so the scripts re-measure from the actual arrow.
+
+**DINO filter pass rates (CS test split, used for the threshold-sweep extrapolation):**
+
+| Tier | thr light/heavy | rain_l | rain_h | snow_l | snow_h |
+|---|---|---:|---:|---:|---:|
+| LOOSE   | 0.70/0.60 | 94.3% | 88.4% | 99.6% | 92.1% |
+| MID     | 0.80/0.70 | 85.4% | 73.8% | 98.1% | 82.4% |
+| STRICT  | 0.85/0.75 | 74.3% | 62.3% | 94.4% | 73.4% |
+| V_STRICT| 0.90/0.80 | 50.5% | 44.6% | 81.7% | 59.5% |
+
+STRICT (0.85/0.75) matches the threshold pair used in the Kaggle public release per `dataset_card.md` v6. Extrapolating those rates to CS train + SODA-VOC + SODA-KTSH (no DINO scores there yet) is a simulation, not a measurement — caveat is rendered in the suptitle of `fig_condition_share_dino_filtered.png`.
+
+---
+
+## 2026-04-25
+
+### Dataset statistics — full direct verification + paper Table 1 + .md sync
+
+Resolved §3.3 Dataset Statistics in `paper/main.tex` (3 `\verify{...}` placeholders) by direct row-count of every Arrow file under `augmentation_data/` plus the upstream sources. Method: pyarrow `open_file`/`open_stream` over each `.arrow`, plus `find … | wc -l` over SODA `JPEGImages/`/`Annotations/`.
+
+**Verified-from-source numbers** (no longer transitive through docs):
+
+| Quantity | Source | Count |
+|---|---|---:|
+| CS10k train | upstream HF `construction_site-train-{00000,00001}-of-00002.arrow` (3,500 + 3,509) | 7,009 |
+| CS10k test | upstream HF `construction_site-test.arrow` | 3,004 |
+| CS10k total | sum | 10,013 |
+| SODA-VOC | `SODA VOCdevkit/.../JPEGImages/*.jpg` (matched by 19,846 XML annotations) | 19,846 |
+| SODA-KTSH | `soda-ktsh/images/*.jpg` | 9,988 |
+
+**Augmented row counts** (all counted from `augmentation_data/`):
+- CS rain: test 1,652 + train 3,627 = 5,279; rain_heavy paired = 5,279 → rain total 10,558
+- CS snow: snow_light test 2,940 + snow_heavy test 3,004 + snow_light train 6,755 = 12,699 (snow_heavy train pending)
+- CS fog (heavy/medium/light): 1,001 + 1,001 + 1,002 = 3,004
+- CS night: 3,004 (test); CS night_weather: rain_night 3,004 + snow_night 3,004 = 6,008
+- CS small: 1,323
+- SODA-VOC rain 4,790 + rain_heavy 4,790 = 9,580; snow 19,623; fog 3 × 1,000 = 3,000; night 19,846; small 1,000
+- SODA-KTSH: rain 2,112 + rain_heavy 2,112 + snow 9,671 = 13,895
+
+**Totals:** CS = 46,609 (10,013 baseline + 36,596 augmented). SODA-VOC = 72,895 (19,846 + 53,049). Combined main dataset = **119,504**. SODA-KTSH (13,895) released alongside but excluded from combined total to avoid double-counting source images.
+
+**Files updated:**
+- [`paper/main.tex`](paper/main.tex) §3.3: replaced `\verify{actual count}`, `\verify{recompute}` × 2 with verified numbers; rewrote Table 1 with all 7 condition rows; added two prose paragraphs covering scoping conventions, light/heavy pairing, SODA 3,000-subset note, NST exclusion. Caption simplified, removed test/train breakdown in cells per author preference.
+- [`generation/AUGMENTATION_REPORT.md`](generation/AUGMENTATION_REPORT.md): resolved "Pending" entries — §3.4 SODA night = 19,846; §4.5 night_rain/snow = 3,004 each on CS test (SODA-VOC night_weather still Pending); §1 base-datasets table now shows full CS train+test split and adds SODA-KTSH; §8 Construction Site Main Pipeline table replaced with verified per-split counts (subtotal 36,596 augmented + 46,609 incl. baseline); §8 SODA section split into SODA-VOC table (53,049 / 72,895) and SODA-KTSH table (13,895).
+- [`data_card.md`](data_card.md): split provenance footnote on Train/test splits to cite direct verification method; added "Full released-dataset row counts" table mirroring paper Table 1, with combined-total caveat about SODA-KTSH and NST archive exclusions.
+
+**Outstanding numbers still marked pending in code/docs (do NOT report as final):**
+- CS snow_heavy train split (only test 3,004 generated; train deferred per `data_card.md` 2026-04-21 entry)
+- SODA-VOC night_weather (rain_night, snow_night) — pipeline not yet run on SODA
+- Abstract `\verify{post-NST count, $\sim$68k}` in [`paper/main.tex`](paper/main.tex) line 72 — actual is 119,504 (incl. baseline) or 89,645 (augmented only); awaiting author decision on which framing to use in abstract before resolving.
+
+---
+
 ## 2026-04-22
 
 ### Style-transfer ablation status — .md system consolidation

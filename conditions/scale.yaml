@@ -1,6 +1,71 @@
-# Scale / distance definitions
+# ConSynth-X — Scale / distance condition definitions
+#
+# `small` is the only synthesized scale variant — produced by FLUX.1-Fill-dev
+# outpainting (expands canvas, making existing objects appear smaller/more
+# distant). The remaining scale bins are annotation-only.
+#
+# Kept in sync with taxonomy/extreme_conditions_definition.md,
+# generation/AUGMENTATION_REPORT.md §5.
+
+schema_version: "0.2"
+last_updated: "2026-04-22"
+
 scale:
-  close_range: {description: "Objects occupy large image area; camera near"}
-  medium_range: {description: "Typical working distance"}
-  long_range: {description: "Distant objects; small pixel area"}
-  small_object: {description: "Objects with small pixel footprint (challenging detection)"}
+
+  medium_range:
+    description: "Baseline — typical working distance, moderate object size."
+    role: baseline
+    method: none
+    provenance: manual
+    annotation_handling: unchanged
+
+  close_range:
+    description: "Objects occupy a large fraction of the image; camera near subject (close-up)."
+    role: annotation_only
+    provenance: "manual | rule_based (bbox area ratio)"
+    annotation_handling: multi_label_tag
+
+  long_range:
+    description: "Distant objects; small pixel footprint without outpainting."
+    role: annotation_only
+    provenance: "manual | rule_based (bbox area ratio)"
+    annotation_handling: multi_label_tag
+
+  small:
+    description: "Synthesized small/distant variant — FLUX.1-Fill-dev outpainting expands the canvas so the original scene occupies a smaller fraction."
+    alias: small_distant                # taxonomy name
+    method: flux_fill_outpainting
+    params:
+      model: "black-forest-labs/FLUX.1-Fill-dev (bfloat16)"
+      prompt: "an outdoor construction site with buildings, roads, and open sky in the background"
+      guidance_scale: 30.0
+      num_inference_steps: 28
+      max_sequence_length: 512
+      max_internal_resolution_px: 728
+      # Truncated Gaussian scale factor s: s ~ N(mu, sigma) clamped to [min, max]
+      scale_factor:
+        distribution: "truncated_gaussian"
+        mean: 0.25                      # 25% expansion per side
+        std: 0.05                       # (max - min) / 4
+        clamp: [0.20, 0.40]
+      canvas_size: "((1 + 2s) * W, (1 + 2s) * H), original pasted at center, gray (128,128,128) background"
+      memory: "CPU offload + VAE slicing + VAE tiling"
+      gpu_requirement: "1x A100 80GB"
+    source:
+      arrow_worker: "generation/outpainting/flux_pipeline_worker.py"
+      voc_worker: "generation/outpainting/flux_pipeline_worker_voc.py"
+      submitters: "generation/outpainting/submit_outpainting_pipeline.py, submit_outpainting_soda.py"
+    provenance: rule_based
+    annotation_handling: bbox_transferred
+    bbox_transform: |
+      # Original normalized bbox (x1, y1) -> new normalized bbox.
+      x1_new = (x1_orig * orig_w * resize_factor + paste_x) / new_w
+      y1_new = (y1_orig * orig_h * resize_factor + paste_y) / new_h
+      # Applied to all annotation types: object bboxes (excavator, rebar,
+      # worker_with_white_hard_hat), rule violation bboxes (rules 1-4),
+      # metadata fields. See generation/AUGMENTATION_REPORT.md §5.4.
+    notes: >
+      After scaling + paste, the original scene occupies ~40-70% of the final
+      canvas area, shrinking object pixel footprints proportionally.
+      Preferred over downscaling because the surrounding context is
+      AI-generated rather than zero-padded/interpolated.

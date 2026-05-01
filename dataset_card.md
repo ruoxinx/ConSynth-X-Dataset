@@ -1,6 +1,8 @@
 # Dataset Card
 
-- Name: ConSynth-X
+- Name: **ConSynth-X: A Large-Scale Synthetic Construction-Site Image Dataset for Challenging Field Conditions**
+- Authors: Viet Huy Duong¹ · Ruoxin Xiong, Ph.D.²
+- Short name: ConSynth-X
 - Purpose: Provide controlled synthetic data generation and curated real splits for evaluating robustness of construction CV models under extreme field conditions.
 - Generation: See `generation/` for engine, scenario templates, and parameter ranges. Setup walkthrough: [`INSTALL.md`](INSTALL.md).
 - Conditions: YAML condition configurations live in `conditions/` and are used to generate labeled variants.
@@ -45,3 +47,15 @@ Sample contents (row counts reflect current Kaggle version; legacy 100-row sampl
 - **v2** (2026-04-20): Added `cs_diff_snow_heavy_test.arrow` (g=12 variant, VLM Jury acceptance InternVL 89% / Phi-4 92% vs light variant 30% / 8%). Renamed old `cs_diff_snow_test.arrow` → `cs_diff_snow_light_test.arrow`.
 - **v3** (2026-04-21): Added rain heavy variants (`cs_diff_rain_heavy_{test,train}.arrow`, `soda_voc_diff_rain_heavy.arrow`, `soda_ktsh_diff_rain_heavy.arrow`) produced by `scripts/update_kaggle_rain_heavy.py`. Also added `soda_voc_diff_rain.arrow` as previously-missing light baseline. Heavy = physics-only overlay on existing IP2P light output (no additional diffusion pass); see `DEVLOG.md` 2026-04-21 for rationale and `docs/methods.md` §1.3 for physics config.
 - **v6** (2026-04-22): `cs_diff_rain_test.arrow` (light) and `cs_diff_rain_heavy_test.arrow` (heavy) replaced with DINO-threshold-filtered 300-row subsets. Thresholds: light ≥ 0.75 (selects 300 of 1,515 eligible), heavy ≥ 0.70 (selects 300 of 1,219 eligible). DINO scores from `validation/results/dino_ssim/ip2p_rain{,_heavy}.csv` (DINOv3 ViT-L/16 cosine similarity vs original). Filtering script: `scripts/update_kaggle_rain_dino_filtered.py`. Other files re-uploaded unchanged as part of snapshot.
+
+## Citation
+
+```bibtex
+@dataset{duong2026consynthx,
+  title  = {ConSynth-X: A Large-Scale Synthetic Construction-Site Image Dataset
+            for Challenging Field Conditions},
+  author = {Duong, Viet Huy and Xiong, Ruoxin},
+  year   = {2026},
+  url    = {https://huggingface.co/datasets/Ben11304/ConSynth-X}
+}
+```

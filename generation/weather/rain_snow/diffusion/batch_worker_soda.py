@@ -33,6 +33,14 @@ def parse_args():
     parser.add_argument('--end', type=int, required=True)
     parser.add_argument('--weather', type=str, required=True, choices=['rain', 'snow'])
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--prompt', type=str, default=None,
+                        help='Override default prompt')
+    parser.add_argument('--guidance-scale', type=float, default=None,
+                        help='Override default guidance_scale (rain=10.0, snow=8.0)')
+    parser.add_argument('--image-guidance-scale', type=float, default=None,
+                        help='Override default image_guidance_scale (default=1.5)')
+    parser.add_argument('--no-filter', action='store_true',
+                        help='Skip SSIM/LPIPS filter — keep all outputs')
     return parser.parse_args()
 
 
@@ -91,6 +99,14 @@ def main():
         igs, guidance = 1.5, 8.0
         ssim_range = SSIM_SNOW
 
+    if args.prompt is not None:
+        prompt = args.prompt
+    if args.guidance_scale is not None:
+        guidance = args.guidance_scale
+    if args.image_guidance_scale is not None:
+        igs = args.image_guidance_scale
+    print(f"Config: prompt='{prompt[:60]}...'  guidance={guidance}  igs={igs}  no_filter={args.no_filter}")
+
     # Output
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -127,9 +143,12 @@ def main():
         lp = compute_lpips(lpips_fn, orig_pil, aug_pil) if lpips_fn else 0.0
 
         # Filter
-        keep_ssim = ssim_range[0] <= ss <= ssim_range[1]
-        keep_lpips = lp < LPIPS_THRESHOLD if args.weather == 'rain' else True
-        keep = keep_ssim and keep_lpips
+        if args.no_filter:
+            keep = True
+        else:
+            keep_ssim = ssim_range[0] <= ss <= ssim_range[1]
+            keep_lpips = lp < LPIPS_THRESHOLD if args.weather == 'rain' else True
+            keep = keep_ssim and keep_lpips
 
         status = 'KEEP' if keep else 'DROP'
         processed = idx - start + 1

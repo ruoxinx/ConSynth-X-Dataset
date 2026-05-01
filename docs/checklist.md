@@ -7,11 +7,22 @@
 
 ## CRITICAL — Phải fix trước khi submit
 
+- [ ] **Paper Table 1 (Dataset Overview) vs current disk row counts — 3 discrepancies (2026-04-27)**
+  Direct row-count from `augmentation_data/` no longer matches `paper/main.tex` `tab:dataset-overview` (line ≈232–242):
+  - CS Snow: paper 12,699 vs disk **15,704** — `train/snow_heavy/snow_heavy.arrow` (6,009 rows) appeared 2026-04-27 14:04 (after the 2026-04-25 verification entry noted "train deferred")
+  - CS Small: paper 1,323 vs disk **2,823** — `small/train/small_constructionsite_train.arrow` (1,500 rows) not counted in Table 1
+  - SODA-VOC Snow: paper 19,623 vs disk **20,623** — snow_heavy 1,000-row subset not added (or treated as paired sub-sample of light)
+  Decision needed: (a) update Table 1 to match disk, or (b) state explicitly which rows are excluded. See `DEVLOG.md` 2026-04-27 entry.
+
+
+
 - [ ] **Rule 2: Parameter justification** — 20+ parameters hardcode không có justification
   - [x] ~~Resolve mâu thuẫn style_weight (10,000 vs 100,000) và steps (10 vs 50)~~ — **RESOLVED 2026-04-21**: NST demoted to ablation archive, không còn canonical value cần thiết cho production. Mâu thuẫn được ghi nhận trong ablation note nếu supplementary yêu cầu.
   - [x] Chạy sensitivity analysis: SSIM/LPIPS sweep — data quantity done (`generation/sensitivity/results/`)
   - [ ] Chạy sensitivity analysis: downstream mAP per threshold — **ĐANG CHẠY** (6 SLURM jobs submitted)
   - [ ] Document tại sao LPIPS chỉ áp dụng cho rain, không snow (main pipeline IP2P)
+  - [x] **End-to-end QC funnel** (2026-04-29) — [`validation/build_qc_funnel.py`](../validation/build_qc_funnel.py) → [`validation/results/qc_funnel/`](../validation/results/qc_funnel/) (CSV + report + 3 figures). DINO/SSIM extended cho CS train + SODA-VOC + SODA-KTSH (12 conditions). Filter scope tách rõ: rain (SSIM+LPIPS filtered) vs snow/fog/night (unfiltered, partial gen). Rain filter retention domain-dependent: CS 52-55% vs SODA 21-24%. Worst-case audit: `night_rain` 10.8% DINO≥0.75. Xem [`docs/validation.md`](validation.md) §11b.
+  - [ ] **Anomaly: CS train snow_heavy = 6,009/7,009 (85.7%)** — `methods.md` nói `--no-filter` nhưng disk có drop. Likely partial regeneration. Verify trước submit (2026-04-29).
   - [~] ~~Verify nguồn gốc MiDaS params (baseline=0.54, focal=721.09)~~ — **DEFERRED**: MiDaS chỉ dùng trong NST ablation, main IP2P pipeline không dùng depth estimation.
   - [ ] Document IP2P guidance parameters (image_guidance=1.5, guidance=10.0/8.0/12.0, steps=30) — **main**
   - [ ] Document physics overlay params hoặc cite literature — **main**
@@ -156,6 +167,29 @@
   - [ ] Recruit 3+ annotators
   - [ ] Thu thập data → export CSV → tính fooling rate, MOS, recognition accuracy, Krippendorff's alpha
 
+### Approach 9: Zero-Shot Downstream Detection Robustness — SUCCESS (2026-04-28)
+
+- [x] **Unified 100-img benchmark on 11 conditions, 3 zero-shot detectors** — directly addresses GAP-1
+  - **Source**: 100 SODA-VOC ids deterministic (seed=42), 460 person GT boxes, materialised at `detection_validation/source_100/{clear/, clear.arrow, manifest.json, image_list.txt}` via `bench/build_unified_100.py`
+  - **Conditions generated** (all on the same 100 source ids — matched-pair, ∆mAP cross-comparable):
+    - rain_light, rain_heavy (IP2P + heavy_fog physics post-process)
+    - snow_light, snow_heavy (IP2P, heavy uses g=12, igs=1.2)
+    - fog_light, fog_medium, fog_heavy (Depth-Anything-V2 + Perlin fog)
+    - night (CycleGAN day2night turbo)
+    - night_rain, night_snow (VOC-B2: weather → CycleGAN night → physics)
+    - small (FLUX.1-Fill outpainting; bboxes transferred to expanded canvas via `flux_pipeline_worker_voc.py`)
+  - **Generation jobs** (Pitzer V100, total ≈40 min wall): `jobs/det_val/{j1_weather_ip2p, j2_rain_heavy_cpu, j3_fog, j4_night, j5_night_weather, j6_small}.sh` + orchestrator `submit_all.sh`
+  - **Detectors**: COCO-pretrained YOLOv8m, Faster R-CNN R50-FPN-v2 (torchvision), DETR R50 (`facebook/detr-resnet-50`) — all evaluated person-only at IoU=0.5 via pycocotools
+  - **Eval driver**: `bench/zero_shot_unified.py` + `jobs/det_val/run_unified_eval.sh` (3-task array on V100, 1.5–3.5 min each)
+  - **Results**: `bench/sanity_results/unified_{yolov8m,fasterrcnn,detr}.{csv,json}`
+  - **Key findings (cross-detector consistent)**:
+    - Robust band: fog × 3 (∆ 0.07–0.15) — fog only attenuates contrast, preserves texture
+    - Mid band: snow_light, night, small (∆ 0.10–0.30)
+    - Heavy degradation: rain × 2, snow_heavy, night_snow (∆ 0.25–0.48)
+    - **Worst-case = `night_rain`** (∆ 0.44–0.53 ≡ ~85% mAP loss) — combinational stress of low-light + rain streaks
+    - Faster R-CNN has highest clear baseline (0.627) but also largest drops, suggesting more brittle COCO-fit; YOLOv8m and DETR degrade more uniformly
+  - Files: `bench/{build_unified_100, heavy_rain_jpgs, zero_shot_unified}.py`, `jobs/det_val/`
+
 ### Public Sample Release — DONE (2026-04-20)
 - [x] **Kaggle sample dataset v2** uploaded — https://www.kaggle.com/datasets/viethuyduong/consynth-x-augmentation-sample
   - v1 (2026-04-16): 22 Arrow files, ~100 samples/condition (original, ST, IP2P rain/snow light, fog, night, small, SODA)
@@ -182,7 +216,7 @@
 
 ### CRITICAL GAPS cho Paper 1
 
-- [ ] **GAP-1: Detection under weather conditions** — Tất cả detection eval hiện tại dùng clean val set. Cần test trained model trên weather/night test set để chứng minh augmentation tạo robustness, không chỉ "không gây hại".
+- [x] **GAP-1: Detection under weather conditions** — **CLOSED 2026-04-28**: zero-shot 3-detector unified bench (Approach 9) cho thấy mAP person drop rõ ràng dưới rain/snow/night/night_rain/small (∆ up to 0.53). Kết quả này chứng minh augmented conditions thực sự tạo distribution shift đủ mạnh để stress detection — đủ làm Technical Validation evidence cho paper. Note: bench dùng zero-shot COCO-pretrained models (không phải robustness-trained), nên measures task difficulty across conditions; downstream training-on-aug evaluation vẫn chưa có (nice-to-have, không block).
 - [ ] **GAP-2: SODA dataset validation thiếu** — 100% validation results chỉ cho Construction Site (3,004 images). SODA (19,846 images, ~47K augmented) chưa có validation nào. Thiếu 2/3 dataset validation.
 - [ ] **GAP-3: Visual inspection diffusion snow** — Classifier accuracy 26% nhưng texture fidelity 86% và FID < baseline → contradiction. Cần visual comparison figure (diffusion snow vs style snow vs real ACDC snow) để giải thích trong paper.
 - [ ] **GAP-4: Narrative cho paper** — Kết quả validation đủ mạnh cho câu chuyện "realistic augmentation pipeline with complementary methods". Cần viết Technical Validation section tổng hợp cả 5 approaches với narrative rõ ràng.

@@ -1,6 +1,8 @@
 # Data Card
 
-- Dataset name: ConSynth-X
+- Dataset name: **ConSynth-X: A Large-Scale Synthetic Construction-Site Image Dataset for Challenging Field Conditions**
+- Authors: Viet Huy Duong¹ · Ruoxin Xiong, Ph.D.²
+- Short name: ConSynth-X
 - Curators: Repository maintainers
 - Contact: Use the repository issue tracker for questions or corrections.
 - Version: Label schema `0.1`
@@ -11,7 +13,7 @@ Labeling and conditions:
 - Label consistency: taxonomy definitions live in `taxonomy/extreme_conditions_definition.md`, and condition identifiers are tracked in `metadata/condition_labels.json`.
 
 Train/test splits:
-- Splits follow the source datasets. Construction Site 10k: train (7,009 images) / test (3,004 images). SODA: original VOC splits.
+- Splits follow the source datasets. Construction Site 10k: train (7,009 images) / test (3,004 images), totalling 10,013 (verified 2026-04-25 via direct row count of upstream HF Arrow tables `construction_site-train-{00000,00001}-of-00002.arrow`). SODA-VOC: 19,846 images (verified 2026-04-25 by counting JPEGImages and Annotations under `SODA VOCdevkit/`). SODA-KTSH auxiliary split: 9,988 source images.
 - All augmented data inherits the split of its source image. Augmented train images are for training; augmented test images are for cross-condition evaluation.
 - Split information is encoded in the Arrow file names (e.g., `construction_site-train-*.arrow`, `construction_site-test.arrow`) and folder structure (`diffusion/train/`, `diffusion/test/`).
 - Rain/snow augmentation in the main dataset uses IP2P diffusion only. The legacy VGG neural-style-transfer rain/snow outputs (3 intensity levels × 2 hazards × 2 datasets, ~43 GB with VOC bboxes preserved) are retained under [`experiments/ablation_style_transfer/`](experiments/ablation_style_transfer/) for baseline comparison and reproducibility of paper §3.1 (see that folder's `README.md`).
@@ -46,6 +48,22 @@ Reproducibility:
 - Per-parameter justifications (style transfer weights, IP2P guidance, physics
   overlay): `docs/methods.md`.
 
+Full released-dataset row counts (verified 2026-04-25 from `augmentation_data/`):
+
+| Condition | Method | Constr. Site | SODA-VOC |
+|---|---|---:|---:|
+| Original | Baseline | 10,013 | 19,846 |
+| Rain (light + heavy) | IP2P g=10 + physics | 10,558 | 9,580 |
+| Snow (light + heavy) | IP2P g=8/g=12 + physics | 12,699 | 19,623 |
+| Fog (3 zones) | Koschmieder + Depth Anything V2 | 3,004 | 3,000 |
+| Night | CycleGAN-Turbo | 3,004 | 19,846 |
+| Night + Weather | Night → IP2P → physics | 6,008 | — |
+| Small object | FLUX.1-Fill-dev outpainting | 1,323 | 1,000 |
+| **Total (incl. baseline)** | | **46,609** | **72,895** |
+| **Combined CS + SODA-VOC** | | | **119,504** |
+
+SODA-KTSH auxiliary split (rain 2,112 + rain_heavy 2,112 + snow 9,671 = 13,895) is released alongside but excluded from the combined total to avoid double-counting source images. Legacy NST rain/snow (10,266 CS + 47,169 SODA) is archived under `experiments/ablation_style_transfer/` and is not included in either total.
+
 Recommended reporting tables for papers:
 - Overall performance
 - Per-condition performance (e.g., rain, fog, low_light)
@@ -57,3 +75,15 @@ Licensing and privacy:
 - Code in this repository is released under Apache-2.0.
 - The dataset card declares dataset licensing as CC BY-NC 4.0.
 - Any release containing identifiable people, vehicles, or site-sensitive imagery should be reviewed before distribution and documented in the downstream dataset release notes.
+
+## Citation
+
+```bibtex
+@dataset{duong2026consynthx,
+  title  = {ConSynth-X: A Large-Scale Synthetic Construction-Site Image Dataset
+            for Challenging Field Conditions},
+  author = {Duong, Viet Huy and Xiong, Ruoxin},
+  year   = {2026},
+  url    = {https://huggingface.co/datasets/Ben11304/ConSynth-X}
+}
+```

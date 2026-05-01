@@ -35,6 +35,8 @@ MODEL_MAP = {
     "qwen2.5-vl-7b": ("Qwen25VL7B", "models.qwen2_vl"),
     "internvl2.5-8b": ("InternVL25_8B", "models.internvl"),
     "phi-4-multimodal": ("Phi4Multimodal", "models.phi4"),
+    "qwen3-vl-8b": ("Qwen3VL8B", "models.qwen3_5"),
+    "claude-sonnet-4.6": ("ClaudeSonnet46", "models.claude_api"),
 }
 
 
@@ -70,7 +72,10 @@ def load_checkpoint(path: Path) -> list:
 
 
 def run_evaluation(model, model_name: str, n_synthetic: int = 50,
-                   n_acdc: int = 40, resume: bool = False):
+                   n_acdc: int = 40, resume: bool = False,
+                   dino_threshold: float | None = None,
+                   conditions: list | None = None,
+                   skip_acdc: bool = False):
     """Run VLM Jury evaluation for one model."""
     from validation.vlm_jury.data_loader import load_all_samples, concat_pair
     from validation.vlm_jury.prompts import (
@@ -80,8 +85,9 @@ def run_evaluation(model, model_name: str, n_synthetic: int = 50,
 
     out_dir = OUT_DIR
     out_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_path = out_dir / f"{model_name}_checkpoint.json"
-    result_path = out_dir / f"{model_name}_results.json"
+    suffix = f"_dino{dino_threshold}" if dino_threshold is not None else ""
+    checkpoint_path = out_dir / f"{model_name}{suffix}_checkpoint.json"
+    result_path = out_dir / f"{model_name}{suffix}_results.json"
 
     # Load checkpoint
     results = load_checkpoint(checkpoint_path) if resume else []
@@ -90,7 +96,10 @@ def run_evaluation(model, model_name: str, n_synthetic: int = 50,
         print(f"Resumed: {len(results)} completed evaluations")
 
     # Load samples
-    samples = load_all_samples(n_synthetic=n_synthetic, n_acdc=n_acdc)
+    samples = load_all_samples(n_synthetic=n_synthetic, n_acdc=n_acdc,
+                                dino_threshold=dino_threshold,
+                                conditions=conditions,
+                                skip_acdc=skip_acdc)
 
     # Filter already-done
     todo = [s for s in samples if (s.condition, s.image_id) not in done_keys]
@@ -197,10 +206,23 @@ def main():
                         help="ACDC baseline images per condition (default: 40)")
     parser.add_argument("--resume", action="store_true",
                         help="Resume from checkpoint")
+    parser.add_argument("--dino-threshold", type=float, default=None,
+                        help="Restrict synthetic sampling to augmentations with "
+                             "DINOv3 cosine similarity >= threshold (requires "
+                             "validation/results/dino_ssim/{condition}.csv). "
+                             "Output files get a _dino<t> suffix.")
+    parser.add_argument("--conditions", type=str, default=None,
+                        help="Comma-separated subset of SYNTHETIC_CONDITIONS to "
+                             "evaluate (default: all).")
+    parser.add_argument("--skip-acdc", action="store_true",
+                        help="Skip ACDC baseline conditions.")
     args = parser.parse_args()
 
+    conds = [c.strip() for c in args.conditions.split(',')] if args.conditions else None
     model = load_model(args.model)
-    run_evaluation(model, args.model, args.n_synthetic, args.n_acdc, args.resume)
+    run_evaluation(model, args.model, args.n_synthetic, args.n_acdc,
+                    args.resume, dino_threshold=args.dino_threshold,
+                    conditions=conds, skip_acdc=args.skip_acdc)
 
 
 if __name__ == "__main__":

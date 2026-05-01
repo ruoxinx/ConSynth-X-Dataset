@@ -107,13 +107,37 @@ CONDITION_PAIRS = {
         "reference": "rain",
         "description": "IP2P diffusion rain + heavy physics overlay vs ACDC real rain",
     },
-    "diffusion_snow": {
+    "diffusion_snow_light": {
+        "source": {
+            "type": "arrow_dir",
+            "path": _REPO_ROOT / "augmentation_data" / "construction_site" / "rain_snow" / "diffusion" / "test" / "snow_light",
+        },
+        "reference": "snow",
+        "description": "IP2P diffusion snow (light, g=8) vs ACDC real snow",
+    },
+    "diffusion_snow_heavy": {
         "source": {
             "type": "arrow_dir",
             "path": DATA_ROOT / "output" / "construction_site_test" / "diffusion_snow_heavy",
         },
         "reference": "snow",
-        "description": "IP2P diffusion snow vs ACDC real snow",
+        "description": "IP2P diffusion snow (heavy, g=12) vs ACDC real snow",
+    },
+    "night_rain": {
+        "source": {
+            "type": "arrow_dir",
+            "path": _REPO_ROOT / "augmentation_data" / "construction_site" / "night_weather" / "rain_night",
+        },
+        "reference": "rain",
+        "description": "Compound night+rain (CycleGAN then IP2P rain) vs ACDC real rain",
+    },
+    "night_snow": {
+        "source": {
+            "type": "arrow_dir",
+            "path": _REPO_ROOT / "augmentation_data" / "construction_site" / "night_weather" / "snow_night",
+        },
+        "reference": "snow",
+        "description": "Compound night+snow (CycleGAN then IP2P snow) vs ACDC real snow",
     },
     "diffusion_fog_heavy": {
         "source": {"type": "arrow_dir", "path": FOG_DATA / "heavy"},
@@ -638,11 +662,20 @@ def main():
               f"{stats['kid_mean']:>8.4f}±{stats['kid_std']:.4f} "
               f"{stats['n_augmented']:>7}")
 
-    # Save JSON
+    # Save JSON — merge with existing results so partial reruns don't clobber
+    # previously-computed conditions.
     json_path = output_dir / "fid_kid_results.json"
+    existing = {}
+    if json_path.exists():
+        try:
+            existing = json.load(open(json_path))
+            print(f"\nMerging with {len(existing)} existing entries at {json_path}")
+        except Exception as e:
+            print(f"\nWARNING: could not load existing {json_path}: {e}; overwriting")
+    merged = {**existing, **all_results}
     with open(json_path, "w") as f:
-        json.dump(all_results, f, indent=2)
-    print(f"\nSaved: {json_path}")
+        json.dump(merged, f, indent=2)
+    print(f"Saved: {json_path} ({len(merged)} total entries, {len(all_results)} new/updated)")
 
     # Generate figures per reference dataset
     for ref_name in available_refs:

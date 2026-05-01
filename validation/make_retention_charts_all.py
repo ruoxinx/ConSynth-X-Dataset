@@ -41,6 +41,9 @@ DISPLAY_ORDER = [
     ("fog_heavy",       "Fog (heavy)",      "#6d28d9"),
     # Night — dark
     ("night",           "Night (CycleGAN)", "#1f2937"),
+    # Night + weather (Order B) — pinks/magentas
+    ("night_rain",      "Night + Rain",     "#db2777"),
+    ("night_snow",      "Night + Snow",     "#f472b6"),
 ]
 
 

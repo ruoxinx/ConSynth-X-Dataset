@@ -1,0 +1,10 @@
+torch>=2.0
+torchvision
+diffusers>=0.27
+transformers>=4.40
+accelerate
+peft
+xformers; sys_platform == 'linux'
+Pillow>=10
+tqdm
+huggingface_hub

@@ -26,42 +26,49 @@ CONSYNTH_DATA = (_REPO_ROOT / "augmentation_data/construction_site")
 ACDC_DIR = (_REPO_ROOT / "validation/reference_data/acdc/rgb_anon")
 
 # ── Condition → data source mapping ────────────────────────────
-IP2P_DATA = (_DATA_ROOT / "output/construction_site_test")
+# Keep this aligned with validation/extract_dino_ssim_all.py so that
+# jury sampling and DINO CSVs reference the same augmented images.
+IP2P_DATA = CONSYNTH_DATA / "rain_snow" / "diffusion" / "test"
+ST_DATA = _REPO_ROOT / "augmentation_data" / "construction_site" / "rain_snow" / "style_transfer" / "test"
+# Fallback for the legacy location of style-transfer arrows after the
+# 2026-04-21 "ST -> ablation archive" move.
+if not ST_DATA.exists():
+    ST_DATA = _REPO_ROOT / "experiments" / "ablation_style_transfer" / "construction_site" / "rain_snow" / "style_transfer" / "test"
 
 SYNTHETIC_CONDITIONS = {
     "st_rain_a": {
-        "source": ARROW_DATA / "weather_test_style_rain_0.arrow",
+        "source": ST_DATA / "weather_test_style_rain_0.arrow",
         "weather": "rain",
     },
     "st_rain_b": {
-        "source": ARROW_DATA / "weather_test_style_rain_1.arrow",
+        "source": ST_DATA / "weather_test_style_rain_1.arrow",
         "weather": "rain",
     },
     "st_rain_c": {
-        "source": ARROW_DATA / "weather_test_style_rain_2.arrow",
+        "source": ST_DATA / "weather_test_style_rain_2.arrow",
         "weather": "rain",
     },
     "st_snow_b": {
-        "source": ARROW_DATA / "weather_test_style_snow_1.arrow",
+        "source": ST_DATA / "weather_test_style_snow_1.arrow",
         "weather": "snow",
     },
     "ip2p_rain": {
-        "source": IP2P_DATA / "diffusion_rain_heavy",
+        "source": IP2P_DATA / "rain",
         "weather": "rain",
         "type": "dir",
     },
     "ip2p_rain_heavy": {
-        "source": CONSYNTH_DATA / "rain_snow" / "diffusion" / "test" / "rain_heavy",
+        "source": IP2P_DATA / "rain_heavy",
         "weather": "rain",
         "type": "dir",
     },
     "ip2p_snow_light": {
-        "source": IP2P_DATA / "diffusion_snow_light",
+        "source": IP2P_DATA / "snow_light",
         "weather": "snow",
         "type": "dir",
     },
     "ip2p_snow_heavy": {
-        "source": IP2P_DATA / "diffusion_snow_heavy",
+        "source": IP2P_DATA / "snow_heavy",
         "weather": "snow",
         "type": "dir",
     },
@@ -72,6 +79,26 @@ SYNTHETIC_CONDITIONS = {
     "fog_heavy": {
         "source": CONSYNTH_DATA / "fog" / "diffusion" / "test" / "heavy",
         "weather": "fog",
+        "type": "dir",
+    },
+    "fog_light": {
+        "source": CONSYNTH_DATA / "fog" / "diffusion" / "test" / "light",
+        "weather": "fog",
+        "type": "dir",
+    },
+    "fog_medium": {
+        "source": CONSYNTH_DATA / "fog" / "diffusion" / "test" / "medium",
+        "weather": "fog",
+        "type": "dir",
+    },
+    "night_rain": {
+        "source": CONSYNTH_DATA / "night_weather" / "rain_night",
+        "weather": "rain",
+        "type": "dir",
+    },
+    "night_snow": {
+        "source": CONSYNTH_DATA / "night_weather" / "snow_night",
+        "weather": "snow",
         "type": "dir",
     },
 }
@@ -148,17 +175,58 @@ def load_original_images() -> dict:
     return _load_arrow_images(arrow_path)
 
 
+def _load_dino_allowed_ids(condition: str, threshold: float) -> set | None:
+    """Return set of image_ids with dino_sim >= threshold for condition.
+
+    Returns None if no DINO CSV exists for the condition (callers fall back
+    to the default random sampling).
+    """
+    import csv
+    csv_path = _REPO_ROOT / 'validation/results/dino_ssim' / f'{condition}.csv'
+    if not csv_path.exists():
+        return None
+    allowed = set()
+    with open(csv_path) as f:
+        for row in csv.DictReader(f):
+            try:
+                if float(row['dino_sim']) >= threshold:
+                    allowed.add(str(row['image_id']))
+            except (KeyError, ValueError):
+                continue
+    return allowed
+
+
 def load_synthetic_samples(condition: str, originals: dict,
-                           n_samples: int = 50) -> list:
-    """Load augmented image pairs for one synthetic condition."""
+                           n_samples: int = 50,
+                           dino_threshold: float | None = None) -> list:
+    """Load augmented image pairs for one synthetic condition.
+
+    If `dino_threshold` is given, restrict sampling to augmented images whose
+    DINOv3 cosine similarity with their original is >= threshold (CSV in
+    validation/results/dino_ssim/{condition}.csv). Falls back to all images
+    when no DINO CSV exists for the condition.
+    """
     cfg = SYNTHETIC_CONDITIONS[condition]
     source = cfg["source"]
 
     print(f"  Loading {condition} from {source}...")
+    # When filtering by DINO, load ALL images so we can intersect with the
+    # allowed-ids set; otherwise keep the original speed optimisation.
+    max_load = None if dino_threshold is not None else n_samples * 3
     if cfg.get("type") == "dir":
-        augmented = _load_dir_images(source, max_samples=n_samples * 3)
+        augmented = _load_dir_images(source, max_samples=max_load)
     else:
-        augmented = _load_arrow_images(source, max_samples=n_samples * 3)
+        augmented = _load_arrow_images(source, max_samples=max_load)
+
+    # Apply DINO filter
+    if dino_threshold is not None:
+        allowed = _load_dino_allowed_ids(condition, dino_threshold)
+        if allowed is None:
+            print(f"    (no DINO CSV for {condition}; using all samples)")
+        else:
+            before = len(augmented)
+            augmented = {k: v for k, v in augmented.items() if str(k) in allowed}
+            print(f"    DINO >= {dino_threshold}: {len(augmented)}/{before} kept")
 
     # Pair with originals
     samples = []
@@ -254,32 +322,51 @@ def concat_pair(original: Image.Image, augmented: Image.Image,
     return combined
 
 
-def load_all_samples(n_synthetic: int = 50, n_acdc: int = 40) -> list:
-    """Load all evaluation samples."""
+def load_all_samples(n_synthetic: int = 50, n_acdc: int = 40,
+                     dino_threshold: float | None = None,
+                     conditions: list | None = None,
+                     skip_acdc: bool = False) -> list:
+    """Load all evaluation samples.
+
+    `dino_threshold` filters synthetic samples to those with DINOv3
+    similarity >= threshold (semantic preservation gate). ACDC baselines
+    are unaffected — they have no original pair for DINO comparison.
+    `conditions` optionally restricts which SYNTHETIC_CONDITIONS keys run.
+    `skip_acdc` skips ACDC baselines entirely.
+    """
     print("=" * 60)
-    print("Loading VLM Jury evaluation samples")
+    print("Loading VLM Jury evaluation samples"
+          + (f" (DINO >= {dino_threshold})" if dino_threshold else "")
+          + (f" [subset: {conditions}]" if conditions else ""))
     print("=" * 60)
 
     originals = load_original_images()
     print(f"  Originals: {len(originals)} images")
 
     all_samples = []
+    selected = conditions if conditions else list(SYNTHETIC_CONDITIONS)
 
     # Synthetic conditions
-    for condition in SYNTHETIC_CONDITIONS:
+    for condition in selected:
+        if condition not in SYNTHETIC_CONDITIONS:
+            print(f"  WARNING: unknown condition '{condition}' — skipping")
+            continue
         try:
-            samples = load_synthetic_samples(condition, originals, n_synthetic)
+            samples = load_synthetic_samples(
+                condition, originals, n_synthetic,
+                dino_threshold=dino_threshold)
             all_samples.extend(samples)
         except Exception as e:
             print(f"  WARNING: Failed to load {condition}: {e}")
 
-    # ACDC baselines
-    for condition in ACDC_CONDITIONS:
-        try:
-            samples = load_acdc_baseline(condition, n_acdc)
-            all_samples.extend(samples)
-        except Exception as e:
-            print(f"  WARNING: Failed to load ACDC {condition}: {e}")
+    # ACDC baselines (skipped when running a synthetic subset)
+    if not skip_acdc:
+        for condition in ACDC_CONDITIONS:
+            try:
+                samples = load_acdc_baseline(condition, n_acdc)
+                all_samples.extend(samples)
+            except Exception as e:
+                print(f"  WARNING: Failed to load ACDC {condition}: {e}")
 
     print(f"\nTotal: {len(all_samples)} samples "
           f"({sum(1 for s in all_samples if s.eval_mode == 'paired')} paired, "

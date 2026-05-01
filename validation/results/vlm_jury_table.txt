@@ -1,0 +1,50 @@
+VLM Jury — final results (DINO-prefiltered panel, 2026-04-23 22:18)
+========================================================================================================================
+5 judges: InternVL2.5-8B, Phi-4, Qwen2.5-VL-7B, Qwen3-VL-8B (DINO>=0.75) + Claude Sonnet 4.6 (DINO>=0.80)
+Majority = >=2/3 accept across {InternVL, Phi-4, Qwen2.5} on shared images; Wilson 95% CI.
+Source files: validation/results/vlm_jury/*_dino0.75_results.json + claude-sonnet-4.6_dino0.8_results.json
+
+condition                 N     Maj            95%CI   InternVL      Phi-4    Qwen2.5      Qwen3  Claude4.6
+-----------------------------------------------------------------------------------------------------------
+
+# ACDC (real reference)
+acdc_rain                40   1.000    [0.912,1.000]        —          —          —        0.825      1.000
+acdc_snow                40   0.900    [0.769,0.960]        —          —          —        0.350      0.900
+acdc_fog                 40   1.000    [0.912,1.000]        —          —          —        1.000      1.000
+acdc_night               40   1.000    [0.912,1.000]        —          —          —        1.000      1.000
+
+# Style transfer
+st_rain_a                50   0.760    [0.626,0.857]        —          —          —        0.460      0.760
+st_rain_b                50   0.680    [0.542,0.792]        —          —          —        0.260      0.680
+st_rain_c                50   0.580    [0.442,0.706]        —          —          —        0.400      0.580
+st_snow_b                50   0.480    [0.348,0.615]        —          —          —        0.000      0.480
+
+# IP2P diffusion (rain)
+ip2p_rain                50   0.980    [0.895,0.996]        —          —          —        0.680      0.980
+ip2p_rain_heavy          50   0.760    [0.626,0.857]      1.000      0.660      0.280      0.460      0.900
+
+# IP2P diffusion (snow)
+ip2p_snow_light          50   0.320    [0.208,0.458]      0.780      0.340      0.040      0.060      0.880
+ip2p_snow_heavy          50   0.900    [0.786,0.957]        —          —          —        0.160      0.900
+
+# Fog physics
+fog_light                50   0.980    [0.895,0.996]      1.000      0.980      0.700      0.840      0.980
+fog_medium               50   1.000    [0.929,1.000]      1.000      1.000      0.700      0.800      0.980
+fog_heavy                50   1.000    [0.929,1.000]        —          —          —        0.920      1.000
+
+# Night
+night                    50   0.560    [0.423,0.688]      0.220      0.560      0.880      0.400      1.000
+
+# Night + weather
+night_rain               50   0.780    [0.648,0.872]      1.000      0.540      0.540      0.440      0.720
+night_snow               50   0.240    [0.143,0.374]      0.760      0.240      0.040      0.000      0.060
+
+========================================================================================================================
+Colour legend (applied in PDF/PNG only): >=0.85 green | 0.70-0.85 amber | 0.40-0.70 orange | <0.40 red
+
+Key findings:
+- Claude Sonnet 4.6 is the most lenient judge; ACDC ceiling 100/100/100/90 (fog/night/rain/snow)
+- Local VLMs show 'strict-on-snow' bias even on real ACDC snow (Qwen3: 35%, Claude: 90%)
+- night_snow is universal failure: Claude 6%, Qwen3 0%, majority 24% -> paper limitation
+- DINO>=0.75 prefilter does not predict jury accept (agreement ~50%, random)
+- ip2p_snow_light rescued by snow_heavy variant: light 8-32% majority -> heavy Claude 90%

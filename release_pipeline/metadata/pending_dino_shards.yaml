@@ -1,0 +1,90 @@
+# Shards excluded from ConSynth-X release v1 because DINO score CSV is not yet
+# available in validation/results/dino_ssim/. Re-run repack with these added to
+# condition_registry.yaml after DINO computation completes.
+#
+# DO NOT SHIP these shards in v1.
+#
+# Re-add procedure:
+#   1. Compute DINO scores for the synthetic-vs-source pair, save to
+#      validation/results/dino_ssim/<name>.csv with header
+#      `image_id,ssim,dino_sim,dino_dist`.
+#   2. Move the entry from this file into condition_registry.yaml under `shards:`
+#      with the appropriate `dino_scores_path`.
+#   3. Re-run scripts/repack_to_release.py for just that shard, then update
+#      release-level README and dataset card.
+
+version: 1
+notes: |
+  Originals (cs10k, soda_voc, soda_ktsh) and outpainting (small) are excluded
+  for v1 because DINO comparison requires a paired source-synthetic image and
+  either (a) the original is the source itself (DINO=1 by definition) or
+  (b) the outpainting changes geometry so per-pixel DINO is not directly
+  meaningful without a separate validation protocol.
+  These will be reconsidered for v1.x once a calibration approach is agreed.
+
+pending_shards:
+  # ---- cs10k ----
+  - path: "augmentation_data/construction_site/small/test/small_constructionsite_test.arrow"
+    sub: "cs10k"
+    blocker: "DINO not computed for outpainting; awaiting decision on protocol"
+    rows: 1323
+  - path: "augmentation_data/construction_site/small/train/small_constructionsite_train.arrow"
+    sub: "cs10k"
+    blocker: "DINO not computed for outpainting; awaiting decision on protocol"
+    rows: 1500
+
+  # ---- soda_voc ----
+  - path: "augmentation_data/soda_voc/original/soda_voc_original_first3000.arrow"
+    sub: "soda_voc"
+    blocker: "Original baseline; DINO N/A by design"
+    rows: 3142
+  - path: "augmentation_data/soda_voc/night/soda_day2night.arrow"
+    sub: "soda_voc"
+    blocker: "DINO not yet computed for soda_voc night"
+    rows: 19846  # estimated; verify on disk
+  - path: "augmentation_data/soda_voc/fog/test/fog_heavy.arrow"
+    sub: "soda_voc"
+    blocker: "DINO not yet computed for soda_voc fog"
+  - path: "augmentation_data/soda_voc/fog/test/fog_medium.arrow"
+    sub: "soda_voc"
+    blocker: "DINO not yet computed for soda_voc fog"
+  - path: "augmentation_data/soda_voc/fog/test/fog_light.arrow"
+    sub: "soda_voc"
+    blocker: "DINO not yet computed for soda_voc fog"
+  - path: "augmentation_data/soda_voc/small/soda_small.arrow"
+    sub: "soda_voc"
+    blocker: "DINO not yet computed for soda_voc small/outpainting"
+  - path: "augmentation_data/soda_voc/small/_remaining_2000_source.arrow"
+    sub: "soda_voc"
+    blocker: "Filename suggests staging input; verify whether canonical or pre-cursor before re-adding"
+  - path: "augmentation_data/soda_voc/small/extra2k.arrow"
+    sub: "soda_voc"
+    rows: 2000
+    blocker: "Packed 2026-04-29 from _jpgs_extra2k/{images,meta} (FLUX outpaint extra2k). VOC bbox transformed source->canvas via per-image scale_factor + paste_position; visual round-trip validated on 5 samples in propotype/extra2k/. DINO not yet computed."
+    notes: "Once DINO csv exists, register as condition=small + condition_labels=[small, outpainting, extra2k]. Schema = voc_xml (same as soda_small.arrow)."
+
+  # ---- soda_ktsh ----
+  - path: "augmentation_data/soda_ktsh/fog/fog_heavy.arrow"
+    sub: "soda_ktsh"
+    blocker: "DINO not yet computed for soda_ktsh fog"
+  - path: "augmentation_data/soda_ktsh/fog/fog_medium.arrow"
+    sub: "soda_ktsh"
+    blocker: "DINO not yet computed for soda_ktsh fog"
+  - path: "augmentation_data/soda_ktsh/fog/fog_light.arrow"
+    sub: "soda_ktsh"
+    blocker: "DINO not yet computed for soda_ktsh fog"
+  - path: "augmentation_data/soda_ktsh/night/soda_ktsh_day2night.arrow"
+    sub: "soda_ktsh"
+    blocker: "DINO not yet computed for soda_ktsh night"
+  - path: "augmentation_data/soda_ktsh/small/soda_ktsh_small.arrow"
+    sub: "soda_ktsh"
+    blocker: "DINO not yet computed for soda_ktsh small/outpainting"
+
+# Drop list (not pending — will NOT be released in any version):
+drop_shards:
+  - pattern: "augmentation_data/soda_voc/_b2_inputs/*.arrow"
+    reason: "Pre-diffusion staging inputs; subset already covered by rain_snow/diffusion/*"
+  - pattern: "augmentation_data/soda_voc/_b2_outputs/**/*.arrow"
+    reason: "Per-batch staging outputs (1k subset); finalised data is in rain_snow/diffusion/{rain,snow}_{light,heavy}.arrow"
+  - pattern: "augmentation_data/soda_ktsh/fog/test/<intensity>/*.arrow"
+    reason: "Per-300 batch shards; concatenated form is at soda_ktsh/fog/<intensity>.arrow"

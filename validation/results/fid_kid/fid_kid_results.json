@@ -1,83 +1,13 @@
 {
-  "weather_style_rain_0@acdc": {
-    "fid": 192.28203340660303,
-    "kid_mean": 0.17258623123168945,
-    "kid_std": 0.00266435186415189,
+  "diffusion_rain_heavy@acdc": {
+    "fid": 236.42631964745794,
+    "kid_mean": 0.23819040536880492,
+    "kid_std": 0.00322749093955815,
     "reference": "rain",
     "ref_dataset": "acdc",
-    "n_augmented": 2211,
+    "n_augmented": 1652,
     "n_reference": 1000,
-    "description": "Style transfer rain (light) vs ACDC real rain"
-  },
-  "weather_style_rain_1@acdc": {
-    "fid": 197.74653990908067,
-    "kid_mean": 0.16997618436813355,
-    "kid_std": 0.0025972669005913077,
-    "reference": "rain",
-    "ref_dataset": "acdc",
-    "n_augmented": 1243,
-    "n_reference": 1000,
-    "description": "Style transfer rain (moderate) vs ACDC real rain"
-  },
-  "weather_style_rain_2@acdc": {
-    "fid": 194.06175035993834,
-    "kid_mean": 0.16727988719940184,
-    "kid_std": 0.0026574724940316118,
-    "reference": "rain",
-    "ref_dataset": "acdc",
-    "n_augmented": 1208,
-    "n_reference": 1000,
-    "description": "Style transfer rain (heavy) vs ACDC real rain"
-  },
-  "weather_style_snow_0@acdc": {
-    "fid": 209.49202142122616,
-    "kid_mean": 0.1884412932395935,
-    "kid_std": 0.0022460382660899354,
-    "reference": "snow",
-    "ref_dataset": "acdc",
-    "n_augmented": 2159,
-    "n_reference": 570,
-    "description": "Style transfer snow (light) vs ACDC real snow"
-  },
-  "weather_style_snow_1@acdc": {
-    "fid": 228.2398734461372,
-    "kid_mean": 0.203431921005249,
-    "kid_std": 0.0029992423257206935,
-    "reference": "snow",
-    "ref_dataset": "acdc",
-    "n_augmented": 1649,
-    "n_reference": 570,
-    "description": "Style transfer snow (moderate) vs ACDC real snow"
-  },
-  "weather_style_snow_2@acdc": {
-    "fid": 206.5506375207056,
-    "kid_mean": 0.18692965745925905,
-    "kid_std": 0.0024538234624152805,
-    "reference": "snow",
-    "ref_dataset": "acdc",
-    "n_augmented": 1796,
-    "n_reference": 570,
-    "description": "Style transfer snow (heavy) vs ACDC real snow"
-  },
-  "diffusion_rain@acdc": {
-    "fid": 193.65437197842903,
-    "kid_mean": 0.17004154682159422,
-    "kid_std": 0.003277092371489995,
-    "reference": "rain",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "IP2P diffusion rain vs ACDC real rain"
-  },
-  "diffusion_snow@acdc": {
-    "fid": 205.34365198764146,
-    "kid_mean": 0.18258697986602784,
-    "kid_std": 0.0031607416460559014,
-    "reference": "snow",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 570,
-    "description": "IP2P diffusion snow vs ACDC real snow"
+    "description": "IP2P diffusion rain + heavy physics overlay vs ACDC real rain"
   },
   "diffusion_fog_heavy@acdc": {
     "fid": 219.24011671117336,
@@ -109,135 +39,15 @@
     "n_reference": 1000,
     "description": "IP2P diffusion fog (light) vs real fog"
   },
-  "night@acdc": {
-    "fid": 178.90995802278863,
-    "kid_mean": 0.17488787412643433,
-    "kid_std": 0.0042400372913295546,
-    "reference": "night",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 1006,
-    "description": "CycleGAN-Turbo night vs ACDC real night"
-  },
-  "original_vs_rain@acdc": {
-    "fid": 189.78500626395953,
-    "kid_mean": 0.1626509428024292,
-    "kid_std": 0.0031455148663294156,
-    "reference": "rain",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "Original (clear) vs ACDC real rain \u2014 baseline gap"
-  },
-  "original_vs_snow@acdc": {
-    "fid": 216.03292572978344,
-    "kid_mean": 0.19181828022003175,
-    "kid_std": 0.002353809988068722,
-    "reference": "snow",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 570,
-    "description": "Original (clear) vs ACDC real snow \u2014 baseline gap"
-  },
-  "original_vs_night@acdc": {
-    "fid": 270.52545136085956,
-    "kid_mean": 0.2859160852432251,
-    "kid_std": 0.004558568829765934,
-    "reference": "night",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 1006,
-    "description": "Original (clear) vs ACDC real night \u2014 baseline gap"
-  },
-  "original_vs_fog@acdc": {
-    "fid": 210.14748119682696,
-    "kid_mean": 0.18290523290634156,
-    "kid_std": 0.0038071968032794166,
-    "reference": "fog",
-    "ref_dataset": "acdc",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "Original (clear) vs real fog \u2014 baseline gap"
-  },
-  "weather_style_rain_0@weatherbench": {
-    "fid": 234.41161019948757,
-    "kid_mean": 0.12093321561813354,
-    "kid_std": 0.0023302483713335343,
+  "diffusion_rain_heavy@weatherbench": {
+    "fid": 241.93174659492848,
+    "kid_mean": 0.1470763349533081,
+    "kid_std": 0.0027160536047691713,
     "reference": "rain",
     "ref_dataset": "weatherbench",
-    "n_augmented": 2211,
+    "n_augmented": 1652,
     "n_reference": 1000,
-    "description": "Style transfer rain (light) vs ACDC real rain"
-  },
-  "weather_style_rain_1@weatherbench": {
-    "fid": 235.84389648179695,
-    "kid_mean": 0.11719593048095703,
-    "kid_std": 0.0022637547908671467,
-    "reference": "rain",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 1243,
-    "n_reference": 1000,
-    "description": "Style transfer rain (moderate) vs ACDC real rain"
-  },
-  "weather_style_rain_2@weatherbench": {
-    "fid": 235.0585710781878,
-    "kid_mean": 0.11767714738845825,
-    "kid_std": 0.0023339974291091475,
-    "reference": "rain",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 1208,
-    "n_reference": 1000,
-    "description": "Style transfer rain (heavy) vs ACDC real rain"
-  },
-  "weather_style_snow_0@weatherbench": {
-    "fid": 211.16706512257718,
-    "kid_mean": 0.09565823793411254,
-    "kid_std": 0.002067976815109125,
-    "reference": "snow",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 2159,
-    "n_reference": 1000,
-    "description": "Style transfer snow (light) vs ACDC real snow"
-  },
-  "weather_style_snow_1@weatherbench": {
-    "fid": 221.85462911445748,
-    "kid_mean": 0.11550148963928222,
-    "kid_std": 0.003297649822965245,
-    "reference": "snow",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 1649,
-    "n_reference": 1000,
-    "description": "Style transfer snow (moderate) vs ACDC real snow"
-  },
-  "weather_style_snow_2@weatherbench": {
-    "fid": 214.19553374296103,
-    "kid_mean": 0.10354691505432129,
-    "kid_std": 0.0023202507362095836,
-    "reference": "snow",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 1796,
-    "n_reference": 1000,
-    "description": "Style transfer snow (heavy) vs ACDC real snow"
-  },
-  "diffusion_rain@weatherbench": {
-    "fid": 232.39731772025505,
-    "kid_mean": 0.11202900648117066,
-    "kid_std": 0.0022551043936782466,
-    "reference": "rain",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "IP2P diffusion rain vs ACDC real rain"
-  },
-  "diffusion_snow@weatherbench": {
-    "fid": 214.68205704523223,
-    "kid_mean": 0.10153701066970826,
-    "kid_std": 0.0027730484671489755,
-    "reference": "snow",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "IP2P diffusion snow vs ACDC real snow"
+    "description": "IP2P diffusion rain + heavy physics overlay vs ACDC real rain"
   },
   "diffusion_fog_heavy@weatherbench": {
     "fid": 190.90004598587234,
@@ -269,76 +79,6 @@
     "n_reference": 1000,
     "description": "IP2P diffusion fog (light) vs real fog"
   },
-  "original_vs_rain@weatherbench": {
-    "fid": 232.58868248197697,
-    "kid_mean": 0.11162010192871094,
-    "kid_std": 0.0021119383078824854,
-    "reference": "rain",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "Original (clear) vs ACDC real rain \u2014 baseline gap"
-  },
-  "original_vs_snow@weatherbench": {
-    "fid": 212.9287815703086,
-    "kid_mean": 0.09840714931488037,
-    "kid_std": 0.0024484598139546737,
-    "reference": "snow",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "Original (clear) vs ACDC real snow \u2014 baseline gap"
-  },
-  "original_vs_fog@weatherbench": {
-    "fid": 211.10376056399195,
-    "kid_mean": 0.11510930776596069,
-    "kid_std": 0.00308160281921999,
-    "reference": "fog",
-    "ref_dataset": "weatherbench",
-    "n_augmented": 3004,
-    "n_reference": 1000,
-    "description": "Original (clear) vs real fog \u2014 baseline gap"
-  },
-  "weather_style_snow_0@weathernet": {
-    "fid": 119.94081069646191,
-    "kid_mean": 0.06981059074401856,
-    "kid_std": 0.002496972002897505,
-    "reference": "snow",
-    "ref_dataset": "weathernet",
-    "n_augmented": 2159,
-    "n_reference": 1875,
-    "description": "Style transfer snow (light) vs ACDC real snow"
-  },
-  "weather_style_snow_1@weathernet": {
-    "fid": 124.70444364679953,
-    "kid_mean": 0.0728344464302063,
-    "kid_std": 0.003150058426085174,
-    "reference": "snow",
-    "ref_dataset": "weathernet",
-    "n_augmented": 1649,
-    "n_reference": 1875,
-    "description": "Style transfer snow (moderate) vs ACDC real snow"
-  },
-  "weather_style_snow_2@weathernet": {
-    "fid": 116.76345503880275,
-    "kid_mean": 0.06779693603515625,
-    "kid_std": 0.0025987250854526914,
-    "reference": "snow",
-    "ref_dataset": "weathernet",
-    "n_augmented": 1796,
-    "n_reference": 1875,
-    "description": "Style transfer snow (heavy) vs ACDC real snow"
-  },
-  "diffusion_snow@weathernet": {
-    "fid": 119.86162185583123,
-    "kid_mean": 0.07292454242706299,
-    "kid_std": 0.0026829819522419243,
-    "reference": "snow",
-    "ref_dataset": "weathernet",
-    "n_augmented": 3004,
-    "n_reference": 1875,
-    "description": "IP2P diffusion snow vs ACDC real snow"
-  },
   "diffusion_fog_heavy@weathernet": {
     "fid": 134.53346797936246,
     "kid_mean": 0.07059009790420533,
@@ -369,6 +109,156 @@
     "n_reference": 1261,
     "description": "IP2P diffusion fog (light) vs real fog"
   },
+  "diffusion_snow_light@acdc": {
+    "fid": 197.45331474849255,
+    "kid_mean": 0.17286068677902222,
+    "kid_std": 0.002096898924919537,
+    "reference": "snow",
+    "ref_dataset": "acdc",
+    "n_augmented": 2940,
+    "n_reference": 570,
+    "description": "IP2P diffusion snow (light, g=8) vs ACDC real snow"
+  },
+  "diffusion_snow_heavy@acdc": {
+    "fid": 204.20192226207524,
+    "kid_mean": 0.18904850482940674,
+    "kid_std": 0.002096117008812671,
+    "reference": "snow",
+    "ref_dataset": "acdc",
+    "n_augmented": 3004,
+    "n_reference": 570,
+    "description": "IP2P diffusion snow (heavy, g=12) vs ACDC real snow"
+  },
+  "night_rain@acdc": {
+    "fid": 209.02586375973266,
+    "kid_mean": 0.20426805973052978,
+    "kid_std": 0.00302562360293886,
+    "reference": "rain",
+    "ref_dataset": "acdc",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "Compound night+rain (CycleGAN then IP2P rain) vs ACDC real rain"
+  },
+  "night_snow@acdc": {
+    "fid": 237.78610646137537,
+    "kid_mean": 0.23235219478607178,
+    "kid_std": 0.0026085630919838758,
+    "reference": "snow",
+    "ref_dataset": "acdc",
+    "n_augmented": 3004,
+    "n_reference": 570,
+    "description": "Compound night+snow (CycleGAN then IP2P snow) vs ACDC real snow"
+  },
+  "original_vs_rain@acdc": {
+    "fid": 189.78500626395953,
+    "kid_mean": 0.1626509428024292,
+    "kid_std": 0.0031455148663294156,
+    "reference": "rain",
+    "ref_dataset": "acdc",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "Original (clear) vs ACDC real rain \u2014 baseline gap"
+  },
+  "original_vs_snow@acdc": {
+    "fid": 216.03292572978344,
+    "kid_mean": 0.19181828022003175,
+    "kid_std": 0.002353809988068722,
+    "reference": "snow",
+    "ref_dataset": "acdc",
+    "n_augmented": 3004,
+    "n_reference": 570,
+    "description": "Original (clear) vs ACDC real snow \u2014 baseline gap"
+  },
+  "diffusion_snow_light@weatherbench": {
+    "fid": 199.54744228263974,
+    "kid_mean": 0.08518917798995972,
+    "kid_std": 0.001771185115708463,
+    "reference": "snow",
+    "ref_dataset": "weatherbench",
+    "n_augmented": 2940,
+    "n_reference": 1000,
+    "description": "IP2P diffusion snow (light, g=8) vs ACDC real snow"
+  },
+  "diffusion_snow_heavy@weatherbench": {
+    "fid": 210.2310368293542,
+    "kid_mean": 0.10229060173034668,
+    "kid_std": 0.0021910992593189107,
+    "reference": "snow",
+    "ref_dataset": "weatherbench",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "IP2P diffusion snow (heavy, g=12) vs ACDC real snow"
+  },
+  "night_rain@weatherbench": {
+    "fid": 214.39049332946644,
+    "kid_mean": 0.1277600359916687,
+    "kid_std": 0.0031120046295000075,
+    "reference": "rain",
+    "ref_dataset": "weatherbench",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "Compound night+rain (CycleGAN then IP2P rain) vs ACDC real rain"
+  },
+  "night_snow@weatherbench": {
+    "fid": 228.3000979318998,
+    "kid_mean": 0.14149737119674682,
+    "kid_std": 0.0027520848194610885,
+    "reference": "snow",
+    "ref_dataset": "weatherbench",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "Compound night+snow (CycleGAN then IP2P snow) vs ACDC real snow"
+  },
+  "original_vs_rain@weatherbench": {
+    "fid": 232.58868248197697,
+    "kid_mean": 0.11162010192871094,
+    "kid_std": 0.0021119383078824854,
+    "reference": "rain",
+    "ref_dataset": "weatherbench",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "Original (clear) vs ACDC real rain \u2014 baseline gap"
+  },
+  "original_vs_snow@weatherbench": {
+    "fid": 212.9287815703086,
+    "kid_mean": 0.09840714931488037,
+    "kid_std": 0.0024484598139546737,
+    "reference": "snow",
+    "ref_dataset": "weatherbench",
+    "n_augmented": 3004,
+    "n_reference": 1000,
+    "description": "Original (clear) vs ACDC real snow \u2014 baseline gap"
+  },
+  "diffusion_snow_light@weathernet": {
+    "fid": 103.72587327652215,
+    "kid_mean": 0.053423075675964354,
+    "kid_std": 0.0021148257498309845,
+    "reference": "snow",
+    "ref_dataset": "weathernet",
+    "n_augmented": 2940,
+    "n_reference": 1875,
+    "description": "IP2P diffusion snow (light, g=8) vs ACDC real snow"
+  },
+  "diffusion_snow_heavy@weathernet": {
+    "fid": 104.41665213870141,
+    "kid_mean": 0.05752458095550537,
+    "kid_std": 0.002027092093634103,
+    "reference": "snow",
+    "ref_dataset": "weathernet",
+    "n_augmented": 3004,
+    "n_reference": 1875,
+    "description": "IP2P diffusion snow (heavy, g=12) vs ACDC real snow"
+  },
+  "night_snow@weathernet": {
+    "fid": 145.12468252945084,
+    "kid_mean": 0.11509176969528198,
+    "kid_std": 0.0025919098517481424,
+    "reference": "snow",
+    "ref_dataset": "weathernet",
+    "n_augmented": 3004,
+    "n_reference": 1875,
+    "description": "Compound night+snow (CycleGAN then IP2P snow) vs ACDC real snow"
+  },
   "original_vs_snow@weathernet": {
     "fid": 128.77075740832282,
     "kid_mean": 0.07966580390930175,
@@ -378,15 +268,5 @@
     "n_augmented": 3004,
     "n_reference": 1875,
     "description": "Original (clear) vs ACDC real snow \u2014 baseline gap"
-  },
-  "original_vs_fog@weathernet": {
-    "fid": 143.4732676898131,
-    "kid_mean": 0.07890626907348633,
-    "kid_std": 0.0020150564254490678,
-    "reference": "fog",
-    "ref_dataset": "weathernet",
-    "n_augmented": 3004,
-    "n_reference": 1261,
-    "description": "Original (clear) vs real fog \u2014 baseline gap"
   }
 }

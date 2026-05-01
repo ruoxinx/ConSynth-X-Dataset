@@ -1,0 +1,29 @@
+{
+  "image_id": "hptm3477",
+  "original_size": [
+    1920,
+    1080
+  ],
+  "resized_size": [
+    960,
+    540
+  ],
+  "canvas_size": [
+    1476,
+    830
+  ],
+  "scale_factor": 0.269109,
+  "resize_input": 0.5,
+  "paste_position": {
+    "x": 258,
+    "y": 145,
+    "width": 960,
+    "height": 540
+  },
+  "num_steps": 28,
+  "guidance_scale": 30.0,
+  "max_size": 1024,
+  "prompt": "Extend the image edges seamlessly. Continue only the existing ground texture, dirt, concrete, and sky. Match lighting, colors, and perspective. Do not add any new objects.",
+  "num_objects_original": 21,
+  "num_objects_transferred": 21
+}

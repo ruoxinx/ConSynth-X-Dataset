@@ -43,7 +43,9 @@ Tài liệu này trình bày các phương pháp và thuật toán do tôi tự 
 
 #### Method 2 (MAIN PIPELINE): InstructPix2Pix (IP2P) + Physics Overlay
 
-**Pipeline**: Input → IP2P diffusion (text-guided editing) → Physics overlay (rain streaks/snow flakes) → SSIM+LPIPS filter → Output
+**Pipeline**: Input → IP2P diffusion (text-guided editing) → Physics overlay (rain streaks/snow flakes) → SSIM+LPIPS filter (rain only) → Output
+
+> **Filter scope (paper-grade summary):** SSIM+LPIPS filter chỉ áp **cho rain** (light & heavy paired, cùng kept-set). Snow/fog/night/night_weather KHÔNG filter ở generation time. End-to-end QC funnel + DINO≥0.75 audit cho mọi (source × condition) tổng hợp tại [`validation/results/qc_funnel/`](../validation/results/qc_funnel/) và [`docs/validation.md`](validation.md) §11b. Findings: rain filter retention domain-dependent (CS 52-55% vs SODA 21-24%); worst-case audit `night_rain` 10.8% pass DINO≥0.75.
 
 **Parameters cần justify (TODO — CHƯA CÓ JUSTIFICATION):**
 

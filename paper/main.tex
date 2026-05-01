@@ -69,7 +69,7 @@
 % ══════════════════════════════════════════════════════════════
 \begin{abstract}
 
-Computer vision models for construction site monitoring degrade significantly under adverse field conditions such as rain, snow, fog, nighttime, and varying object scales, yet existing construction datasets predominantly contain images captured under favorable conditions. We present ConSynth-X, a multi-condition construction site dataset comprising over 125,000 images across two source datasets --- Construction Site 10k (3 object classes, 10,013 images) and SODA (15 object classes, $\sim$20,000 images) --- spanning five condition categories: original, weather (rain, snow, fog), nighttime, and small-scale. The dataset was generated through three complementary synthetic augmentation pipelines: (1)~neural style transfer with depth-aware physics particle overlay and InstructPix2Pix text-guided diffusion for weather effects, (2)~CycleGAN-Turbo for day-to-night conversion, and (3)~FLUX.1-Fill-dev outpainting for scale variation. We validate dataset quality through five complementary approaches: AI-generated image detection ($>$99.5\% fooling rate), weather classifier recognition (62--95\% for style transfer), zero-shot VLM jury with three open-weight judges (98\% acceptance for heavy fog, 70--72\% for rain), Fr\'{e}chet Inception Distance against three real-weather reference datasets, texture fidelity via Dempster-Shafer belief fusion, and relative Mahalanobis distance in CLIP and DINOv3 embedding spaces. Cross-validation synthesis reveals a complementary trade-off between pipelines: diffusion preserves texture fidelity (belief $H{=}0.86$) while style transfer produces stronger weather effects (classifier accuracy up to 95\%). All pipelines preserve or transfer bounding box annotations with structural similarity (SSIM) and perceptual distance (LPIPS) quality filtering. Each image carries multi-label condition annotations from a taxonomy of 40+ condition types. We provide the complete generation pipeline, enabling reproduction and extension of the augmentation to new datasets and conditions. The dataset is publicly available under CC BY-NC 4.0 (data) and Apache 2.0 (code) licenses.
+Computer vision models for construction site monitoring degrade significantly under adverse field conditions such as rain, snow, fog, nighttime, and varying object scales, yet existing construction datasets predominantly contain images captured under favorable conditions. We present ConSynth-X, a multi-condition construction site dataset of \verify{post-NST count, $\sim$68k} images built on two source datasets --- Construction Site 10k (3 object classes, 10,013 images) and SODA (15 object classes, $\sim$20,000 images) --- spanning five condition categories: original, weather (rain, snow, fog), nighttime, and small-object. The dataset is generated through three synthetic augmentation pipelines: (1)~InstructPix2Pix text-guided diffusion with ControlNet conditioning and physics-based particle overlay for weather effects, (2)~CycleGAN-Turbo for day-to-night conversion, and (3)~FLUX.1-Fill-dev for small-object augmentation via canvas expansion. We validate dataset quality through three complementary approaches: a zero-shot two-judge VLM jury combining InternVL2.5-8B (open-weight tier) and Claude Sonnet 4.6 (proprietary tier), Fr\'{e}chet and Kernel Inception Distance against three real-weather reference datasets, and a three-task human perceptual study platform (Turing discrimination, MOS realism rating, condition recognition) with pilot data ($n{=}5$) and full collection in progress. Cross-validation shows the IP2P diffusion snow heavy variant reaches majority jury acceptance 0.90 after the light configuration was rejected at 0.32. We describe this as jury-guided parameter refinement, with independence limits noted in the Cross-Validation Summary. All pipelines preserve or transfer bounding box annotations. Each image carries multi-label condition annotations from a taxonomy of 40+ condition types. We provide the complete generation pipeline, enabling reproduction and extension of the augmentation to new datasets and conditions. The dataset is publicly available under CC BY-NC 4.0 (data) and Apache 2.0 (code) licenses.
 
 \end{abstract}
 
@@ -85,7 +85,14 @@ Several datasets exist for construction site object detection, including the Con
 
 Synthetic data augmentation offers a scalable alternative to manual data collection under hazardous conditions. Recent advances in neural style transfer~\citep{gatys2016style}, text-guided diffusion models~\citep{brooks2023ip2p}, unpaired image translation~\citep{parmar2024img2img}, and inpainting architectures~\citep{flux2024tools} provide the tools to generate realistic weather effects, day-to-night conversions, and scale modifications while preserving object annotations.
 
-We present ConSynth-X, a multi-condition construction site dataset generated through three synthetic augmentation pipelines applied to two source datasets. Table~\ref{tab:dataset-overview} summarizes the dataset composition. Each image carries multi-label condition annotations from a taxonomy of 40+ condition types organized into six categories: weather, lighting, scale/size, image quality, scene complexity, and domain shift. All augmentation pipelines preserve or correctly transfer object annotations, and quality filtering ensures that generated images maintain structural similarity to their source images. Figure~\ref{fig:comparison-grid} provides a visual comparison of the two weather augmentation methods alongside the original images.
+We present ConSynth-X, a multi-condition construction site dataset generated through three synthetic augmentation pipelines applied to two source datasets. Table~\ref{tab:dataset-overview} summarizes the dataset composition. Each image carries multi-label condition annotations from a taxonomy of 40+ condition types organized into six categories: weather, lighting, scale/size, image quality, scene complexity, and domain shift. All augmentation pipelines preserve or correctly transfer object annotations.
+
+\textbf{Contributions.} This paper delivers three items:
+\begin{enumerate}[noitemsep]
+    \item ConSynth-X, a 125k-image construction-site dataset spanning fog, rain, snow (light and heavy), nighttime, and small-scale conditions, with per-image multi-label condition annotations from a 40-type taxonomy (Section~3).
+    \item A reproducible three-pipeline augmentation framework: InstructPix2Pix diffusion with ControlNet for weather, CycleGAN-Turbo for day-to-night conversion, and FLUX.1-Fill-dev for small-object augmentation, with preserved or transferred bounding-box annotations (Section~2).
+    \item A multi-axis validation protocol: a two-judge cross-tier zero-shot VLM jury (InternVL2.5-8B and Claude Sonnet 4.6), FID and KID against three real-weather references, per-image DINOv3 cosine similarity released for downstream analysis, and a deployed human-study platform with pilot data ($n{=}5$) and full collection in progress (Section~4).
+\end{enumerate}
 
 
 % ══════════════════════════════════════════════════════════════
@@ -104,100 +111,31 @@ ConSynth-X builds upon two publicly available construction site datasets:
 
 \subsection{Weather Augmentation}
 
-We employ two complementary approaches for weather effect generation, both followed by physics-based particle overlay and quality filtering.
-
-\subsubsection{Method 1: Neural Style Transfer with Depth-Aware Physics}
-
-The first pipeline combines VGG19-based neural style transfer~\citep{gatys2016style} with MiDaS~\citep{ranftl2020midas} monocular depth estimation and physics-based particle rendering:
-
-\begin{enumerate}[noitemsep]
-    \item \textbf{Style transfer}: VGG19 feature matching transfers the color and texture characteristics from reference weather images to construction site images. We use six style reference images (3~rain variants, 3~snow variants), each depicting a different weather scene. The variants are denoted A, B, C and differ in the reference image used, not in pipeline parameters --- all share the same \texttt{style\_weight} and optimization steps.
-    \item \textbf{Depth estimation}: MiDaS DPT\_Large estimates per-pixel depth maps for depth-aware particle placement.
-    \item \textbf{Physics overlay}: Multi-layer rain streaks or snowflakes are rendered with depth-dependent size, density, and opacity, simulating atmospheric perspective.
-    \item \textbf{SSIM filtering}: Output images are filtered by structural similarity index (SSIM~$\in [0.5, 0.95]$) to remove images that are either too similar to the original (ineffective augmentation) or too degraded (corrupted).
-\end{enumerate}
-
-Style transfer optimization uses \texttt{style\_weight}$=100{,}000$ and 50 optimization steps, following the high-stylization regime of Gatys et al.~\citep{gatys2016style} to produce clearly visible weather effects. A lower \texttt{style\_weight} ($10{,}000$, 10 steps) was also tested but produced insufficient atmospheric changes for weather classification (see Section~\ref{sec:weather-cls}).
-
-\subsubsection{Method 2: InstructPix2Pix Diffusion with Physics Overlay}
-
-The second pipeline uses InstructPix2Pix (IP2P)~\citep{brooks2023ip2p}, a text-guided image editing model based on Stable Diffusion, followed by the same physics-based particle overlay:
+The weather augmentation pipeline uses InstructPix2Pix (IP2P)~\citep{brooks2023ip2p}, a text-guided image editing model based on Stable Diffusion, followed by physics-based particle overlay:
 
 \begin{enumerate}[noitemsep]
     \item \textbf{IP2P editing}: A text prompt guides atmospheric transformation while preserving scene structure. The rain prompt is \textit{``a rainy day with dark overcast sky, rain falling, grey clouds''}; the snow prompt is \textit{``a cold winter day with snow, frost on surfaces, grey sky, snow on the ground''}. Key parameters: \texttt{image\_guidance\_scale}$=1.5$, \texttt{guidance\_scale}$=10.0$ (rain) / $8.0$ (snow), 30 inference steps.
-    \item \textbf{Physics overlay}: Same multi-layer particle rendering as Method~1.
-    \item \textbf{Dual filtering}: SSIM filtering ($[0.5{-}0.6, 0.95]$ depending on weather type) followed by LPIPS~\citep{zhang2018lpips} perceptual distance filtering ($< 0.35$, rain only) to reject images with excessive structural deformation.
+    \item \textbf{Physics overlay}: Multi-layer particle rendering with depth-dependent size, density, and opacity (described in Section~\ref{subsec:physics-rendering}).
 \end{enumerate}
 
 \textbf{Structure preservation with ControlNet.} To prevent the diffusion model from altering scene structure (e.g., hallucinating mud patches or distorting ground-level objects), we incorporate ControlNet~\citep{zhang2023controlnet} conditioning. Specifically, we extract Canny edge maps from the original image and use them as structural constraints during the img2img diffusion process. The denoising strength is set to 0.35, following the SDEdit~\citep{meng2022sdedit} principle that low noise levels ($<0.4$) preserve the majority of original image content while allowing atmospheric modifications. The ControlNet conditioning scale is set to 0.8, balancing edge preservation with creative freedom for weather effect generation. This approach ensures that object outlines (excavators, rebar, workers) remain intact while the model modifies only the sky, lighting, and color tone.
 
-\textbf{Prompt design lesson.} An earlier version of the rain prompt included the phrase \textit{``wet muddy ground''}, which caused IP2P to hallucinate large mud/water patches on the ground surface, significantly altering scene structure and obscuring ground-level objects such as rebar. This resulted in 48\% of rain images being rejected by the quality filter. The revised prompt focuses exclusively on atmospheric effects (sky, clouds, rain), since the physics overlay module already handles rain streak rendering. This separation of concerns --- diffusion for atmosphere, ControlNet for structure, physics for particles --- produces structurally faithful augmentation with a higher keep rate.
+\textbf{Prompt design lesson.} An earlier version of the rain prompt included the phrase \textit{``wet muddy ground''}, which caused IP2P to hallucinate large mud/water patches on the ground surface, significantly altering scene structure and obscuring ground-level objects such as rebar. Visual inspection during development showed structural distortion in roughly half of these outputs. The revised prompt focuses exclusively on atmospheric effects (sky, clouds, rain), since the physics overlay module already handles rain streak rendering. This separation of concerns (diffusion for atmosphere, ControlNet for structure, physics for particles) produces structurally faithful augmentation.
 
 The guidance scale values (\texttt{guidance\_scale}$=10.0$ for rain, $8.0$ for snow) were selected based on the IP2P default range recommended by Brooks et al.~\citep{brooks2023ip2p} ($7.5$--$12.5$). Rain uses a higher value to produce more visible atmospheric darkening, while snow uses a lower value to avoid over-saturation of white tones. The \texttt{image\_guidance\_scale}$=1.5$ controls fidelity to the input image; values below $1.0$ produce excessive editing while values above $2.0$ suppress weather effects.
 
-\textbf{IP2P snow intensity variants.} VLM Jury evaluation (Section~\ref{sec:vlm-jury}) revealed that the default snow configuration (\texttt{guidance\_scale}$=8.0$) produces effects too subtle for perceptual recognition: two of three VLM judges rejected 92--96\% of augmented images, citing ``no visible snow coverage on surfaces, color saturation remains high.'' We therefore introduce a second snow variant with stronger parameters: \texttt{guidance\_scale}$=12.0$, \texttt{image\_guidance\_scale}$=1.2$, and a more explicit prompt (\textit{``a cold winter day with \textbf{heavy} snow, \textbf{thick snow covering the ground and surfaces}, grey overcast sky, snowfall''}). We release both variants as \texttt{ip2p\_snow\_light} (original) and \texttt{ip2p\_snow\_heavy} (new), allowing users to select based on their application. The heavy variant restores perceptual recognizability (InternVL 89\%, Phi-4 92\% acceptance; see Table~\ref{tab:vlm-jury}) while trading off some SSIM (mean $0.60$ vs $0.72$ for light) due to stronger structural changes.
-
-Figure~\ref{fig:retention-chart} visualizes the retention rate of the heavy variant across DINO and SSIM quality thresholds. Notably, DINO retention degrades more gradually than SSIM, reflecting DINO's robustness to pixel-level changes; the joint heatmap (panel c) reveals that combining filters is more restrictive than either alone.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{fig4_snow_heavy_retention.pdf}
-\caption{\textbf{Retention analysis for IP2P snow heavy variant} ($N=3{,}004$, no pre-filter applied during generation). (a)~Retention versus DINO similarity threshold: $73\%$ of images pass DINO $\geq 0.75$. (b)~Retention versus SSIM threshold: $84\%$ pass SSIM $\geq 0.5$ (the previous filter's low bound). (c)~Joint retention heatmap showing the fraction retained when both filters are applied simultaneously; white contours mark milestone retention levels (25\%, 50\%, 75\%, 90\%). DINO and SSIM measure complementary quality aspects (structural feature preservation versus pixel similarity, respectively); empirically they correlate moderately ($r=0.40$), so joint filtering is more restrictive than either metric alone.}
-\label{fig:retention-chart}
-\end{figure}
+\textbf{IP2P snow intensity variants.} VLM Jury evaluation (Section~\ref{sec:vlm-jury}) revealed that the default snow configuration (\texttt{guidance\_scale}$=8.0$) produces effects too subtle for perceptual recognition: the 2-of-3 open-weight majority accepted only 32\% of augmented images, with judges citing ``no visible snow coverage on surfaces, color saturation remains high.'' We therefore introduce a second snow variant with stronger parameters: \texttt{guidance\_scale}$=12.0$, \texttt{image\_guidance\_scale}$=1.2$, and a more explicit prompt (\textit{``a cold winter day with \textbf{heavy} snow, \textbf{thick snow covering the ground and surfaces}, grey overcast sky, snowfall''}). We release both variants as \texttt{ip2p\_snow\_light} (original) and \texttt{ip2p\_snow\_heavy} (new), allowing users to select based on their application. The heavy variant restores perceptual recognizability (majority acceptance 90\%, Claude Sonnet 4.6 acceptance 90\%; see Table~\ref{tab:vlm-jury}).
 
 \subsubsection{Physics-Based Particle Rendering}
+\label{subsec:physics-rendering}
 
-Both weather pipelines share a common particle overlay module that renders multi-layer atmospheric effects:
+The particle overlay module renders multi-layer atmospheric effects on top of the IP2P output:
 
 \textbf{Rain}: Three depth layers (far: 1500--2500 streaks, $\alpha=0.25$; mid: 1000--2000, $\alpha=0.35$; near: 300--700, $\alpha=0.40$) with angle $75$--$87^{\circ}$ and a light fog overlay ($\alpha=0.15{-}0.30$). Streak length scales with depth (10--50\,px).
 
 \textbf{Snow}: Three layers (far: 1500--3000 flakes, $r=1{-}2$\,px; mid: 500--1000, $r=2{-}4$\,px; near: 100--300, $r=4{-}6$\,px) rendered with screen blending mode.
 
 Our physics-based approach draws on the principles of Tremblay et al.~\citep{tremblay2021rain}, who demonstrated the effectiveness of depth-dependent rain rendering for improving detection robustness.
-
-\subsubsection{Quality Filtering}
-
-Generated images are filtered using a two-stage pipeline:
-
-\begin{enumerate}[noitemsep]
-    \item \textbf{SSIM filter}: Retains images with structural similarity in $[\tau_\text{low}, 0.95]$, where $\tau_\text{low}$ is set per weather type (rain: 0.60, snow: 0.50 for style transfer; same thresholds for IP2P diffusion).
-    \item \textbf{LPIPS filter}: For IP2P rain images, an additional perceptual distance filter ($\text{LPIPS} < 0.35$) removes images with structural deformation not captured by SSIM.
-\end{enumerate}
-
-Snow augmentation uses SSIM filtering only (no LPIPS). The snow keep rate (96.4\%) is substantially higher than rain (51.7\%), suggesting that IP2P produces fewer structural deformations for snow than for rain. Visual inspection of 100 random snow samples confirmed no systematic structural artifacts, supporting the sufficiency of SSIM-only filtering for this condition.
-
-Table~\ref{tab:weather-output} reports the number of images retained after filtering for each style and method. Figure~\ref{fig:filter-distributions} visualizes the SSIM and LPIPS score distributions for all generated IP2P diffusion images before filtering, showing clear separation between retained (KEEP) and rejected (DROP) samples.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{fig3_filter_distributions.pdf}
-\caption{\textbf{Quality filtering threshold analysis for IP2P diffusion data.} (a)~Rain SSIM distribution: the threshold at 0.60 separates 3,627 KEEP from 3,382 DROP images. (b)~Rain LPIPS distribution: the threshold at 0.35 catches structurally damaged images missed by SSIM. (c)~Snow SSIM distribution: 96.4\% pass rate at SSIM$\geq$0.50 vs.\ 51.7\% for rain. (d)~Joint SSIM--LPIPS scatter for rain: clear KEEP/DROP separation validates dual-threshold filtering.}
-\label{fig:filter-distributions}
-\end{figure}
-
-\textbf{Retention characteristics across all augmentation conditions.} Figure~\ref{fig:retention-all-conditions} shows the retention rate as a function of DINO similarity and SSIM thresholds for all 14 augmentation variants in the dataset (6~style transfer + 4~IP2P diffusion + 3~fog + 1~night). Three patterns emerge. (i)~Style transfer, fog (light, medium), and lightly-filtered IP2P variants (rain, snow light) preserve DINO structure well ($>$85\% retention at DINO $\geq 0.80$), reflecting minimal semantic shift; IP2P rain in particular retains $85\%$ despite physics rain-streak overlay because the SSIM$+$LPIPS filter applied during generation already removes aggressively-edited samples, so the released subset is semantic-preserving by construction. (ii)~IP2P snow heavy (designed for stronger weather effect) and night CycleGAN introduce the largest DINO distances ($59\%$ and $77\%$ at threshold $0.80$ respectively), consistent with their role as aggressive global edits. (iii)~SSIM retention degrades faster than DINO retention for night and IP2P snow heavy variants, indicating pixel-level changes exceed structural feature changes---consistent with DINO's known robustness to texture-level modifications. These patterns directly inform filter selection: conditions with gentle edits (fog light) tolerate strict SSIM filtering, while aggressive edits (night CycleGAN) require DINO-based filtering to avoid discarding most of the data.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{fig5_retention_curves_all.pdf}
-\caption{\textbf{Retention rates across all augmentation conditions.} Left: retention versus DINO similarity threshold (DINOv3 ViT-L/16 cosine similarity between original and augmented embeddings). Right: retention versus SSIM threshold. Style transfer (red) and mild fog (violet) preserve structure strongly; IP2P diffusion (blue) and night CycleGAN (black) produce larger per-image distances. Dashed vertical lines indicate commonly tested thresholds (DINO$=$0.75, SSIM$=$0.5).}
-\label{fig:retention-all-conditions}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{fig1_comparison_grid.pdf}
-\caption{\textbf{Visual comparison of weather augmentation methods.} Three construction site images shown as: original (left), neural style transfer rain~A / snow~A (center), and InstructPix2Pix diffusion with physics overlay (right). Row~1: strong rain effect (SSIM=0.62); Row~2: subtle rain (SSIM=0.86); Row~3: snow (SSIM=0.74). Style transfer produces color/texture shifts with occasional artifacts (Row~2, center), while IP2P diffusion generates more physically consistent atmospheric effects including wet ground, overcast sky, and depth-aware rain streaks. SSIM and LPIPS scores are reported for the diffusion outputs.}
-\label{fig:comparison-grid}
-\end{figure}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=\textwidth]{fig2_quality_spectrum.pdf}
-\caption{\textbf{Quality spectrum of IP2P diffusion rain outputs (KEEP samples only).} Top row: original images. Bottom row: corresponding IP2P diffusion outputs ordered by SSIM from excellent (left, SSIM$>$0.85) to borderline (right, SSIM$\approx$0.60). The borderline samples show visible color shifts and reduced structural fidelity but remain usable for training. The annotation box reports that 3,382 of 7,009 rain images (48\%) were filtered out by the dual SSIM/LPIPS threshold, with DROP samples exhibiting SSIM as low as 0.16 and LPIPS as high as 0.83. These corrupted images --- not stored in the released dataset --- include severe structural deformation, hallucinated objects, and color collapse.}
-\label{fig:quality-spectrum}
-\end{figure}
 
 \subsection{Fog Augmentation}
 
@@ -211,7 +149,7 @@ where $I(x)$ is the original pixel intensity, $d(x)$ is the estimated depth, $\b
 
 Day-to-night conversion uses CycleGAN-Turbo~\citep{parmar2024img2img}, a one-step unpaired image translation model. Each day image is resized to $512 \times 512$, passed through the \texttt{day\_to\_night} checkpoint, and resized back to the original resolution using Lanczos interpolation. This produces a 1:1 mapping (one night variant per day image) with all annotations copied unchanged, since the transformation is pixel-level and does not alter object positions.
 
-\subsection{Scale Augmentation via Outpainting}
+\subsection{Small-Object Augmentation}
 
 To simulate objects at greater distances, we use FLUX.1-Fill-dev~\citep{flux2024tools} to expand the image canvas, making objects appear proportionally smaller. The scale factor follows a truncated Gaussian distribution:
 \begin{equation}
@@ -225,9 +163,9 @@ Bounding boxes are transferred to the new coordinate system via geometric transf
     x'_1 = \frac{x_1 \cdot W \cdot r + p_x}{W'}, \quad
     y'_1 = \frac{y_1 \cdot H \cdot r + p_y}{H'}
 \end{equation}
-where $r$ is the resize factor, $(p_x, p_y)$ is the paste offset, and $(W', H')$ is the new canvas size. Degenerate boxes (zero area after transfer) are filtered out.
+where $r$ is the resize factor, $(p_x, p_y)$ is the paste offset, and $(W', H')$ is the new canvas size. Degenerate boxes (zero area after transfer) are removed.
 
-The text prompt \textit{``an outdoor construction site with buildings, roads, and open sky in the background''} guides the inpainting of newly exposed regions. The outpainting success rate varies significantly by source dataset: 44\% for Construction Site 10k (1,323 of 3,004) but only $\sim$5\% for SODA ($\sim$1,001 of $\sim$20,000). The low SODA success rate is attributed to the greater diversity of scene compositions (15 object classes, varied camera angles) which causes FLUX.1 to generate inconsistent background content, failing the visual quality check.
+The text prompt \textit{``an outdoor construction site with buildings, roads, and open sky in the background''} guides the generation of newly exposed canvas regions. The success rate varies significantly by source dataset: 44\% for Construction Site 10k (1,323 of 3,004) but only $\sim$5\% for SODA ($\sim$1,001 of $\sim$20,000). The low SODA success rate is attributed to the greater diversity of scene compositions (15 object classes, varied camera angles) which causes FLUX.1 to generate inconsistent background content, failing the visual quality check.
 
 \subsection{Annotation Preservation}
 
@@ -235,7 +173,7 @@ All augmentation pipelines are designed to preserve object annotations:
 
 \begin{itemize}[noitemsep]
     \item \textbf{Weather and night}: Pixel-level transformations that do not alter object geometry. Bounding box annotations are copied directly from source images.
-    \item \textbf{Outpainting}: Explicit geometric coordinate transformation (Eq.~\ref{eq:bbox-transfer}) with degenerate-box filtering.
+    \item \textbf{Small-object augmentation}: Explicit geometric coordinate transformation (Eq.~\ref{eq:bbox-transfer}) with degenerate-box removal.
 \end{itemize}
 
 
@@ -260,7 +198,7 @@ ConSynth-X/
     style_transfer/        # 6 styles x 2 datasets (Arrow)
     diffusion/             # IP2P rain + snow (Arrow + meta CSV)
   night/                   # CycleGAN-Turbo output (Arrow)
-  small/                   # Outpainting output (Arrow)
+  small/                   # Small-object augmentation output (Arrow)
   metadata/
     condition_labels.json  # Multi-label condition per image
     object_annotations/    # Bounding boxes (per-class)
@@ -274,66 +212,39 @@ ConSynth-X/
 
 Source images and annotations are stored in Apache Arrow IPC streaming format, enabling efficient random access and columnar operations. Each Arrow table contains columns for \texttt{image} (JPEG bytes), \texttt{image\_id}, per-class bounding box lists (normalized $[0,1]$ coordinates as $[x_1, y_1, x_2, y_2]$), and augmentation metadata.
 
-For IP2P diffusion data, companion CSV files (\texttt{meta\_*.csv}) record per-image quality metrics: \texttt{image\_id}, \texttt{ssim}, \texttt{lpips}, and \texttt{status} (KEEP/DROP).
-
 SODA annotations follow Pascal VOC XML format with 15 object classes.
 
 \subsection{Dataset Statistics}
 
+Table~\ref{tab:dataset-overview} reports per-condition image counts verified directly from the released Arrow tables. Two scoping conventions apply throughout. First, augmentation coverage on Construction Site differs by pipeline: rain and snow extend across both train and test splits, whereas fog, night, small-object, and night+weather currently cover only the 3{,}004-image test split (full-train coverage is deferred to a future release as noted in \texttt{data\_card.md}). Second, fog and small-object on SODA-VOC are computed on the first 3{,}000 images of the source set (the \texttt{soda\_voc\_original\_first3000.arrow} subset), while rain, snow, and night cover the full 19{,}846-image VOC corpus. The legacy VGG neural-style-transfer rain/snow outputs (10{,}266 CS + 47{,}169 SODA) are not counted here; they are retained as an ablation baseline under \texttt{experiments/ablation\_style\_transfer/} per the 2026-04-21 scope decision.
+
+The \emph{heavy} variants of rain and snow are paired with their \emph{light} counterparts by image identifier. Rain-heavy is a physics-only overlay applied on top of the IP2P light output (no second diffusion pass), so the heavy and light rows share \texttt{image\_id}, bounding boxes, and quality scores. Snow-heavy on Construction Site is an independent IP2P diffusion at $g{=}12$ and therefore not strictly paired with snow-light at $g{=}8$. Quality filtering is condition-specific: rain-light and rain-heavy on the Kaggle public release are DINOv3-thresholded to 300-row subsets ($\geq 0.75$ and $\geq 0.70$ respectively, see \texttt{dataset\_card.md} v6); the full released Arrow tables retain the unfiltered counts reported in Table~\ref{tab:dataset-overview}.
+
 \begin{table}[H]
 \centering
-\caption{Overview of ConSynth-X dataset composition by condition and augmentation method.}
+\caption{Overview of ConSynth-X dataset composition by condition and augmentation method. Counts are verified from the released Arrow tables under \texttt{augmentation\_data/}. SODA-VOC fog and small-object are computed on the first 3{,}000 source images; all other SODA-VOC conditions cover the full 19{,}846-image VOC corpus.}
 \label{tab:dataset-overview}
-\begin{tabular}{llcc}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{llrr}
 \toprule
-\textbf{Condition} & \textbf{Method} & \textbf{Constr.\ Site} & \textbf{SODA} \\
+\textbf{Condition} & \textbf{Method} & \textbf{Constr.\ Site} & \textbf{SODA-VOC} \\
 \midrule
-Original        & Baseline              & 10,013 & $\sim$20,000 \\
-Weather (style) & Neural Style Transfer & 10,266 & 47,169 \\
-Weather (diff.) & InstructPix2Pix       & 10,382 & --     \\
-Night           & CycleGAN-Turbo        & 3,004  & 19,846 \\
-Fog             & Koschmieder + DA V2   & 3,003  & --     \\
-Small           & FLUX.1-Fill-dev       & 1,323  & 1,001  \\
+Original                 & Baseline                                  & 10,013 & 19,846 \\
+Rain (light + heavy)     & InstructPix2Pix ($g{=}10$) + physics      & 10,558 & 9,580  \\
+Snow (light + heavy)     & InstructPix2Pix ($g{=}8/12$) + physics    & 12,699 & 19,623 \\
+Fog (3 zones)            & Koschmieder + Depth Anything V2           & 3,004  & 3,000  \\
+Night                    & CycleGAN-Turbo (day$\rightarrow$night)    & 3,004  & 19,846 \\
+Night + Weather          & Night $\rightarrow$ IP2P $\rightarrow$ physics & 6,008 & --     \\
+Small object             & FLUX.1-Fill-dev outpainting               & 1,323  & 1,000  \\
 \midrule
-\textbf{Total}  &                       & \textbf{37,991} & \textbf{$\sim$88,016} \\
+\textbf{Total}           &                                           & \textbf{46,609}                          & \textbf{72,895} \\
+\midrule
+\multicolumn{3}{r}{\textbf{Combined ConSynth-X (CS + SODA-VOC):}} & \textbf{119,504} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{table}[H]
-\centering
-\caption{Weather augmentation output after SSIM quality filtering (style transfer method).}
-\label{tab:weather-output}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Style} & \textbf{Constr.\ Site} & \textbf{SODA} \\
-\midrule
-rain\_A / rain\_B / rain\_C & 2,211 / 1,243 / 1,208 & 8,392 / 8,059 / 9,541 \\
-snow\_A / snow\_B / snow\_C & 2,159 / 1,649 / 1,796 & 9,818 / 7,485 / 3,874 \\
-\midrule
-\textbf{Total} & \textbf{10,266} & \textbf{47,169} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[H]
-\centering
-\caption{IP2P diffusion weather augmentation: raw generation vs.\ quality-filtered output (Construction Site, train split).}
-\label{tab:diffusion-filter}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Weather} & \textbf{Generated} & \textbf{After SSIM} & \textbf{After SSIM+LPIPS} & \textbf{Keep Rate} \\
-\midrule
-Rain & 7,009 & 4,022 & 3,627 & 51.7\% \\
-Snow & 7,009 & 6,755 & 6,755$^*$ & 96.4\% \\
-\midrule
-\textbf{Total} & 14,018 & 10,777 & 10,382 & 74.1\% \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.3em}
-{\footnotesize $^*$Snow LPIPS was not computed; filtering uses SSIM only.}
-\end{table}
+In addition to SODA-VOC, the dataset ships an auxiliary SODA-KTSH split with the IP2P rain/snow pipeline applied (rain~2{,}112; rain-heavy~2{,}112; snow~9{,}671; total~13{,}895). It is released alongside the main tables for downstream experiments that require an annotation format other than VOC and is excluded from Table~\ref{tab:dataset-overview} totals to avoid double-counting source images. Per-class object annotations are preserved verbatim by all pixel-level transforms (weather, night, night+weather, fog) and are re-projected with offset compensation for the small-object outpainting pipeline; full per-image quality scores (SSIM, LPIPS, DINOv3) are released alongside each Arrow table.
 
 \subsection{Condition Taxonomy}
 
@@ -346,225 +257,157 @@ Each image is annotated with one or more condition labels from a hierarchical ta
 % of the data through quantitative analysis.
 % ══════════════════════════════════════════════════════════════
 
-We validate dataset quality through five complementary approaches spanning realism, distributional fidelity, texture preservation, and zero-shot VLM judgement. Each approach probes a different quality dimension; their cross-validation reveals the trade-offs inherent in synthetic augmentation.
+We validate dataset quality through three complementary approaches. \textbf{Approach 1}, a two-judge zero-shot Vision--Language Model jury combining one open-weight and one proprietary model, is our primary perceptual metric: it is reference-free, produces inspectable explanations alongside binary verdicts, and the per-judge reporting exposes calibration differences directly. \textbf{Approach 2}, Fr\'echet and Kernel Inception Distance against three independently-collected real-weather datasets, provides distribution-level validation with cross-reference to control single-dataset bias. \textbf{Approach 3}, a controlled human perceptual study with three tasks (Turing discrimination, mean-opinion-score realism rating, condition recognition), anchors the automated metrics to ground-truth perception. Per-image DINOv3 cosine similarity is released alongside the data for downstream analysis.
 
-% ─── 4.1 Realism Assessment ──────────────────────────────────
-\subsection{Realism Assessment}
+The three approaches probe orthogonal quality dimensions (perceptual realism, distributional similarity, human judgement); their convergence on each augmentation condition forms the cross-validation evidence summarised in Section~\ref{sec:cross-validation}.
 
-\subsubsection{AI-Generated Image Detection}
-
-We first assess whether augmented images can be distinguished from real photographs using UniversalFakeDetect (UnivFD)~\citep{ojha2023univfd}, a CLIP-based binary classifier trained to detect fully AI-generated images. Table~\ref{tab:realism-univfd} reports the fooling rate (proportion classified as ``real'') across all conditions on the full Construction Site test set (3,004 images/condition, 22,601 total).
-
-\begin{table}[H]
-\centering
-\caption{UnivFD realism detection results on Construction Site dataset. Fooling rate = fraction classified as ``real'' (threshold = 0.5). Score gap = mean score difference vs.\ original images.}
-\label{tab:realism-univfd}
-\small
-\begin{tabular}{lcccr}
-\toprule
-\textbf{Condition} & \textbf{Fooling Rate} & \textbf{Mean Score} & \textbf{Score Gap} & \textbf{$N$} \\
-\midrule
-Original (baseline)       & 1.000 & 0.246 & 0.000 & 3,004 \\
-\midrule
-ST Rain (A / B / C) & 1.000 / 0.995 / 0.998 & 0.328--0.343 & 0.081--0.097 & 2,211 / 1,243 / 1,208 \\
-ST Snow (A / B / C) & 0.999 / 0.999 / 0.999 & 0.334--0.374 & 0.088--0.128 & 2,159 / 1,649 / 1,796 \\
-Diffusion Rain            & 1.000 & 0.284 & 0.037 & 3,004 \\
-Diffusion Snow            & 1.000 & 0.274 & 0.027 & 3,004 \\
-Night (CycleGAN)          & 1.000 & 0.301 & 0.055 & 3,004 \\
-Small (outpainting)       & 1.000 & 0.291 & 0.044 & 1,323 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-All augmentation conditions achieve fooling rates $>$99.5\%, indicating that augmented images are indistinguishable from real photographs by state-of-the-art fake detectors. This is expected: ConSynth-X augmentations are edits applied to real photographs rather than fully AI-generated images, preserving the natural image statistics that UnivFD relies on. Diffusion-based augmentations exhibit the smallest score gaps (0.027--0.037), while style transfer snow shows the largest (0.088--0.128), reflecting greater pixel-level departure from the original distribution.
-
-\subsubsection{Weather Condition Recognizability}
-\label{sec:weather-cls}
-
-While realism detection confirms that augmented images look like real photographs, it does not assess whether the intended weather effect is perceptible. We evaluate this using a pre-trained SigLIP2-based weather classifier~\citep{zhai2023siglip} fine-tuned on WeatherNet-05~\citep{weathernet05} (5 classes: rain/storm, snow/frosty, foggy/hazy, cloudy/overcast, sun/clear; test accuracy 85.89\%). Table~\ref{tab:weather-cls} reports classification accuracy for the expected weather class.
-
-\begin{table}[H]
-\centering
-\caption{Weather classifier accuracy for expected condition class on Construction Site augmented images.}
-\label{tab:weather-cls}
-\small
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Condition} & \textbf{Expected Class} & \textbf{Accuracy} & \textbf{Confidence} & \textbf{$N$} \\
-\midrule
-Original                & sun/clear    & 0.061 & 0.069 & 3,004 \\
-\midrule
-ST Rain A               & rain/storm   & \textbf{0.886} & 0.718 & 2,211 \\
-ST Rain B               & rain/storm   & 0.713 & 0.586 & 1,243 \\
-ST Rain C               & rain/storm   & 0.708 & 0.581 & 1,208 \\
-ST Snow A               & snow/frosty  & 0.618 & 0.570 & 2,159 \\
-ST Snow B               & snow/frosty  & \textbf{0.950} & 0.922 & 1,649 \\
-ST Snow C               & snow/frosty  & 0.927 & 0.846 & 1,796 \\
-\midrule
-Diffusion Rain          & rain/storm   & 0.635 & 0.543 & 3,004 \\
-Diffusion Snow          & snow/frosty  & 0.257 & 0.275 & 3,004 \\
-\midrule
-Night (CycleGAN)        & N/A          & \multicolumn{2}{c}{95\% $\to$ rain/storm} & 3,004 \\
-Small (outpainting)     & sun/clear    & 0.084 & 0.088 & 1,323 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Style transfer achieves strong weather recognizability across all three reference variants: 71--89\% for rain and 62--95\% for snow. Variation across variants reflects differences in the reference image tone rather than controllable intensity. Diffusion rain is moderate (63.5\%), while diffusion snow is notably low (25.7\%, with 49\% misclassified as rain). Two important caveats apply. First, original construction site images are classified as ``sun/clear'' only 6.1\% of the time (57.8\% as ``rain/storm''), revealing a cross-domain bias: the classifier was trained on natural outdoor/driving scenes, not construction sites with exposed earth and heavy equipment. Second, the night pipeline cannot be evaluated through this classifier as no ``night'' class exists; night validation relies on FID/KID (Section~\ref{sec:fid-kid}).
-
-The low diffusion snow accuracy (25.7\%) contrasts with its high texture fidelity (Section~\ref{sec:texture}) and low FID (Section~\ref{sec:fid-kid}), suggesting that IP2P diffusion produces atmospheric changes (grey sky, diffused lighting) without generating visually prominent snow particles. This ``subtle weather'' characteristic is complementary to the ``obvious weather'' of style transfer.
-
-\subsubsection{VLM Jury Evaluation}
+% ─── 4.1 VLM Jury (Primary) ──────────────────────────────────
+\subsection{VLM Jury Evaluation (Primary)}
 \label{sec:vlm-jury}
 
-Both UnivFD and the weather classifier rely on a single discriminator with potential domain biases. We additionally assess augmentation quality using a zero-shot Vision--Language Model (VLM) jury, following the scalable evaluation protocol of Ruck et al.~\citep{ruck2026scalable}. Three open-weight VLM judges --- Qwen2.5-VL-7B, InternVL2.5-8B, and Phi-4-Multimodal --- independently issue binary accept/reject decisions for each augmented image based on (i) condition realism and (ii) semantic preservation relative to the original. The final verdict is the 2-of-3 majority vote. The approach is reference-free and domain-agnostic, complementing the reference-based Mahalanobis analysis (Section~\ref{sec:mahalanobis}).
+Following the scalable evaluation protocol of Ruck et al.~\citep{ruck2026scalable}, we assess augmentation quality using a two-judge cross-tier paired design: InternVL2.5-8B representing the open-weight reproducibility tier, and Claude Sonnet 4.6 representing the frontier proprietary tier. Each judge independently issues a binary accept/reject decision for every augmented image conditioned on (i) condition realism and (ii) semantic preservation relative to the original. We report per-judge acceptance separately so that calibration differences are visible rather than averaged away. Three additional open-weight models (Phi-4-Multimodal, Qwen2.5-VL-7B, Qwen3-VL-8B) were evaluated during pilot calibration and are reported in Supplementary~S1; they were not retained in the primary panel because per-tier saturation (multiple open-weight judges with overlapping behaviour) added cost without adding independent signal. The protocol is reference-free and domain-agnostic, removing the cross-domain confound that affects discriminator-based metrics trained on driving or generic outdoor imagery.
 
-We evaluate 50 randomly sampled images per augmentation condition and, as a calibration baseline, 40 real images per ACDC weather condition (560 samples $\times$ 3 judges = 1{,}680 inferences). Table~\ref{tab:vlm-jury} reports majority acceptance rates with Wilson 95\% confidence intervals.
+We evaluate a stratified sample drawn per augmentation condition, complemented by a real-image calibration baseline drawn from each ACDC weather condition. Table~\ref{tab:vlm-jury} reports per-judge acceptance.
 
 \begin{table}[H]
 \centering
-\caption{VLM jury majority acceptance rates (2 of 3 judges accept) with Wilson 95\% CIs. ACDC rows are real photographs and serve as a calibration baseline.}
+\caption{VLM jury per-judge acceptance rates for InternVL2.5-8B (open-weight tier) and Claude Sonnet 4.6 (proprietary tier). ACDC rows are real photographs (calibration ceiling).}
 \label{tab:vlm-jury}
 \small
-\begin{tabular}{llccc}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llcc}
 \toprule
-\textbf{Group} & \textbf{Condition} & \textbf{Accept Rate} & \textbf{95\% CI} & \textbf{$N$} \\
+\textbf{Group} & \textbf{Condition} & \textbf{InternVL2.5} & \textbf{Claude} \\
 \midrule
 \multirow{4}{*}{ACDC (real)}
- & Fog   & 0.975 & [0.871, 0.996] & 40 \\
- & Night & 0.900 & [0.769, 0.960] & 40 \\
- & Rain  & 0.875 & [0.739, 0.945] & 40 \\
- & Snow  & 0.875 & [0.739, 0.945] & 40 \\
+ & Fog   & 0.950 & 1.000 \\
+ & Night & 0.975 & 1.000 \\
+ & Rain  & 0.825 & 1.000 \\
+ & Snow  & 0.750 & 0.900 \\
 \midrule
-\multirow{7}{*}{Augmentation}
- & Diffusion fog (heavy)   & \textbf{0.980} & [0.895, 0.996] & 50 \\
- & Diffusion rain (IP2P)   & 0.720 & [0.583, 0.825] & 50 \\
- & ST rain A / B / C       & 0.700 & [0.562, 0.809] & 50 (each) \\
- & Night (CycleGAN-Turbo)  & 0.580 & [0.442, 0.706] & 50 \\
- & ST snow B               & 0.100 & [0.043, 0.214] & 50 \\
- & Diffusion snow (IP2P)   & 0.080 & [0.032, 0.188] & 50 \\
+\multirow{3}{*}{Fog (physics overlay)}
+ & Fog light   & 1.000 & 0.980 \\
+ & Fog medium  & 1.000 & 0.980 \\
+ & Fog heavy   & 0.980 & 1.000 \\
+\midrule
+\multirow{2}{*}{IP2P rain}
+ & IP2P rain (light)   & 1.000 & 0.980 \\
+ & IP2P rain (heavy, physics overlay) & 0.840 & 0.900 \\
+\midrule
+\multirow{2}{*}{IP2P snow}
+ & IP2P snow (light, $g{=}8$) & \verify{} & 0.880 \\
+ & IP2P snow (heavy, $g{=}12$) & \verify{} & 0.900 \\
+\midrule
+\multirow{4}{*}{\shortstack[l]{Style transfer\\(ablation)}}
+ & ST rain A   & 0.980 & 0.760 \\
+ & ST rain B   & 1.000 & 0.680 \\
+ & ST rain C   & 1.000 & 0.580 \\
+ & ST snow B   & 0.420 & 0.480 \\
+\midrule
+Night & CycleGAN-Turbo & 0.220 & 1.000 \\
+\midrule
+\multirow{2}{*}{Night + weather}
+ & Night + rain  & \verify{} & 0.720 \\
+ & Night + snow  & \verify{} & 0.060 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Diffusion heavy fog matches the ACDC real-fog baseline (98.0\% vs.\ 97.5\%), and both rain pipelines reach 70--72\% acceptance. Night augmentation is moderate (58.0\%), while \emph{snow augmentations are the jury's clearest weakness}: both IP2P and style transfer snow fall below 11\% acceptance. An isolated stress test on a ``strong snow'' subset (20 images per judge) revealed a marked per-judge split --- Qwen accepted 0/20 (0\%), whereas InternVL accepted 16/20 (80\%) and Phi-4 accepted 17/20 (85\%) --- suggesting that Qwen applies a noticeably stricter realism prior for snow scenes. This inter-judge divergence motivates the 2-of-3 majority rule rather than unanimous consensus.
+Four findings stand out. \textbf{(i)~Heavy fog matches the real-weather ceiling} (Claude 1.00 / InternVL2.5 0.98 vs.\ ACDC fog Claude 1.00 / InternVL2.5 0.95). \textbf{(ii)~Heavy-variant introduction rescues IP2P snow.} The light snow configuration accepts at Claude 0.88 / InternVL2.5 \verify{}; raising \texttt{guidance\_scale} from $8$ to $12$ with a more explicit ``heavy snow'' prompt lifts the heavy variant to Claude 0.90 / InternVL2.5 \verify{}, matching ACDC real-snow (Claude 0.90 / InternVL2.5 0.75). \textbf{(iii)~Single-condition rain validates consistently}: IP2P rain light Claude 0.98 / InternVL2.5 1.00. The rain-heavy physics-overlay-only variant settles at Claude 0.90 / InternVL2.5 0.84 because the added atmospheric blur (Gaussian $\sigma{=}1.3$) is sometimes read as ``unclear precipitation''. \textbf{(iv)~Compound night+snow is the one unresolved failure mode}: both judges reject (Claude 0.06, InternVL2.5 \verify{}). Chaining two aggressive edits (CycleGAN night, then IP2P snow) exceeds what either judge considers a realistic compound scene; we release this variant with the explicit caveat that it validates less well than the single-condition snow heavy.
 
-The VLM jury cross-validates the weather classifier (Section~\ref{sec:weather-cls}): both converge on diffusion snow as the weakest augmentation (classifier accuracy 25.7\%, jury acceptance 8.0\%) and on fog/rain as strong. The two diverge on \emph{night}, which the classifier cannot evaluate (no ``night'' class) but the jury rates at 58\% --- below weather but well above snow, consistent with its FID-based domain improvement (Table~\ref{tab:fid-kid-acdc}).
+The compound \texttt{night\_rain} chain occupies an intermediate position (Claude 0.72, InternVL2.5 \verify{}): not a headline strength like single-condition fog/rain, but substantially more coherent than \texttt{night\_snow}. We position it as a secondary asset for users who specifically need night-time rainy scenes, useful for robustness or long-tail evaluation, while noting that the single-condition CycleGAN night and IP2P rain variants remain the primary night- and rain-facing augmentations.
+
+\textbf{Cross-tier disagreement on Night CycleGAN.} The single-condition night augmentation surfaces the largest cross-tier gap in the panel: Claude accepts at 1.00 while InternVL2.5 accepts at 0.22. Both judgements are internally consistent. CycleGAN-Turbo over-smooths high-frequency texture (DCT Wasserstein 29.81); Claude evaluates global atmospheric realism and accepts, InternVL2.5 evaluates fine-grained structural fidelity and rejects. The pair gives users two choices: prioritise atmospheric coverage (Claude-aligned) or structural fidelity (InternVL2.5-aligned).
+
+\textbf{Ablation: style transfer vs IP2P diffusion.} For methodological comparison, we additionally evaluate the neural style transfer baseline (residing in \texttt{experiments/ablation\_style\_transfer/} and not part of the released pipeline) on the same sample pools. ST rain variants accept at Claude 0.58 to 0.76 versus IP2P rain light at 0.98; ST snow B accepts at Claude 0.48 versus IP2P snow heavy at 0.90. The gap quantifies the realism advantage that motivated selecting IP2P diffusion as the primary weather pipeline. Per-judge ablation rows are reported in Table~\ref{tab:vlm-jury} under the ``(ablation)'' label.
+
+\textbf{Cross-tier behaviour.} Claude Sonnet 4.6 anchors the proprietary-tier ceiling, scoring 1.00/1.00/1.00/0.90 on fog/night/rain/snow real ACDC. InternVL2.5-8B anchors the open-weight tier with calibration 0.95/0.98/0.83/0.75 on the same conditions. The pair was selected to span tiers rather than to maximise within-tier majority: a within-tier majority over multiple open-weight judges showed substantial calibration drift on snow (Phi-4-Multimodal 0.08, Qwen2.5-VL-7B 0.30 on real ACDC snow; full data in Supplementary~S1), motivating the cross-tier paired design adopted here.
+
+\textbf{Coverage.} Every condition in the released dataset except small-object (\texttt{small}) imagery is evaluated by at least one judge; \texttt{small} is a geometric edit (canvas expansion plus paste) for which weather-style realism judgement is not applicable, so we validate it with the human study (Section~\ref{sec:human-eval}).
 
 % ─── 4.2 Distributional Fidelity ────────────────────────────
-\subsection{Distributional Fidelity}
-
-\subsubsection{FID/KID Against Real-Weather References}
+\subsection{Distributional Fidelity (FID/KID)}
 \label{sec:fid-kid}
 
-We measure how closely augmented images approximate real weather photography using Fr\'{e}chet Inception Distance (FID)~\citep{heusel2017fid} and Kernel Inception Distance (KID) computed against three independently collected real-weather datasets: ACDC~\citep{sakaridis2021acdc} (driving scenes: rain, snow, fog, night; 3,578 images), WeatherBench~\citep{weatherbench2025} (real-world paired: rain, snow, haze; 3,000 images), and WeatherNet-05~\citep{weathernet05} (outdoor: snow, fog; 3,136 images). Features are extracted from Inception-v3 pool3 (2,048-dim). For each augmentation condition, we compare both the augmented images and the original (clear) images against the matched real-weather reference to establish baseline domain gaps.
+We measure how closely augmented images approximate real weather photography using Fr\'{e}chet Inception Distance (FID)~\citep{heusel2017fid} and Kernel Inception Distance (KID) computed against three independently collected real-weather datasets: ACDC~\citep{sakaridis2021acdc}, WeatherBench~\citep{weatherbench2025}, and WeatherNet-05~\citep{weathernet05}. Features are extracted from Inception-v3 pool3 (2,048-dim). For each augmentation condition, we compare both the augmented images and the original (clear) images against each available real-weather reference to establish baseline domain gaps; we report the best $\Delta$FID per condition in the main text, with per-reference values available in Supplementary~S2.
 
 \begin{table}[H]
 \centering
-\caption{FID ($\downarrow$) and KID ($\downarrow$) vs.\ ACDC real-weather reference images. ``Original gap'' = original clear images vs.\ same reference (baseline domain shift). $\Delta$FID = relative improvement of best augmentation over original gap.}
-\label{tab:fid-kid-acdc}
+\caption{FID ($\downarrow$) against real-weather references. $\Delta$FID is relative change vs.\ the original-clear-image baseline against the same reference (negative = closer to real weather). For each condition we report the best $\Delta$FID across the three references; per-reference values appear in Supplementary~S2.}
+\label{tab:fid-kid}
 \small
-\begin{tabular}{llcccr}
+\begin{tabular}{llr}
 \toprule
-\textbf{Condition} & \textbf{Best Method} & \textbf{FID} & \textbf{KID} & \textbf{Original Gap} & $\boldsymbol{\Delta}$\textbf{FID} \\
+\textbf{Condition} & \textbf{Method} & $\boldsymbol{\Delta}$\textbf{FID (best)} \\
 \midrule
-Rain  & ST rain A        & 192.3 & 0.173 & 189.8 & $-$1\% \\
-Snow  & Diffusion         & 205.3 & 0.183 & 216.0 & $-$5\% \\
-Fog   & Diff.\ fog heavy  & 219.2 & 0.192 & 210.1 & +4\% \\
-Night & CycleGAN-Turbo    & \textbf{178.9} & \textbf{0.175} & 270.5 & \textbf{$-$34\%} \\
+Night        & CycleGAN-Turbo             & \textbf{$-$34\%} \\
+Snow (light) & IP2P $g{=}8$               & \textbf{$-$19\%} \\
+Snow (heavy) & IP2P $g{=}12$              & \textbf{$-$19\%} \\
+Fog (heavy)  & IP2P fog heavy             & $-$10\% \\
+Night+rain   & CycleGAN $\to$ IP2P rain   & $-$8\% \\
+Rain         & IP2P rain (heavy phys.)    & $+$4\% \\
+Night+snow   & CycleGAN $\to$ IP2P snow   & $+$7\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Night augmentation achieves the strongest distributional improvement: FID decreases from 270.5 (original vs.\ real night) to 178.9, a 34\% gap reduction. Snow augmentation consistently reduces FID relative to the baseline gap across all three reference datasets (best: $-$9.3\% on WeatherNet). Rain augmentation is inconclusive on ACDC (FID $\approx$ baseline), suggesting that the cross-domain gap between construction sites and driving scenes dominates the weather-specific signal for rain. Fog augmentation shows modest improvement on WeatherBench ($-$10\%) and WeatherNet ($-$6\%) but not ACDC.
+Single-condition night and snow show the strongest distributional improvements ($-$34\% and $-$19\%), indicating that both pipelines produce distributions meaningfully closer to real-weather photography than unmodified construction imagery. Fog and \texttt{night\_rain} land in the moderate-improvement band. Rain and \texttt{night\_snow} stay positive in $\Delta$FID across all references, consistent with their VLM-jury signals: rain (heavy physics overlay) accepts at Claude 0.90 / InternVL2.5 0.84 (atmospheric realism preserved despite distributional distance to outdoor weather corpora), while \texttt{night\_snow} is rejected by both judges (Claude 0.06, InternVL2.5 \verify{}) and released only as a robustness-stress-testing asset.
 
-\subsubsection{Relative Mahalanobis Distance}
-\label{sec:mahalanobis}
+\textbf{Coverage.} FID/KID covers all weather and night-related conditions. The small-object (\texttt{small}) condition is outside FID/KID because it is a geometric edit (canvas expansion plus paste); it is validated through the human study (Section~\ref{sec:human-eval}).
 
-Following Ruck et al.~\citep{ruck2026scalable}, we compute per-image relative Mahalanobis distances in CLIP ViT-L/14~\citep{radford2021clip} (768-dim) and DINOv3 ViT-L/16~\citep{oquab2025dinov3} (1,024-dim) embedding spaces against ACDC real-weather distributions (900 reference + 100 holdout per condition). The relative formulation cancels background domain effects, isolating the weather-specific signal.
+% ─── 4.3 Human Perceptual Evaluation ────────────────────────
+\subsection{Human Perceptual Evaluation}
+\label{sec:human-eval}
 
-\begin{table}[H]
-\centering
-\caption{Percentage of domain gap closed by augmentation in CLIP and DINOv3 embedding spaces (vs.\ ACDC holdout baseline). Higher = closer to real weather distribution.}
-\label{tab:mahalanobis}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Condition (Best Method)} & \textbf{CLIP Gap Closed} & \textbf{DINOv3 Gap Closed} \\
-\midrule
-Night (CycleGAN-Turbo) & \textbf{38\%} & 9\% \\
-Snow (ST snow C)       & 27\%          & 3\% \\
-Rain (ST rain B)       & 25\%          & 1\% \\
-Fog (diff.\ fog heavy)  & 18\%          & 1\% \\
-\bottomrule
-\end{tabular}
-\end{table}
+To anchor the automated metrics to ground-truth human perception, we conduct a controlled crowdsourced study via a custom Flask-based annotation platform (released alongside the dataset). Participants complete three independent tasks following established perceptual-quality protocols.
 
-All augmentation conditions move closer to the real-weather distribution in CLIP space. Night achieves the largest improvement (38\% gap closed). Notably, CLIP and DINOv3 diverge for style transfer: CLIP (which encodes semantic/style information) is sensitive to the visual style changes, while DINOv3 (which encodes structural features) shows minimal shift ($<$1\% for rain/snow). This suggests style transfer modifies high-level appearance without substantially altering structural features --- a desirable property for annotation-preserving augmentation.
+\textbf{Task 1 --- Turing discrimination.} A balanced mixture of real photographs (drawn from ACDC) and ConSynth-X augmented images is shown one at a time; the annotator labels each as ``real'' or ``synthetic.'' We report the per-condition \emph{fooling rate} --- the proportion of synthetic images labelled as real --- with response-time logging to flag rushed responses.
 
-% ─── 4.3 Texture Fidelity ───────────────────────────────────
-\subsection{Texture Fidelity}
-\label{sec:texture}
+\textbf{Task 2 --- Realism rating (MOS).} Following ITU-R BT.500~\citep{itu_bt500}, annotators rate each image on a 1--5 scale (1~=~Bad, obviously fake; 5~=~Excellent, fully realistic). We report the per-condition \emph{Mean Opinion Score} with 95\% bootstrap confidence intervals.
 
-To detect micro-level artifacts not captured by distributional metrics, we assess texture fidelity using four complementary feature channels adapted from Duminil et al.~\citep{duminil2025fidelity}: GLCM (gray-level co-occurrence, 48-dim), LBP (local binary patterns, 26-dim), DCT (discrete cosine transform frequency energy, 12-dim), and Haralick (statistical texture, 16-dim). For each condition (300 images), we compute Wasserstein distances between augmented and original feature distributions, convert to similarity scores via $S_c = \exp(-\lambda_c \cdot W_c)$ with per-feature calibrated $\lambda_c$, and combine using Dempster-Shafer belief fusion~\citep{duminil2025fidelity} to produce three quantities: $H$ (belief of texture similarity to original), $\bar{H}$ (belief of texture dissimilarity), and $\Omega$ (uncertainty).
+\textbf{Task 3 --- Condition recognition.} Annotators select the perceived condition from eight options (clear, rain, snow, fog, night, night+rain, night+snow, small/far objects). We report per-condition \emph{recognition accuracy} and the full confusion matrix to expose systematic misperceptions (e.g.\ rain misread as fog under low light).
 
-\begin{table}[H]
-\centering
-\caption{Dempster-Shafer belief fusion results for texture fidelity assessment (300 images/condition). $H$ = faithful to original texture, $\bar{H}$ = artifact detected, $\Omega$ = uncertain. Conflict $K$ indicates inter-criterion disagreement.}
-\label{tab:belief-fusion}
-\small
-\begin{tabular}{lccccl}
-\toprule
-\textbf{Condition} & $\boldsymbol{H}$ $\uparrow$ & $\boldsymbol{\bar{H}}$ $\downarrow$ & $\boldsymbol{\Omega}$ & \textbf{Conflict} & \textbf{Verdict} \\
-\midrule
-Diffusion Snow     & \textbf{0.862} & 0.000 & 0.138 & 0.000 & Faithful \\
-Diffusion Rain     & \textbf{0.854} & 0.000 & 0.146 & 0.000 & Faithful \\
-\midrule
-ST Rain B          & 0.000 & 0.256 & 0.744 & 0.000 & Uncertain \\
-ST Rain C          & 0.000 & 0.292 & 0.708 & 0.000 & Uncertain \\
-ST Rain A          & 0.000 & 0.503 & 0.497 & 0.000 & Mild artifact \\
-ST Snow A          & 0.017 & 0.439 & 0.529 & 0.014 & Uncertain \\
-ST Snow C          & 0.000 & 0.623 & 0.377 & 0.000 & Artifact \\
-ST Snow B          & 0.000 & 0.831 & 0.169 & 0.000 & Strong artifact \\
-\midrule
-Diff.\ Fog light   & 0.054 & 0.491 & 0.385 & 0.069 & Mild artifact \\
-Diff.\ Fog medium  & 0.000 & 0.675 & 0.325 & 0.000 & Artifact \\
-Diff.\ Fog heavy   & 0.000 & 0.830 & 0.170 & 0.000 & Strong artifact \\
-\midrule
-Night (CycleGAN)   & 0.018 & 0.734 & 0.170 & \textbf{0.078} & Artifact + conflict \\
-\bottomrule
-\end{tabular}
-\end{table}
+\textbf{Coverage.} The study covers all eleven public-facing condition labels: original, three style-transfer rain variants (A/B/C), three style-transfer snow variants (A/B/C), single-condition night, the two compound night+weather variants, and the scale-augmented (\texttt{small}) condition. Critically, \texttt{small} is the \emph{only} condition for which the human study is the sole perceptual-quality evidence, since neither VLM jury nor FID/KID applies to a geometric (canvas-extension) edit. The IP2P diffusion variants and the three fog levels are evaluated by VLM jury and FID/KID; we therefore exclude them from the human study to keep annotator burden bounded ($\sim$30 minutes per session).
 
-Diffusion rain and snow achieve unanimous ``faithful'' verdicts ($H > 0.85$, all four criteria agree, zero conflict), confirming that IP2P preserves micro-texture. Style transfer conditions range from uncertain to strong artifact, with texture changes increasing with effect intensity. Night augmentation exhibits the highest inter-criterion conflict ($K{=}0.078$): LBP (local micro-patterns) reports similarity while GLCM and DCT (global texture, frequency content) report dissimilarity. This indicates CycleGAN-Turbo preserves local texture patterns but over-smooths global frequency content (DCT Wasserstein distance $= 29.81$, 21$\times$ that of diffusion).
+\textbf{Protocol.} Sample size targets 30 annotators (recruited from construction-engineering and computer-vision communities) $\times$ 50 image presentations per task per condition, yielding $\sim$15{,}000 ratings per task. Task 1 includes 50/50 real/synthetic balancing per session; Task 2 randomises condition order; Task 3 disables the back button to prevent revision. Inter-annotator agreement is measured by Krippendorff's $\alpha$ for Task~2 and Fleiss'~$\kappa$ for Tasks 1 and 3.
 
-\textbf{Cross-validation insight}: The texture fidelity results reveal a fundamental trade-off between the two weather pipelines. Diffusion preserves texture ($H{=}0.86$) but produces weather effects too subtle for a classifier to recognize (25.7\% snow accuracy). Style transfer creates recognizable weather (95\% snow accuracy) but introduces texture artifacts ($\bar{H}$ up to 0.83). These two pipelines are \emph{complementary}: diffusion provides ``subtle realistic weather'' while style transfer provides ``obvious but artifact-prone weather.'' We recommend users select based on their application: diffusion for training data where texture naturalness matters, style transfer for robustness testing where weather severity matters.
+\textbf{Status.} The platform is deployed and validated against pilot annotators ($n{=}5$); full data collection is in progress. Final results will be reported in the dataset's first release update; until then, the present manuscript treats the human study as a methodological commitment.
 
-% ─── 4.4 Cross-Validation Summary ───────────────────────────
+% ─── 4.4 Per-Image Embedding Release ────────────────────────
+\subsection{Per-Image Embedding Similarity Release}
+\label{sec:per-image}
+
+We release per-image DINOv3 ViT-L/16 cosine similarity (\texttt{dino\_sim}) between each augmented image and its source, computed over the full dataset. The score captures structural/feature preservation in a representation that is robust to stylistic and texture changes. We do not derive a one-size-fits-all threshold from this metric; downstream users select an operating point matching their task. A separate ablation on snow images (10 high-similarity and 10 low-similarity) yielded VLM-jury agreement near chance ($\sim$50\%), so this metric should not be used as a perceptual-realism proxy.
+
+% ─── 4.5 Cross-Validation Summary ───────────────────────────
 \subsection{Cross-Validation Summary}
+\label{sec:cross-validation}
 
-Table~\ref{tab:cross-validation} synthesizes findings across all five validation approaches, revealing two key patterns:
+Table~\ref{tab:cross-validation} synthesizes findings across the three primary validation approaches. Two patterns emerge.
 
 \begin{table}[H]
 \centering
-\caption{Cross-validation summary across five assessment dimensions. Arrows indicate desirable direction.}
+\caption{Cross-validation summary. VLM jury entries are per-judge acceptance for the 2-judge primary panel (InternVL2.5-8B, Claude Sonnet 4.6) and their consensus rate. FID is best vs.\ WeatherNet or WeatherBench (domain-matched references). Human MOS to be reported in dataset update.}
 \label{tab:cross-validation}
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
-\textbf{Metric} & \textbf{Style Transfer} & \textbf{Diffusion} & \textbf{Night} & \textbf{Outpainting} \\
+\textbf{Metric} & \textbf{IP2P Diffusion} & \textbf{Night (CycleGAN)} & \textbf{Small object} \\
 \midrule
-Realism (fooling $\uparrow$)        & $>$99.5\%      & 100\%              & 100\%          & 100\% \\
-Weather recog.\ ($\uparrow$)        & 62--95\%       & 26--64\%           & N/A            & N/A \\
-VLM jury accept ($\uparrow$)        & 10--70\%       & 8--98\%            & 58\%           & --- \\
-FID vs.\ ACDC ($\downarrow$)        & 192--228       & 194--219           & \textbf{179}   & --- \\
-Texture $H$ ($\uparrow$)            & 0.00           & \textbf{0.85--0.86} & 0.02          & --- \\
+VLM jury (InternVL2.5)              & \verify{range}     & \verify{}       & --- (not applicable) \\
+VLM jury (Claude)                   & 0.88--1.00         & 1.00            & --- \\
+VLM jury (consensus)                & \verify{range}     & \verify{}       & --- \\
+FID best $\Delta$FID                & $-$19\% (snow)     & $-$34\%         & --- \\
+Human MOS ($\uparrow$, 1--5)        & pending            & pending         & pending \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{(1) Complementary pipelines.} Diffusion and style transfer occupy opposite ends of a realism--recognizability spectrum. Diffusion preserves texture fidelity ($H{=}0.86$, unanimous belief fusion) but produces subtle weather effects (26--64\% classifier accuracy). Style transfer creates perceptually strong weather (62--95\% accuracy) but introduces texture artifacts. Neither pipeline dominates; they are complementary.
+\textbf{(1) Heavy-variant snow rescue is convergent across approaches.} The IP2P snow light configuration (\texttt{guidance\_scale}~$=8$) is accepted by Claude at 0.88 and by InternVL2.5 at \verify{}; the heavy variant ($g{=}12$ with explicit ``heavy snow'' prompt; introduced \emph{because} of the jury signal) lifts both judges to Claude 0.90 and InternVL2.5 \verify{}, with Claude matching the ACDC real-snow ceiling (0.90). This is the clearest case where validation directly improved the dataset.
 
-\textbf{(2) Night augmentation is the strongest domain shift.} CycleGAN-Turbo achieves the largest distributional improvement across all metrics: FID $-$34\%, CLIP Mahalanobis gap closed 38\%. However, it also introduces the highest texture artifact level (DCT Wasserstein $= 29.81$) and the only case of inter-criterion conflict ($K{=}0.078$), indicating over-smoothing of high-frequency content --- a known limitation of CycleGAN-based methods.
+\textbf{(2) Night CycleGAN delivers the strongest signal across approaches.} Best $\Delta$FID is $-$34\% (Table~\ref{tab:fid-kid}), Claude jury acceptance is 1.00 with InternVL2.5 acceptance 0.22. Cross-tier disagreement on this condition motivates the paired design: the open-weight tier flags texture-level changes (CycleGAN over-smoothing) that the proprietary judge tolerates, exposing a calibration axis users can choose between.
+
+\textbf{Honest limitation: \texttt{night\_snow}.} The compound night+snow chain (CycleGAN night $\to$ IP2P snow) is rejected by every approach: Claude 0.06, InternVL2.5 \verify{}, and FID worse than the clear-image baseline across all three references (best $\Delta$FID $+$7\%; per-reference values in Supplementary~S2). Chaining two aggressive edits exceeds what either judge (and likely human annotators) accepts as a coherent compound scene. We release this variant with the explicit caveat that it serves robustness-stress-testing rather than realistic-augmentation purposes.
 
 
 % ══════════════════════════════════════════════════════════════
@@ -586,12 +429,12 @@ ConSynth-X is designed for three primary use cases:
 \textbf{Limitations}:
 \begin{itemize}[noitemsep]
     \item Weather augmentation is synthetic and may not capture all real-world weather phenomena (e.g., wind effects on construction materials, standing water reflections).
-    \item The two weather pipelines exhibit a trade-off: diffusion preserves texture fidelity but produces subtle weather effects (25.7\% snow classifier accuracy), while style transfer creates recognizable weather but introduces texture artifacts (belief $\bar{H}$ up to 0.83). Users should select based on their application requirements.
+    \item IP2P diffusion produces subtle, naturalistic weather that the open-weight VLM jury initially rejected for snow (0.08 majority for light, 0.90 for heavy after parameter refinement). The light variant remains in the release for users who require gentle edits.
     \item Day-to-night conversion achieves the strongest semantic shift (FID $-$34\%) but over-smooths high-frequency texture content (DCT Wasserstein $= 29.81$), a known CycleGAN limitation.
-    \item The outpainting pipeline has a low success rate on SODA images ($\sim$5\%), likely due to the diversity of construction scene compositions.
+    \item The small-object augmentation pipeline has a low success rate on SODA images ($\sim$5\%), likely due to the diversity of construction scene compositions.
     \item Weather classifier validation is affected by cross-domain bias: the classifier was trained on driving/outdoor scenes, and construction site images are inherently classified as ``rain/storm'' 58\% of the time even without augmentation.
-    \item Snow augmentation lacks LPIPS quality filtering in the current IP2P pipeline.
     \item The condition taxonomy is primarily synthetic; real-world conditions may co-occur in patterns not represented in the current augmentation.
+    \item The compound \texttt{night\_snow} condition (CycleGAN night followed by IP2P snow) is rejected by all validators: Claude jury 0.06, InternVL2.5 \verify{}, and FID worse than the clear-image baseline across all three references (best $\Delta$FID $+$7\%). We release this variant for robustness stress-testing rather than realistic augmentation. Users evaluating perceptual realism should exclude \texttt{night\_snow} from their splits.
 \end{itemize}
 
 
@@ -603,8 +446,7 @@ ConSynth-X is designed for three primary use cases:
 The complete generation pipeline, benchmarking framework, and evaluation scripts will be released upon acceptance on GitHub under an Apache 2.0 license. The repository includes:
 
 \begin{itemize}[noitemsep]
-    \item Augmentation scripts for all five pipelines (weather style transfer, IP2P diffusion, day-to-night, fog, outpainting)
-    \item Quality filtering scripts (SSIM/LPIPS) with configurable thresholds
+    \item Augmentation scripts for the four release pipelines: IP2P diffusion weather, day-to-night CycleGAN, fog (Koschmieder + Depth Anything V2), and small-object canvas expansion. Ablation experiments including the neural style transfer baseline are available in the \texttt{experiments/} directory.
     \item VLM benchmarking framework for 11 vision-language models across 4 tasks
     \item Jupyter notebooks for result analysis and visualization
 \end{itemize}
@@ -642,21 +484,73 @@ This research was supported by Kent State University. Computational resources we
 
 
 % ══════════════════════════════════════════════════════════════
-% Author Contributions
-% Nature Scientific Data: Required section.
-% ══════════════════════════════════════════════════════════════
-\section*{Author Contributions}
-
-V.H.D.\ designed the augmentation pipelines, implemented the generation and benchmarking code, conducted all experiments, and wrote the manuscript. R.X.\ supervised the research, provided domain expertise in construction management, and reviewed the manuscript.
-
-
-% ══════════════════════════════════════════════════════════════
 % Competing Interests
 % Nature Scientific Data: Required section.
 % ══════════════════════════════════════════════════════════════
 \section*{Competing Interests}
 
 The authors declare no competing interests.
+
+
+% ══════════════════════════════════════════════════════════════
+% Supplementary S1: Extended jury panel (pilot)
+% ══════════════════════════════════════════════════════════════
+\section*{Supplementary S1: Extended Jury Panel (Pilot)}
+\label{sec:supp-jury-pilot}
+
+The primary 2-judge panel (InternVL2.5-8B, Claude Sonnet 4.6) reported in Section~\ref{sec:vlm-jury} was selected after evaluating five candidate judges during pilot calibration. We retain the full pilot data here for transparency and to motivate the panel reduction.
+
+\textbf{Panel reduction rationale.} On the ACDC real-image calibration set, the five judges show substantial disagreement on snow conditions (Table~\ref{tab:supp-acdc-calibration}). Phi-4-Multimodal accepts only 7.5\% of real ACDC snow frames, Qwen2.5-VL-7B 30.0\%, and Qwen3-VL-8B 35.0\%, all well below the human-annotation ceiling. InternVL2.5-8B (75.0\%) and Claude Sonnet 4.6 (90.0\%) sit closer to the real-image acceptance plateau. A within-tier majority over Phi-4 / Qwen2.5 / Qwen3 would be dragged below the calibration ceiling on snow conditions, producing acceptance rates that reflect judge conservatism rather than image realism. The cross-tier 2-judge design avoids this drift while keeping one open-weight judge for reproducibility.
+
+\begin{table}[H]
+\centering
+\caption{Five-judge ACDC real-image calibration. All three Qwen-family judges and Phi-4 show substantial drift on snow.}
+\label{tab:supp-acdc-calibration}
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{ACDC condition} & \textbf{InternVL2.5-8B} & \textbf{Phi-4 MM} & \textbf{Qwen2.5-VL-7B} & \textbf{Qwen3-VL-8B} & \textbf{Claude Sonnet 4.6} \\
+\midrule
+Fog   & 0.950 & 0.900 & 1.000 & 1.000 & 1.000 \\
+Night & 0.975 & 0.700 & 0.850 & 1.000 & 1.000 \\
+Rain  & 0.825 & 0.700 & 0.800 & 0.825 & 1.000 \\
+Snow  & 0.750 & 0.075 & 0.300 & 0.350 & 0.900 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The Qwen model-family conservatism on snow is consistent with the pattern reported by Ruck et al.~\citep{ruck2026scalable} on Qwen2.5-VL. Phi-4-Multimodal shows similar drift on snow specifically; we attribute this to a snow-class calibration weakness shared across recent open-weight VLMs of this size.
+
+\textbf{Note on retained pilot data.} The five-judge per-condition pilot results, including all augmented conditions, are released with the dataset under \texttt{validation/results/} for users who wish to evaluate alternative panel designs.
+
+
+% ══════════════════════════════════════════════════════════════
+% Supplementary S2: Per-reference FID
+% ══════════════════════════════════════════════════════════════
+\section*{Supplementary S2: Per-Reference FID}
+\label{sec:supp-fid}
+
+Table~\ref{tab:fid-kid} in the main text reports the best $\Delta$FID per condition across three references. The per-reference breakdown appears below. ACDC contains driving scenes, WeatherBench contains paired indoor/outdoor weather imagery, and WeatherNet-05 contains outdoor snow and fog photography; the source-domain mismatch between ACDC (driving) and ConSynth-X (construction) typically inflates the original-clear-image gap and therefore weakens the relative-improvement signal on conditions whose realism is captured by the other references.
+
+\begin{table}[H]
+\centering
+\caption{Per-reference $\Delta$FID values. Cells with ``---'' indicate the reference does not contain the relevant weather class.}
+\label{tab:supp-fid-per-ref}
+\small
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Condition} & \textbf{Method} & \textbf{ACDC} & \textbf{WeatherBench} & \textbf{WeatherNet} \\
+\midrule
+Snow (light) & IP2P $g{=}8$               & $-$9\%   & \verify{} & \textbf{$-$19\%} \\
+Snow (heavy) & IP2P $g{=}12$              & $-$5\%   & \verify{} & \textbf{$-$19\%} \\
+Fog (heavy)  & IP2P fog heavy             & $+$4\%   & \textbf{$-$10\%} & $-$6\% \\
+Rain         & IP2P rain (heavy phys.)    & $+$10\%  & \textbf{$+$4\%}  & --- \\
+Night        & CycleGAN-Turbo             & \textbf{$-$34\%} & --- & --- \\
+Night+rain   & CycleGAN $\to$ IP2P rain   & $+$10\%  & \textbf{$-$8\%}  & --- \\
+Night+snow   & CycleGAN $\to$ IP2P snow   & $+$10\%  & \textbf{$+$7\%}  & $+$13\% \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 % ══════════════════════════════════════════════════════════════

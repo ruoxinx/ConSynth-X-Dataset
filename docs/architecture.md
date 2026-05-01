@@ -112,6 +112,30 @@ ConSynth-X/
 │   │   └── dino_ssim_retention_all.*      # Paper Figure 2
 │   └── logs/                              # SLURM logs
 │
+├── release_pipeline/                      # === REPACK / PUBLIC RELEASE ===
+│   ├── convert/
+│   │   ├── release_schema.py              # Canonical pa.schema per sub + validate_table()
+│   │   ├── voc_to_objects.py              # VOC XML parser (round-trip, hard-error on size mismatch)
+│   │   ├── cs10k_to_objects.py            # cs10k per-class cols + rule_violations + image_attributes
+│   │   ├── bbox_join.py                   # Join bbox from source for shards lacking annotation
+│   │   ├── coco_emitter.py                # Streaming COCO writer (CocoStreamingEmitter)
+│   │   └── integrity.py                   # SHA256, EXIF rotation, atomic write helpers
+│   ├── scripts/
+│   │   ├── repack_to_release.py           # Main runner — dry-run default, --execute writes
+│   │   ├── validate_release.py            # Post-execute byte/bbox round-trip check
+│   │   ├── pack_extra2k.py                # One-off: soda_voc/small extra2k FLUX → arrow
+│   │   └── pack_soda_ktsh_original.py     # ktsh raw-jpg → arrow source builder
+│   ├── metadata/
+│   │   ├── condition_registry.yaml        # 35 shards mapped to format/condition/pipeline/dino csv
+│   │   └── pending_dino_shards.yaml       # Historical (now empty after DINO compute)
+│   ├── tests/test_parsers.py              # 12 unit tests (VOC round-trip, cs10k formats, etc.)
+│   └── logs/                              # SLURM stdout/stderr (repack, hf_upload, kaggle_upload)
+│
+│   Output (gitignored):
+│     /fs/scratch/PGS0407/binben14/ConSynth-X-release-v1/      → 50 GB Parquet
+│     /fs/scratch/PGS0407/binben14/ConSynth-X-release-v1-coco/ → 53 GB COCO + JPEG
+│   Public mirror: kaggle.com/datasets/viethuyduong/construction-site-augmentation-data
+│
 ├── human_validation/                      # === HUMAN PERCEPTUAL VALIDATION ===
 │   ├── app.py                             # Flask web app (3 tasks, admin dashboard)
 │   ├── sample_images.py                   # Sample images from augmentation_data
