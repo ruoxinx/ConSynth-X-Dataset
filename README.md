@@ -8,11 +8,11 @@ Code repository for **ConSynth-X: A Large-Scale Synthetic Construction-Site Imag
 
 | Clean | Night | Fog (heavy) | Fog (medium) | Fog (light) |
 | :---: | :---: | :---: | :---: | :---: |
-| ![](augmentation_data/samples/soda_original.jpg) | ![](augmentation_data/samples/soda_night.jpg) | ![](augmentation_data/samples/soda_fog_heavy.jpg) | ![](augmentation_data/samples/soda_fog_medium.jpg) | ![](augmentation_data/samples/soda_fog_light.jpg) |
+| ![](assets/preview/soda_original.jpg) | ![](assets/preview/soda_night.jpg) | ![](assets/preview/soda_fog_heavy.jpg) | ![](assets/preview/soda_fog_medium.jpg) | ![](assets/preview/soda_fog_light.jpg) |
 
 | Rain (IP2P) | Snow (IP2P) | Rain (ST, ablation) | Snow (ST, ablation) | KTSH rain |
 | :---: | :---: | :---: | :---: | :---: |
-| ![](augmentation_data/samples/soda_rain_diffusion.jpg) | ![](augmentation_data/samples/soda_snow_diffusion.jpg) | ![](augmentation_data/samples/soda_rain_style.jpg) | ![](augmentation_data/samples/soda_snow_style.jpg) | ![](augmentation_data/samples/ktsh_rain.jpg) |
+| ![](assets/preview/soda_rain_diffusion.jpg) | ![](assets/preview/soda_snow_diffusion.jpg) | ![](assets/preview/soda_rain_style.jpg) | ![](assets/preview/soda_snow_style.jpg) | ![](assets/preview/ktsh_rain.jpg) |
 
 ---
 
