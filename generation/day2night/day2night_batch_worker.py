@@ -21,17 +21,8 @@ BASE_DIR = Path(__file__).parent
 IMG2IMG_SRC = BASE_DIR / "img2img-turbo" / "src"
 sys.path.insert(0, str(IMG2IMG_SRC))
 
-import pyarrow as pa
-from PIL import Image
-import torch
-from torchvision import transforms
-from tqdm import tqdm
-
-from cyclegan_turbo import CycleGAN_Turbo
-from my_utils.training_utils import build_transform
-
-
 def load_arrow_file(path):
+    import pyarrow as pa
     """Load Arrow IPC file"""
     with open(path, 'rb') as f:
         reader = pa.ipc.open_stream(f)
@@ -40,7 +31,9 @@ def load_arrow_file(path):
 
 
 def get_image_from_row(row):
+    from PIL import Image
     """Extract PIL Image from Arrow row"""
+    import io
     image_data = row['image'][0].as_py()
     if isinstance(image_data, dict):
         img_bytes = image_data['bytes']
@@ -56,6 +49,14 @@ def main():
     parser.add_argument('--end-idx', type=int, required=True, help='End index (exclusive)')
     parser.add_argument('--batch-id', type=int, default=0, help='Batch ID for logging')
     args = parser.parse_args()
+
+    import pyarrow as pa
+    from PIL import Image
+    import torch
+    from torchvision import transforms
+    from tqdm import tqdm
+    from cyclegan_turbo import CycleGAN_Turbo
+    from my_utils.training_utils import build_transform
     
     arrow_path = Path(args.arrow_file)
     output_dir = Path(args.output_dir)

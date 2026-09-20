@@ -9,18 +9,8 @@ import sys
 import gc
 import random
 from pathlib import Path
-import numpy as np
-import pyarrow as pa
-from PIL import Image
-import io
-import cv2
-import torch
-import lpips
-from skimage.metrics import structural_similarity as ssim
-
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from physics import add_natural_rain, add_natural_snow
 
 LPIPS_THRESHOLD = 0.35
 SSIM_RAIN = (0.6, 0.95)
@@ -47,11 +37,14 @@ def parse_args():
 
 
 def load_arrow(path):
+    import pyarrow as pa
     with open(path, 'rb') as f:
         return pa.ipc.open_stream(f).read_all()
 
 
 def get_image(table, idx):
+    import io
+    from PIL import Image
     row = table.column('image')[idx].as_py()
     if isinstance(row, dict):
         return Image.open(io.BytesIO(row['bytes'])).convert('RGB')
@@ -59,12 +52,15 @@ def get_image(table, idx):
 
 
 def image_to_bytes(img, quality=95):
+    import io
     buf = io.BytesIO()
     img.save(buf, format='JPEG', quality=quality)
     return buf.getvalue()
 
 
 def compute_lpips(lpips_fn, orig_pil, aug_pil):
+    import numpy as np
+    import torch
     size = (256, 256)
     orig_t = torch.from_numpy(np.array(orig_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
     aug_t = torch.from_numpy(np.array(aug_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
@@ -73,6 +69,8 @@ def compute_lpips(lpips_fn, orig_pil, aug_pil):
 
 
 def compute_ssim(orig_pil, aug_pil):
+    import numpy as np
+    from skimage.metrics import structural_similarity as ssim
     orig = np.array(orig_pil.resize((256, 256)))
     aug = np.array(aug_pil.resize((256, 256)))
     return ssim(orig, aug, channel_axis=2)
@@ -80,6 +78,14 @@ def compute_ssim(orig_pil, aug_pil):
 
 def main():
     args = parse_args()
+
+    import io
+    import numpy as np
+    import pyarrow as pa
+    from PIL import Image
+    import torch
+    import lpips
+    from physics import add_natural_rain, add_natural_snow
 
     print("=" * 60)
     print(f"V4 Batch Worker: {args.weather}")

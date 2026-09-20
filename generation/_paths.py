@@ -6,14 +6,16 @@ Configure via environment variables:
   CONSYNTH_DATA_ROOT    Path to data directory. Expected layout (mirrors the
                         "ConstructionSite" working tree used during development):
                           $CONSYNTH_DATA_ROOT/
-                            LouisChen15___construction_site/   # HF arrow shards
+                            LouisChen15___construction_site/   # source shards
                             SODA/data/SODA VOCdevkit/VOCdevkit/VOC2007/
+                            SODA/data/soda-ktsh/images/
+                            SODA/data/soda-ktsh/captiondata/
                             augmentation_data/
                             augmentation_data_arrow/
                             validation_data/
   CONSYNTH_CONDA_ENV    Conda env used by SLURM submit scripts (default: VLM)
 
-See ConSynth-X/.env.example and ConSynth-X/INSTALL.md.
+See `.env.example` and `REPRODUCE.md` in the repository root.
 """
 
 from __future__ import annotations

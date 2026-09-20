@@ -18,15 +18,6 @@ BASE_DIR = Path(__file__).parent
 IMG2IMG_SRC = BASE_DIR / "img2img-turbo" / "src"
 sys.path.insert(0, str(IMG2IMG_SRC))
 
-from PIL import Image
-import torch
-from torchvision import transforms
-from tqdm import tqdm
-
-from cyclegan_turbo import CycleGAN_Turbo
-from my_utils.training_utils import build_transform
-
-
 def get_image_list(images_dir):
     """Get sorted list of image files"""
     extensions = {'.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'}
@@ -45,6 +36,13 @@ def main():
     parser.add_argument('--end-idx', type=int, required=True, help='End index (exclusive)')
     parser.add_argument('--batch-id', type=int, default=0, help='Batch ID for logging')
     args = parser.parse_args()
+
+    from PIL import Image
+    import torch
+    from torchvision import transforms
+    from tqdm import tqdm
+    from cyclegan_turbo import CycleGAN_Turbo
+    from my_utils.training_utils import build_transform
     
     images_dir = Path(args.images_dir)
     output_dir = Path(args.output_dir)

@@ -24,9 +24,8 @@ build/
 *.npz
 *.hdf5
 
-# Images & media (keep style references via git add -f)
+# Images & media
 *.jpg
-!assets/preview/*.jpg
 
 # Secrets
 .env
@@ -75,14 +74,71 @@ wandb/
 runs/
 checkpoints/
 augmentation_data/
-ConSynth-X/d2n_recovery_kit/
+
+# Local development archive; preserved locally and excluded from the public tree.
+/.local-development/
+
+# Development-only material is retained locally but must not return to the
+# public checkout if restored from the local archive.
+/assets/
+/augmentation_data_sample/
+/bench/
+/benchmarks/
+/d2n_recovery_kit/
+/detection_validation/
+/docs/
+/examples/
+/experiments/
+/evaluation/
+/human_validation/
+/metadata/
+/paper/
+/propotype/
+/release_pipeline/
+/scripts/
+/slide/
+/splits/
+/taxonomy/
+/conditions/
+/validation/
+/weights/
+/environment.yml
+/INSTALL.md
+/data_card.md
+/dataset_card.md
+/generation/sensitivity/
+/generation/AUGMENTATION_REPORT.md
+/generation/day2night/submit_day2night_batch.py
+/generation/day2night/submit_day2night_soda.py
+/generation/day2night/run_day2night.py
+/generation/day2night/day2night_ktsh_recovery.py
+/generation/weather/rain_snow/diffusion/submit_night_weather_test.py
+/generation/weather/rain_snow/diffusion/submit_soda.py
+/generation/weather/rain_snow/diffusion/submit_test.py
+/generation/weather/rain_snow/diffusion/submit_train.py
+/generation/weather/rain_snow/diffusion/submit_voc_b2_night.py
+/generation/weather/rain_snow/diffusion/submit_weather_night.py
+/generation/weather/rain_snow/diffusion/eval_dino_similarity.py
+/generation/weather/rain_snow/diffusion/gen_dino_ssim_disagreement.py
+/generation/weather/rain_snow/diffusion/extract_samples.py
+/generation/weather/rain_snow/diffusion/test_controlnet_ip2p.py
+/generation/weather/rain_snow/diffusion/test_flux_kontext.py
+/generation/weather/rain_snow/diffusion/test_models.py
+/generation/weather/rain_snow/diffusion/test_new_prompt.py
+/generation/weather/rain_snow/diffusion/test_rain_heavy_physics_only.py
+/generation/weather/rain_snow/diffusion/test_snow_stronger.py
+/generation/weather/fog/diffusion/fog_pipeline.py
+/generation/utils/pack_originals_for_sample.py
+/generation/weather/libs/
+/generation/weather/fog/style_transfer/
+# Keep reproducibility runs outside the source tree.
+generation/**/jobs/
+generation/**/logs/
+release_pipeline/_pending_v1_1/
+bench/gt/
+bench/sanity_results/
+*.db
 
 # Claude Code
 CLAUDE.md
 
-/augmentation_data/
-
-
-/paper/
-/related_paper/
-/slide/

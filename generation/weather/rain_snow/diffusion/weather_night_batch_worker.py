@@ -19,7 +19,7 @@ IP2P config matches production rain.arrow / snow.arrow (batch_worker.py defaults
 Usage:
     python weather_night_batch_worker.py \
         --orig-input construction_site_test.arrow \
-        --output-dir output/rain_night \
+        --output-dir output/night_rain \
         --start 0 --end 500 \
         --weather rain --seed 42
 """
@@ -31,23 +31,12 @@ import io
 import random
 from pathlib import Path
 
-import numpy as np
-import pyarrow as pa
-from PIL import Image
-import torch
-import lpips
-from skimage.metrics import structural_similarity as ssim
-
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from physics import add_natural_rain, add_natural_snow
 
 # CycleGAN-Turbo (img2img-turbo)
 IMG2IMG_SRC = SCRIPT_DIR.parents[2] / 'day2night' / 'img2img-turbo' / 'src'
 sys.path.insert(0, str(IMG2IMG_SRC))
-from cyclegan_turbo import CycleGAN_Turbo
-from my_utils.training_utils import build_transform
-from torchvision import transforms
 
 # ---------- Quality filter thresholds (mirror Order A worker) ----------
 LPIPS_THRESHOLD = 0.35
@@ -94,11 +83,13 @@ def parse_args():
 
 
 def load_arrow(path):
+    import pyarrow as pa
     with open(path, 'rb') as f:
         return pa.ipc.open_stream(f).read_all()
 
 
 def get_image(table, idx):
+    from PIL import Image
     row = table.column('image')[idx].as_py()
     if isinstance(row, dict):
         return Image.open(io.BytesIO(row['bytes'])).convert('RGB')
@@ -112,6 +103,8 @@ def image_to_bytes(img, quality=95):
 
 
 def compute_lpips(lpips_fn, orig_pil, aug_pil):
+    import numpy as np
+    import torch
     size = (256, 256)
     o = torch.from_numpy(np.array(orig_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
     a = torch.from_numpy(np.array(aug_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
@@ -120,12 +113,16 @@ def compute_lpips(lpips_fn, orig_pil, aug_pil):
 
 
 def compute_ssim(orig_pil, aug_pil):
+    import numpy as np
+    from skimage.metrics import structural_similarity as ssim
     o = np.array(orig_pil.resize((256, 256)))
     a = np.array(aug_pil.resize((256, 256)))
     return ssim(o, a, channel_axis=2)
 
 
 def run_ip2p(pipe, image, cfg, seed):
+    import torch
+    from PIL import Image
     w, h = image.size
     max_dim = 768
     scale = min(max_dim / max(h, w), 1.0)
@@ -143,6 +140,9 @@ def run_ip2p(pipe, image, cfg, seed):
 
 
 def run_cyclegan_night(model, image, T_val):
+    import torch
+    from PIL import Image
+    from torchvision import transforms
     w, h = image.size
     with torch.no_grad():
         x = T_val(image)
@@ -156,6 +156,15 @@ def run_cyclegan_night(model, image, T_val):
 def main():
     args = parse_args()
     cfg = IP2P_CONFIG[args.weather]
+
+    import numpy as np
+    import pyarrow as pa
+    from PIL import Image
+    import torch
+    import lpips
+    from physics import add_natural_rain, add_natural_snow
+    from cyclegan_turbo import CycleGAN_Turbo
+    from my_utils.training_utils import build_transform
 
     print('=' * 60)
     print(f'WEATHER-NIGHT BATCH WORKER (Order B): {args.weather.upper()}')

@@ -1,8 +1,0 @@
-[
-  {
-    "image_id": "string",
-    "objects": [
-      {"id": 1, "category": "excavator", "bbox": [x,y,w,h], "area": 1234, "iscrowd": 0}
-    ]
-  }
-]

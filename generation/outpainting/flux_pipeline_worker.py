@@ -16,13 +16,10 @@ import os
 import sys
 import json
 import random
-import torch
 import gc
 from pathlib import Path
 from PIL import Image, ImageDraw
 import io
-import pyarrow as pa
-from diffusers import FluxFillPipeline
 import argparse
 from typing import Dict, List, Tuple, Optional
 
@@ -179,6 +176,8 @@ def create_outpainting_canvas(
 
 def setup_flux_pipeline():
     """Setup FLUX pipeline with memory optimizations."""
+    import torch
+    from diffusers import FluxFillPipeline
     print("Loading FLUX.1-Fill-dev model...")
     
     pipe = FluxFillPipeline.from_pretrained(
@@ -254,6 +253,9 @@ def process_arrow_batch(
     prompt: str = "Extend the image edges seamlessly. Continue only the existing ground texture, dirt, concrete, and sky. Match lighting, colors, and perspective. Do not add any new objects.",
     seed: int = 42
 ):
+    import pyarrow as pa
+    import torch
+
     """
     Process samples from arrow file.
     
@@ -461,7 +463,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     
     args = parser.parse_args()
-    
+
     # Handle --num-samples
     end_idx = args.end
     if args.num_samples is not None:

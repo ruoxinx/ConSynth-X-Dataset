@@ -2,6 +2,9 @@
 """
 Night Weather Batch Worker: IP2P + Physics on Night images.
 
+The CycleGAN day-to-night conversion is a separate upstream stage. This worker
+expects its resulting night Arrow as input and does not load or run CycleGAN.
+
 Pipeline:
   Night image (from night.arrow)
     → IP2P diffusion (rain/snow prompt tuned for night scenes)
@@ -23,18 +26,10 @@ import sys
 import gc
 import random
 from pathlib import Path
-import numpy as np
-import pyarrow as pa
-from PIL import Image
 import io
-import cv2
-import torch
-import lpips
-from skimage.metrics import structural_similarity as ssim
 
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from physics import add_natural_rain, add_natural_snow
 
 # Quality filter thresholds (same as day weather pipeline)
 LPIPS_THRESHOLD = 0.35
@@ -86,11 +81,13 @@ def parse_args():
 
 
 def load_arrow(path):
+    import pyarrow as pa
     with open(path, 'rb') as f:
         return pa.ipc.open_stream(f).read_all()
 
 
 def get_image(table, idx):
+    from PIL import Image
     row = table.column('image')[idx].as_py()
     if isinstance(row, dict):
         return Image.open(io.BytesIO(row['bytes'])).convert('RGB')
@@ -104,6 +101,8 @@ def image_to_bytes(img, quality=95):
 
 
 def compute_lpips(lpips_fn, orig_pil, aug_pil):
+    import numpy as np
+    import torch
     size = (256, 256)
     orig_t = torch.from_numpy(np.array(orig_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
     aug_t = torch.from_numpy(np.array(aug_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
@@ -112,6 +111,8 @@ def compute_lpips(lpips_fn, orig_pil, aug_pil):
 
 
 def compute_ssim(orig_pil, aug_pil):
+    import numpy as np
+    from skimage.metrics import structural_similarity as ssim
     orig = np.array(orig_pil.resize((256, 256)))
     aug = np.array(aug_pil.resize((256, 256)))
     return ssim(orig, aug, channel_axis=2)
@@ -120,6 +121,13 @@ def compute_ssim(orig_pil, aug_pil):
 def main():
     args = parse_args()
     cfg = IP2P_CONFIG[args.weather]
+
+    import numpy as np
+    import pyarrow as pa
+    from PIL import Image
+    import torch
+    import lpips
+    from physics import add_natural_rain, add_natural_snow
 
     print("=" * 60)
     print(f"NIGHT WEATHER BATCH WORKER: {args.weather.upper()}")

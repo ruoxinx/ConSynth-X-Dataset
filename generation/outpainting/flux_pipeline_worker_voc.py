@@ -12,16 +12,15 @@ Output structure:
     meta/          - Full metadata for debugging
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import json
 import random
-import torch
 import gc
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from PIL import Image, ImageDraw
-from diffusers import FluxFillPipeline
 import argparse
 from typing import Dict, List, Tuple, Optional
 from xml.dom import minidom
@@ -165,6 +164,7 @@ def create_outpainting_canvas(
     image: Image.Image,
     scale_factor: float
 ) -> Tuple[Image.Image, Image.Image, Tuple[int, int, int, int]]:
+    from PIL import Image, ImageDraw
     """Create canvas and mask for outpainting."""
     orig_w, orig_h = image.size
 
@@ -186,6 +186,8 @@ def create_outpainting_canvas(
 
 
 def setup_flux_pipeline():
+    import torch
+    from diffusers import FluxFillPipeline
     """Setup FLUX pipeline with memory optimizations."""
     print("Loading FLUX.1-Fill-dev model...")
 
@@ -212,6 +214,7 @@ def run_outpainting(
     max_size: int = 1024
 ) -> Image.Image:
     """Run FLUX outpainting."""
+    from PIL import Image
     orig_canvas_size = canvas.size
 
     if max(canvas.size) > max_size:
@@ -262,6 +265,8 @@ def process_voc_batch(
     max_size: int = 1024
 ):
     """Process VOC format images with outpainting."""
+    import torch
+    from PIL import Image
 
     random.seed(seed)
 

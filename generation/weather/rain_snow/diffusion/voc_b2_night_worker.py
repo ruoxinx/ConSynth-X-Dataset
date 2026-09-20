@@ -2,8 +2,8 @@
 """
 VOC B2 Night-from-Weather Worker.
 
-B2 variant of Order B: reuse pre-computed IP2P weather images (from voc rain_light /
-snow_light arrows), apply only CycleGAN day2night + physics. Skips the IP2P step.
+B2 variant of Order B: reuse pre-computed IP2P weather images (from voc rain /
+snow arrows), apply only CycleGAN day2night + physics. Skips the IP2P step.
 
 Pipeline (per image):
   Weather arrow image (already IP2P'd day rain/snow)
@@ -29,28 +29,17 @@ import io
 import random
 from pathlib import Path
 
-import numpy as np
-import pyarrow as pa
-from PIL import Image
-import torch
-import lpips
-from skimage.metrics import structural_similarity as ssim
-
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from physics import add_natural_rain, add_natural_snow
 
 IMG2IMG_SRC = SCRIPT_DIR.parents[2] / 'day2night' / 'img2img-turbo' / 'src'
 sys.path.insert(0, str(IMG2IMG_SRC))
-from cyclegan_turbo import CycleGAN_Turbo
-from my_utils.training_utils import build_transform
-from torchvision import transforms
 
 
 def parse_args():
     p = argparse.ArgumentParser(description='VOC B2 Night-from-Weather Worker')
     p.add_argument('--weather-input', type=str, required=True,
-                   help='Path to voc weather arrow (rain_light/snow_light sliced)')
+                   help='Path to voc weather arrow (rain/snow sliced)')
     p.add_argument('--orig-input', type=str, required=True,
                    help='Path to voc clear arrow at SAME image_id ordering')
     p.add_argument('--output-dir', type=str, required=True)
@@ -62,11 +51,13 @@ def parse_args():
 
 
 def load_arrow(path):
+    import pyarrow as pa
     with open(path, 'rb') as f:
         return pa.ipc.open_stream(f).read_all()
 
 
 def get_image(table, idx):
+    from PIL import Image
     row = table.column('image')[idx].as_py()
     if isinstance(row, dict):
         return Image.open(io.BytesIO(row['bytes'])).convert('RGB')
@@ -80,6 +71,8 @@ def image_to_bytes(img, quality=95):
 
 
 def compute_lpips(lpips_fn, orig_pil, aug_pil):
+    import numpy as np
+    import torch
     size = (256, 256)
     o = torch.from_numpy(np.array(orig_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
     a = torch.from_numpy(np.array(aug_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
@@ -88,12 +81,17 @@ def compute_lpips(lpips_fn, orig_pil, aug_pil):
 
 
 def compute_ssim(orig_pil, aug_pil):
+    import numpy as np
+    from skimage.metrics import structural_similarity as ssim
     o = np.array(orig_pil.resize((256, 256)))
     a = np.array(aug_pil.resize((256, 256)))
     return ssim(o, a, channel_axis=2)
 
 
 def run_cyclegan_night(model, image, T_val):
+    import torch
+    from PIL import Image
+    from torchvision import transforms
     w, h = image.size
     with torch.no_grad():
         x = T_val(image)
@@ -106,6 +104,15 @@ def run_cyclegan_night(model, image, T_val):
 
 def main():
     args = parse_args()
+
+    import numpy as np
+    import pyarrow as pa
+    from PIL import Image
+    import torch
+    import lpips
+    from physics import add_natural_rain, add_natural_snow
+    from cyclegan_turbo import CycleGAN_Turbo
+    from my_utils.training_utils import build_transform
 
     print('=' * 60)
     print(f'VOC B2 NIGHT-FROM-WEATHER WORKER: {args.weather.upper()}')

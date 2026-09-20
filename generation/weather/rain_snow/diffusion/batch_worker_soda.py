@@ -9,16 +9,9 @@ import sys
 import gc
 import random
 from pathlib import Path
-import numpy as np
-from PIL import Image
-import cv2
-import torch
-import lpips
-from skimage.metrics import structural_similarity as ssim
 
 SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
-from physics import add_natural_rain, add_natural_snow
 
 LPIPS_THRESHOLD = 0.35
 SSIM_RAIN = (0.6, 0.95)
@@ -45,6 +38,8 @@ def parse_args():
 
 
 def compute_lpips(lpips_fn, orig_pil, aug_pil):
+    import numpy as np
+    import torch
     size = (256, 256)
     orig_t = torch.from_numpy(np.array(orig_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
     aug_t = torch.from_numpy(np.array(aug_pil.resize(size))).permute(2, 0, 1).float() / 127.5 - 1.0
@@ -53,6 +48,8 @@ def compute_lpips(lpips_fn, orig_pil, aug_pil):
 
 
 def compute_ssim(orig_pil, aug_pil):
+    import numpy as np
+    from skimage.metrics import structural_similarity as ssim
     orig = np.array(orig_pil.resize((256, 256)))
     aug = np.array(aug_pil.resize((256, 256)))
     return ssim(orig, aug, channel_axis=2)
@@ -60,6 +57,12 @@ def compute_ssim(orig_pil, aug_pil):
 
 def main():
     args = parse_args()
+
+    import numpy as np
+    from PIL import Image
+    import torch
+    import lpips
+    from physics import add_natural_rain, add_natural_snow
 
     input_dir = Path(args.input_dir)
     all_images = sorted([f for f in input_dir.iterdir() if f.suffix.lower() in ('.jpg', '.jpeg', '.png')])
