@@ -67,7 +67,7 @@ and [UPSTREAM_ATTRIBUTION.md](UPSTREAM_ATTRIBUTION.md).
 ```bibtex
 @dataset{consynth_x_2026,
   title  = {ConSynth-X: A paired synthetic construction-site image dataset for robust computer vision under adverse conditions},
-  author = {Duong, Viet Huy and Xiong, Ruoxin},
+  author = {Duong, Viet Huy and Xiong, Ruoxin and Al Forhad, Md Abdullah and Shi, Weishi},
   year   = {2026},
   doi    = {10.57967/hf/9597},
   url    = {https://huggingface.co/datasets/openconstruction/ConSynth-X}
