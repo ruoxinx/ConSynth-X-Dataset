@@ -10,7 +10,7 @@ needed to study the published pipelines. It does not provide the full dataset.
 ### Quick links
 
 - 📊 **[View representative sample data](https://ben11304.github.io/ConSynth-X/gallery)**
-- 🌐 **[Project website]((https://ben11304.github.io/ConSynth-X)**
+- 🌐 **[Project website](https://ben11304.github.io/ConSynth-X)**
 - 💻 **[Generation code](https://github.com/ruoxinx/ConSynth-X-Dataset)**
 
 ## Dataset access and distribution
