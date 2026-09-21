@@ -37,9 +37,7 @@ redistribution of the upstream originals.
 ## Reproduce the pipeline
 
 This repository contains the generation workers and documentation for local
-regeneration. Validation, benchmarking, and downstream evaluation code are
-kept in the private development archive and are not included in the current
-public release. The repository does not publish dataset shards, source
+regeneration. The repository does not publish dataset shards, source
 images, checkpoints, experiment outputs, notebooks, slides, or internal
 development reports.
 
